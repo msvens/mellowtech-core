@@ -45,9 +45,10 @@ import java.util.regex.Pattern;
  *
  * @author Martin Svensson
  */
+@Deprecated
 public class ByteStorableBlockFileNoIdTest {
 
-  @Test
+  //@Test
   public void test() throws IOException {
     String path = Platform.getTempDir();
     String fileName = path+"/BlockFileWithNoId.blf";
@@ -80,6 +81,7 @@ public class ByteStorableBlockFileNoIdTest {
     for (Iterator<Map.Entry<String, Integer>> iter = map.entrySet().iterator(); iter
             .hasNext();) {
       Map.Entry<String, Integer> e = iter.next();
+      System.err.println(e.getKey());
       int block = bsf.write(new CBString(e.getKey()));
       Assert.assertTrue(block > -1);
       blockMap.put(e.getKey(), block);

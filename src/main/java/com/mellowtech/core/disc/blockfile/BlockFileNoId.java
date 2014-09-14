@@ -52,6 +52,7 @@ import com.mellowtech.core.util.Platform;
  * @author rickard.coster@asimus.se
  * @version 1.0
  */
+@Deprecated
 public class BlockFileNoId {
   protected int cacheSize;
   protected CacheLRU <Integer, BlockNoId> cache;

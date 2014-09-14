@@ -47,9 +47,12 @@ import java.util.TreeMap;
  * file that contains a list of non-full Blocks. The list of free Blocks is kept
  * in memory at all times, and only written when close() is called.
  * 
+ * OBSERVE. THIS CLASS IS CURRENTLY BROKEN
+ * 
  * @author rickard.coster@asimus.se
  * @version 1.0
  */
+@Deprecated
 public class ByteStorableBlockFileNoId {
 
   protected BlockFileNoId blockFile;

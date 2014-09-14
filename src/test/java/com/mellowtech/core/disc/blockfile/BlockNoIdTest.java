@@ -39,9 +39,10 @@ import java.nio.ByteBuffer;
  *
  * @author Martin Svensson
  */
+@Deprecated
 public class BlockNoIdTest {
 
-  @Test
+  //@Test
   public void test() {
 
     BlockNoId block = new BlockNoId(64, new CBString());

@@ -54,6 +54,7 @@ import com.mellowtech.core.bytestorable.CBString;
  * @author rickard.coster@asimus.se
  * @version 1.0
  */
+@Deprecated 
 public class BlockNoId extends ByteStorable {
 
   /**
@@ -233,7 +234,9 @@ public class BlockNoId extends ByteStorable {
     int addSize = 0;
     boolean found = false;
     for (int i = 0; i < count; i++) {
+      
       int cmp = key.compareTo(template.fromBytes(buffer, offsets[i]));
+      System.err.println("iter lastCmp: "+lastCmp+", count="+count+", cmp="+cmp);
       if (!found && lastCmp < 0 && cmp > 0) {
         // The new object should be inserted before the current object, add
         // the new key's size to offsets from now on. 
@@ -250,10 +253,11 @@ public class BlockNoId extends ByteStorable {
     // If there was no place found for the element it should go last...
     // otherwise there is an error in this algorithm or the compareTo method
     if (!found ) {
+      System.err.println("lastCmp: "+lastCmp+", count="+count);
       if (lastCmp > 0 || (lastCmp < 0 && count == 0)) 
         byteSize += sizeBytesNeeded(bufferLength); // the offset
       else
-        throw new IllegalArgumentException("Error in fitsKey()");
+        throw new IllegalArgumentException("Error in fitsValue()");
     }
     
     // The actual data length increases

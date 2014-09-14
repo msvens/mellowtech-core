@@ -62,12 +62,20 @@
             <artifactId>mail</artifactId>
             <version>1.4.1</version>
         </dependency>
+        
+        <dependency>
+   	 		<groupId>com.esotericsoftware.kryo</groupId>
+    		<artifactId>kryo</artifactId>
+    		<version>2.24.0</version>
+		</dependency>
+
         <dependency>
             <groupId>de.sven-jacobs</groupId>
             <artifactId>loremipsum</artifactId>
             <version>1.0</version>
             <scope>test</scope>
         </dependency>
+        
     </dependencies>
 
     <build>
@@ -127,12 +135,12 @@
 
     <distributionManagement>
         <repository>
-            <id>a-releases</id>
+            <id>mellowtech</id>
             <name>Mellowtech Core</name>
             <url>http://www.mellowtech.org/nexus/content/repositories/releases</url>
         </repository>
         <snapshotRepository>
-            <id>a-snapshots</id>
+            <id>mellowtech</id>
             <name>Mellowtech Core</name>
             <url>http://www.mellowtech.org/nexus/content/repositories/snapshots</url>
         </snapshotRepository>
