@@ -27,10 +27,7 @@
 
 package com.mellowtech.core.collections;
 
-import javax.mail.MethodNotSupportedException;
-import java.io.IOException;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.SortedMap;
 
 /**

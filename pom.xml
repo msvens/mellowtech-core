@@ -29,10 +29,10 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
   http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <groupId>com.mellowtech</groupId>
+    <groupId>org.mellowtech</groupId>
     <artifactId>core</artifactId>
     <packaging>jar</packaging>
-    <version>0.7-SNAPSHOT</version>
+    <version>1.0</version>
     <name>MELLOWTECH-CORE</name>
     <url>http://www.mellowtech.org/projects/core</url>
     <scm>
@@ -56,18 +56,6 @@
             <version>4.9</version>
             <scope>test</scope>
         </dependency>
-
-        <dependency>
-            <groupId>javax.mail</groupId>
-            <artifactId>mail</artifactId>
-            <version>1.4.1</version>
-        </dependency>
-        
-        <dependency>
-   	 		<groupId>com.esotericsoftware.kryo</groupId>
-    		<artifactId>kryo</artifactId>
-    		<version>2.24.0</version>
-		</dependency>
 
         <dependency>
             <groupId>de.sven-jacobs</groupId>
