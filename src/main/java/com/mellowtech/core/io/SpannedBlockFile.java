@@ -110,7 +110,7 @@ public class SpannedBlockFile{
 
     //store data:
     int currBlock = record;
-    int toRet = currBlock;
+    //int toRet = currBlock;
     int nextBlock = numBlocks > 1 ? bf.insert(null) : -1;
     int offset = 0;
     int bs = bf.getBlockSize();
@@ -172,7 +172,7 @@ public class SpannedBlockFile{
     ByteBuffer bb;
     byte b[] = bf.get(record);
     bb = ByteBuffer.wrap(b);
-    int length = bb.getInt();
+    bb.getInt(); //length
     int next = bb.getInt();
     bf.delete(record);
     while(next != -1){
@@ -187,7 +187,7 @@ public class SpannedBlockFile{
     ByteBuffer bb;
     byte b[] = bf.get(record);
     bb = ByteBuffer.wrap(b);
-    int length = bb.getInt();
+    bb.getInt(); //length
     int next = bb.getInt();
     //bf.delete(record);
     while(next != -1){

@@ -36,6 +36,11 @@ package com.mellowtech.core.io;
 public class MIoException extends Exception {
 
 
+  /**
+   * 
+   */
+  private static final long serialVersionUID = 2679422301140278387L;
+
   public MIoException() {
   }
 

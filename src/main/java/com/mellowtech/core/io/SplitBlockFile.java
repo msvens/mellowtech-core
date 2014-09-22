@@ -99,6 +99,7 @@ public class SplitBlockFile implements RecordFile {
     if(!f.exists())
       return false;
 
+    @SuppressWarnings("resource")
     RandomAccessFile raf = new RandomAccessFile(f, "rw");
     fc = raf.getChannel();
 

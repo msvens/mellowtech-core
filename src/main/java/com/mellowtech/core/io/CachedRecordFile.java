@@ -45,7 +45,7 @@ public class CachedRecordFile implements RecordFile {
 
   private final RecordFile file;
   private AbstractCache<Integer, byte[]> cache;
-  private int writeOps = 0, readOps = 0;
+  //private int writeOps = 0, readOps = 0;
 
   public CachedRecordFile(RecordFile file, boolean readOnly, boolean mem, int size){
     this.file = file;
@@ -223,7 +223,7 @@ public class CachedRecordFile implements RecordFile {
           if(value.isDirty())
             try {
               file.update(key, value.getValue());
-              writeOps++;
+              //writeOps++;
             } catch (IOException e) {
               CoreLog.L().log(Level.SEVERE, "could not write block", e);
             }
@@ -235,7 +235,7 @@ public class CachedRecordFile implements RecordFile {
       @Override
       public byte[] get(Integer key) throws Exception, NoSuchValueException {
         byte b[] = file.get(key);
-        readOps++;
+        //readOps++;
         return b;
       }
     };

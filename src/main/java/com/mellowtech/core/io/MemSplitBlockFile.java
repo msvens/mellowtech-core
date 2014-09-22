@@ -90,6 +90,7 @@ public class MemSplitBlockFile implements RecordFile {
     if(!f.exists())
       return false;
 
+    @SuppressWarnings("resource")
     RandomAccessFile raf = new RandomAccessFile(f, "rw");
     fc = raf.getChannel();
 
@@ -124,7 +125,7 @@ public class MemSplitBlockFile implements RecordFile {
     init();
 
     //map blocks
-    long blocksSize = fc.size() - startBlocks;
+    //long blocksSize = fc.size() - startBlocks;
     mapBlocks(startBlocks, fc.size());
     //blocks = fc.map(FileChannel.MapMode.READ_WRITE, startBlocks, blocksSize);
 

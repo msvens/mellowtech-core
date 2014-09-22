@@ -26,8 +26,7 @@ public class BBInputStream extends InputStream{
   
   @Override
   public int read(byte[] b) throws IOException {
-    // TODO Auto-generated method stub
-    return super.read(b);
+    return this.read(b, 0, b.length);
   }
 
   @Override
@@ -52,14 +51,13 @@ public class BBInputStream extends InputStream{
 
   @Override
   public synchronized void reset() throws IOException {
-    // TODO Auto-generated method stub
     super.reset();
   }
 
   @Override
   public int read() throws IOException {
-    if(bb.hasRemaining()) return -1;
-      return bb.get();
+    if(bb.hasRemaining()) bb.get();
+    return -1;
   }
 
 }
