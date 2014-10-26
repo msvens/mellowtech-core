@@ -37,21 +37,21 @@ import java.util.*;
  *
  * @author Martin Svensson
  */
-public class CBMixedList extends ByteStorable implements List<Object> {
+public class CBMixedList extends ByteStorable <List <Object>> implements List<Object> {
 
   private List <Object> list;
 
   public CBMixedList(){
-    this.list = new ArrayList();
+    this.list = new ArrayList <Object> ();
   }
 
   @Override
-  public ByteStorable fromBytes(ByteBuffer bb, boolean doNew) {
+  public ByteStorable <List<Object>> fromBytes(ByteBuffer bb, boolean doNew) {
     CBMixedList toRet = doNew ? new CBMixedList() : this;
     toRet.list.clear();
     PrimitiveObject po = new PrimitiveObject();
 
-    int size = bb.getInt();
+    bb.getInt(); //read past int
     int elems = bb.getInt();
     for(int i = 0; i < elems; i++){
       toRet.list.add(po.fromBytes(bb, true).get());
@@ -206,7 +206,7 @@ public class CBMixedList extends ByteStorable implements List<Object> {
 
   @Override
   public List<Object> subList(int fromIndex, int toIndex) {
-    ArrayList <Object> sub = (ArrayList) list.subList(fromIndex, toIndex);
+    ArrayList <Object> sub = (ArrayList <Object>) list.subList(fromIndex, toIndex);
     CBMixedList toRet = new CBMixedList();
     toRet.list = sub;
     return toRet;

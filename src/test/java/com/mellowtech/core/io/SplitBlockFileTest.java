@@ -56,8 +56,8 @@ public class SplitBlockFileTest {
     rf.insert(test);
     rf.insert(test);
     rf.insert(test);
-    rf.insertMapped(test);
-    rf.insertMapped(test);
+    rf.insertRegion(test);
+    rf.insertRegion(test);
 
     rf.delete(1);
     Iterator<Record> iter = rf.iterator();
@@ -66,7 +66,7 @@ public class SplitBlockFileTest {
       String str = new String(next.data, 0, test.length);
       Assert.assertEquals("This is My Test Record", str);
     }
-    iter = rf.mappedIterator();
+    iter = rf.iteratorRegion();
 
     while(iter.hasNext()){
       Record next = iter.next();
@@ -76,9 +76,9 @@ public class SplitBlockFileTest {
 
 
     Assert.assertTrue(rf.contains(0));
-    Assert.assertTrue(rf.containsMapped(0));
+    Assert.assertTrue(rf.containsRegion(0));
     Assert.assertEquals(2, rf.size());
-    Assert.assertEquals(2, rf.sizeMapped());
+    Assert.assertEquals(2, rf.sizeRegion());
 
     rf.close();
     rf = new SplitBlockFile(tmpFile);
@@ -90,7 +90,7 @@ public class SplitBlockFileTest {
       String str = new String(next.data, 0, test.length);
       Assert.assertEquals("This is My Test Record", str);
     }
-    iter = rf.mappedIterator();
+    iter = rf.iteratorRegion();
 
     while(iter.hasNext()){
       Record next = iter.next();
@@ -102,10 +102,10 @@ public class SplitBlockFileTest {
     reserved.fromBytes(rf.getReserve(), 0, false);
     Assert.assertEquals("this is my reserved", reserved.get());
     Assert.assertEquals(2, rf.size());
-    Assert.assertEquals(2, rf.sizeMapped());
+    Assert.assertEquals(2, rf.sizeRegion());
     Assert.assertFalse(rf.contains(1));
     Assert.assertTrue(rf.contains(2));
     Assert.assertTrue(rf.contains(0));
-    Assert.assertTrue(rf.containsMapped(0));
+    Assert.assertTrue(rf.containsRegion(0));
   }
 }

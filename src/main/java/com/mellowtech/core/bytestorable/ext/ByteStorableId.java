@@ -35,16 +35,17 @@ import java.nio.ByteBuffer;
 /**
  * ByteStorable that is a tuple of an integer id value and an object.
  */
-public class ByteStorableId extends ByteComparable {
+@Deprecated
+public class ByteStorableId extends ByteComparable <ByteStorableId> {
   int id;
-  ByteStorable object;
+  ByteStorable <?> object;
   
   public ByteStorableId() {
     this.id = -1;
     this.object = null;
   }
   
-  public ByteStorableId(int id, ByteStorable object) {
+  public ByteStorableId(int id, ByteStorable <?> object) {
     this.id = id;
     this.object = object;
   }
@@ -57,11 +58,11 @@ public class ByteStorableId extends ByteComparable {
     this.id = id;
   }
 
-  public ByteStorable getObject() {
+  public ByteStorable <?> getObject() {
     return object;
   }
 
-  public void setObject(ByteStorable object) {
+  public void setObject(ByteStorable <?> object) {
     this.object = object;
   }
 
@@ -81,7 +82,7 @@ public class ByteStorableId extends ByteComparable {
   }
 
   @Override
-  public ByteStorable fromBytes(ByteBuffer bb, boolean doNew) {
+  public ByteStorable <ByteStorableId> fromBytes(ByteBuffer bb, boolean doNew) {
     int dataSize = getSize(bb);
     ByteStorableId ibs = doNew ? new ByteStorableId() : this;
     ibs.id = getSize(bb);

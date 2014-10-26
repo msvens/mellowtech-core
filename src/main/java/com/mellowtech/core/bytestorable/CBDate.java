@@ -35,7 +35,7 @@ import java.util.Date;
  * @author Martin Svensson
  * @version 1.0
  */
-public class CBDate extends ByteComparable <CBDate>{
+public class CBDate extends ByteComparable <Date>{
 
   private Date value;
 
@@ -57,9 +57,8 @@ public class CBDate extends ByteComparable <CBDate>{
   }
 
   @Override
-  public void set(Object value){
+  public void set(Date value){
     if(value == null) throw new ByteStorableException("null not allowed");
-    if(!(value instanceof Date)) throw new ByteStorableException("not a Date");
     this.value = (Date) value;
   }
 
@@ -98,7 +97,7 @@ public class CBDate extends ByteComparable <CBDate>{
   }
 
   @Override
-  public ByteStorable <CBDate> fromBytes(ByteBuffer bb, boolean doNew) {
+  public ByteStorable <Date> fromBytes(ByteBuffer bb, boolean doNew) {
     if (doNew)
       return new CBDate(bb.getLong());
     value.setTime(bb.getLong());
@@ -106,9 +105,9 @@ public class CBDate extends ByteComparable <CBDate>{
   }
 
   @Override
-  public int compareTo(CBDate other) {
+  public int compareTo(ByteStorable <Date> other) {
     //CBLong o = (CBLong) other;
-    return value.compareTo(other.value);
+    return value.compareTo(other.get());
   }
 
   @Override

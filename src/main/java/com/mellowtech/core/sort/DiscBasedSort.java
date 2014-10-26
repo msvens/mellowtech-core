@@ -57,13 +57,13 @@ import com.mellowtech.core.util.Platform;
  * @version 1.0
  * @see com.mellowtech.core.sort.EDiscBasedSort
  */
-public class DiscBasedSort {
+public class DiscBasedSort <E> {
   public static final String SORT_RUN_FILE = "disc_sort_d_run.";
   private static final String SEP = System.getProperties().getProperty(
       "file.separator");
 
   private static int blockSize = 1024;
-  private ByteStorable template;
+  private ByteStorable <E> template;
   private int complevel = 0;
   private String tempDir = null;
 
@@ -91,7 +91,7 @@ public class DiscBasedSort {
    * @param tempDir
    *          temporary directory for sort runs
    */
-  public DiscBasedSort(ByteStorable template, String tempDir) {
+  public DiscBasedSort(ByteStorable <E> template, String tempDir) {
     this(template, 0, tempDir);
   }
 
@@ -106,7 +106,7 @@ public class DiscBasedSort {
    * @param tempDir
    *          temporary directory for sort runs
    */
-  public DiscBasedSort(ByteStorable template, int complevel, String tempDir) {
+  public DiscBasedSort(ByteStorable <E> template, int complevel, String tempDir) {
     this.template = template;
     this.complevel = complevel;
     this.tempDir = tempDir;
@@ -135,15 +135,13 @@ public class DiscBasedSort {
    * @return the number of objects sorted.
    */
   public int sort(String fName, String outputFile, int memorySize) {
-    try {
-      FileChannel fc = (new FileInputStream(fName)).getChannel();
-      FileChannel fo = (new FileOutputStream(outputFile)).getChannel();
-      int ret = sort(fc, fo, memorySize);
-      fc.close();
-      fo.close();
-      return ret;
+    try(FileInputStream fis = new FileInputStream(fName);
+        FileOutputStream fos = new FileOutputStream(outputFile)){
+      FileChannel fc = fis.getChannel();
+      FileChannel fo = fos.getChannel();
+      return sort(fc, fo, memorySize);
     }
-    catch (IOException e) {
+    catch(IOException e){
       CoreLog.L().log(Level.WARNING, "could not sort", e);
       return -1;
     }
@@ -207,10 +205,10 @@ public class DiscBasedSort {
   private int makeRuns(ReadableByteChannel input, int heapSize,
       ByteBuffer large, ByteBuffer ob, String tmpDir) {
     try {
-      DBSContainer hb = new DBSContainer(large, input, blockSize, template,
+      DBSContainer <E> hb = new DBSContainer <E> (large, input, blockSize, template,
           heapSize);
 
-      ByteStorable[] objs = new ByteStorable[10000];
+      ByteStorable [] objs = new ByteStorable [10000];
       int i = 0;
       int numObjs = 0;
 
@@ -218,8 +216,8 @@ public class DiscBasedSort {
         i++;
         if (!hb.prepareRun())
           break;
-        DBSProducer p = new DBSProducer(hb);
-        DBSConsumer c = new DBSConsumer(hb, objs);
+        DBSProducer <E> p = new DBSProducer <E> (hb);
+        DBSConsumer <E> c = new DBSConsumer <E> (hb, objs);
         p.start();
         c.start();
         c.join();
@@ -241,14 +239,12 @@ public class DiscBasedSort {
       int i, String dir, ByteBuffer output) throws Exception {
 
     output.clear(); // clear output buffer:
-
+    try(FileOutputStream fos = new FileOutputStream(dir + SEP + SORT_RUN_FILE + i)){
     // Create output channel:
-    FileChannel fc = (new FileOutputStream(dir + SEP + SORT_RUN_FILE + i))
-        .getChannel();
+    FileChannel fc = fos.getChannel();
     int size = 0, numBytes = 0;
 
     // sort offsets:
-    long l = System.currentTimeMillis();
     Sorters.quickSort(objs, numObjs);
 
     for (int j = 0; j < numObjs; j++) {
@@ -263,15 +259,18 @@ public class DiscBasedSort {
     // flush outputbuffer:
     output.flip();
     fc.write(output);
-    fc.close();
     return numBytes;
+    }
+    catch(IOException e){
+      throw e;
+    }
   }
 }
 
-class DBSProducer extends Thread {
-  private DBSContainer hb;
+class DBSProducer <E> extends Thread {
+  private DBSContainer <E> hb;
 
-  public DBSProducer(DBSContainer hb) {
+  public DBSProducer(DBSContainer <E> hb) {
     this.hb = hb;
   }
 
@@ -286,13 +285,13 @@ class DBSProducer extends Thread {
   }
 }
 
-class DBSConsumer extends Thread {
-  private DBSContainer hb;
-  private ByteStorable tmp;
+class DBSConsumer <E> extends Thread {
+  private DBSContainer <E> hb;
+  private ByteStorable <E> tmp;
   private ByteStorable[] objs;
   private int numObjs = 0;
 
-  public DBSConsumer(DBSContainer hb, ByteStorable[] objs) {
+  public DBSConsumer(DBSContainer <E> hb, ByteStorable[] objs) {
     this.objs = objs;
     this.hb = hb;
   }
@@ -325,17 +324,17 @@ class DBSConsumer extends Thread {
   }
 }
 
-class DBSContainer {
+class DBSContainer <E> {
 
   ByteBuffer buffer;
   ByteBuffer consumerBuffer;
   ReadableByteChannel c;
   boolean noMore = false, consumedAll = false, endOfStream = false;
   int slack = -1, totConsumed, totProduced, blockSize, maxRead;
-  ByteStorable template;
+  ByteStorable <E> template;
 
   public DBSContainer(ByteBuffer b, ReadableByteChannel c, int blockSize,
-      ByteStorable template, int maxRead) {
+      ByteStorable <E> template, int maxRead) {
 
     this.blockSize = blockSize;
     this.maxRead = maxRead;
@@ -400,7 +399,7 @@ class DBSContainer {
     return consumedAll;
   }
 
-  public synchronized ByteStorable consume() { // as much as possible
+  public synchronized ByteStorable <E> consume() { // as much as possible
     try {
       if ((noMore && slack >= 0) || consumedAll) {
         notifyAll();
@@ -410,7 +409,7 @@ class DBSContainer {
       while (slack != -1) {
         wait();
       }
-      ByteStorable tmp;
+      ByteStorable <E> tmp;
 
       int bSize = ByteStorable.slackOrSize(consumerBuffer, template);
       if(bSize < 0 && endOfStream) {

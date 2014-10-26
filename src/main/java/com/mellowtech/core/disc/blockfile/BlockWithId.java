@@ -33,7 +33,6 @@ import java.util.logging.Level;
 
 import com.mellowtech.core.CoreLog;
 import com.mellowtech.core.bytestorable.ByteStorable;
-import com.mellowtech.core.bytestorable.CBString;
 
 /**
  * A Block contains a number of variable-length records, where each record is
@@ -52,9 +51,10 @@ import com.mellowtech.core.bytestorable.CBString;
  * disk.
  * 
  * @author rickard.coster@asimus.se
- * @version 1.0
+ * @author msvens@gmail.com
+ * @version 2.0
  */
-public class BlockWithId extends ByteStorable {
+public class BlockWithId <E> extends ByteStorable <E> {
 
   /**
    * Creates a new <code>Block</code> instance.
@@ -63,7 +63,7 @@ public class BlockWithId extends ByteStorable {
    *          an instance of the <code>ByteStorable</code> type stored in the
    *          block
    */
-  public BlockWithId(ByteStorable template) {
+  public BlockWithId(ByteStorable <E> template) {
     this.template = template;
   }
 
@@ -76,7 +76,7 @@ public class BlockWithId extends ByteStorable {
    *          an instance of the <code>ByteStorable</code> type stored in the
    *          block
    */
-  public BlockWithId(int blockSize, ByteStorable template) {
+  public BlockWithId(int blockSize, ByteStorable <E> template) {
     buffer = new byte[blockSize];
     this.template = template;
   }
@@ -97,7 +97,7 @@ public class BlockWithId extends ByteStorable {
   int bufferLength = 0;
 
   // template used for reading objects
-  ByteStorable template = null;
+  ByteStorable <E> template = null;
 
   protected final static int GROW_SIZE = 10;
 
@@ -135,10 +135,10 @@ public class BlockWithId extends ByteStorable {
    *          the id
    * @return the data, or null.
    */
-  public ByteStorable get(int id) {
+  public ByteStorable <E> get(int id) {
     int index = binarySearch(ids, id, 0, count - 1);
     if (index >= 0) {
-      ByteStorable bs = (ByteStorable) template.fromBytes(buffer,
+      ByteStorable <E> bs = template.fromBytes(buffer,
           offsets[index]);
       return bs;
     }
@@ -187,7 +187,7 @@ public class BlockWithId extends ByteStorable {
    *          the data value
    * @return true if value can be inserted, false otherwise.
    */
-  public boolean fitsValue(int id, ByteStorable value) {
+  public boolean fitsValue(int id, ByteStorable <E> value) {
     // new value and id size
     int valueSize = value.byteSize();
 
@@ -231,7 +231,7 @@ public class BlockWithId extends ByteStorable {
    *          the data value
    * @return true if id, value pair was inserted, false if id existed or value could not fit
    */
-  public boolean insert(int id, ByteStorable value) {
+  public boolean insert(int id, ByteStorable <E> value) {
     if (!fitsValue(id, value)) {
       return false;
     }
@@ -263,7 +263,7 @@ public class BlockWithId extends ByteStorable {
    *          the id
    * @return the removed value, or null if there was no such id
    */
-  public ByteStorable remove(int id) {
+  public ByteStorable <E> remove(int id) {
     int index = binarySearch(ids, id, 0, count - 1);
     if (index < 0)
       return null; // id not found
@@ -276,7 +276,7 @@ public class BlockWithId extends ByteStorable {
     System.arraycopy(offsets, index + 1, offsets, index, count - 1 - index);
 
     // get the object
-    ByteStorable bs = template.fromBytes(buffer, off);
+    ByteStorable <E> bs = template.fromBytes(buffer, off);
     int byteSize = template.byteSize(buffer, off);
 
     // move bytes byteSize bytes back
@@ -306,8 +306,8 @@ public class BlockWithId extends ByteStorable {
    *         In the case the new value did not fit, the old value is left
    *         unchanged.
    */
-  public boolean update(int id, ByteStorable value) {
-    ByteStorable oldvalue = remove(id);
+  public boolean update(int id, ByteStorable <E> value) {
+    ByteStorable <E> oldvalue = remove(id);
     if (oldvalue != null) {
       if (insert(id, value))
         return true;
@@ -333,7 +333,7 @@ public class BlockWithId extends ByteStorable {
   }
 
   public int byteSize(ByteBuffer bb) {
-    BlockWithId block = new BlockWithId(buffer.length, template);
+    BlockWithId <E> block = new BlockWithId <E>(buffer.length, template);
     block.fromBytes(bb);
     return block.byteSize();
   }
@@ -350,8 +350,8 @@ public class BlockWithId extends ByteStorable {
     bb.put(buffer, 0, bufferLength);
   }
 
-  public ByteStorable fromBytes(ByteBuffer bb) {
-    BlockWithId block = new BlockWithId(buffer.length, template);
+  public ByteStorable <E> fromBytes(ByteBuffer bb) {
+    BlockWithId <E> block = new BlockWithId <E> (buffer.length, template);
     block.count = getSize(bb);
     block.bufferLength = getSize(bb); 
     block.ids = new int[block.count];
@@ -366,39 +366,39 @@ public class BlockWithId extends ByteStorable {
     return block;
   }
 
-  public ByteStorable fromBytes(ByteBuffer bb, boolean doNew) {
+  public ByteStorable <E> fromBytes(ByteBuffer bb, boolean doNew) {
     return fromBytes(bb);
   }
 
-  class Entry implements Map.Entry {
+  class Entry implements Map.Entry <Integer, ByteStorable <E>> {
     int id;
-    ByteStorable object;
+    ByteStorable <E> object;
 
-    public Object getKey() {
-      return new Integer(id);
+    public Integer getKey() {
+      return id;
     }
 
-    public Object getValue() {
+    public ByteStorable <E> getValue() {
       return object;
     }
 
-    public Object setValue(Object arg0) {
-      object = (ByteStorable) arg0;
+    public ByteStorable <E> setValue(ByteStorable <E> arg0) {
+      object = arg0;
       return object;
     }
   }
 
-  class EntryIterator implements Iterator {
+  class EntryIterator implements Iterator <Map.Entry<Integer, ByteStorable <E>>> {
     int i = 0;
-    BlockWithId b;
+    BlockWithId <E> b;
     Entry e;
 
-    EntryIterator(BlockWithId b) {
+    EntryIterator(BlockWithId <E> b) {
       this.b = b;
       this.e = new Entry();
     }
 
-    public Object next() {
+    public Map.Entry<Integer, ByteStorable<E>> next() {
       if (i >= b.count)
         return null;
       e.id = b.ids[i];
@@ -416,7 +416,7 @@ public class BlockWithId extends ByteStorable {
     }
   }
 
-  public Iterator iterator() {
+  public Iterator <Map.Entry<Integer, ByteStorable<E>>> iterator() {
     return new EntryIterator(this);
   }
 

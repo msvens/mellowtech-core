@@ -33,7 +33,7 @@ import java.nio.ByteBuffer;
  * @author Martin Svensson
  */
 
-public class CBBoolean extends ByteComparable {
+public class CBBoolean extends ByteComparable <Boolean> {
 
   /**
    * Value of this CBBoolean
@@ -61,7 +61,7 @@ public class CBBoolean extends ByteComparable {
 
   // ***********GET/SET**************
   @Override
-  public void set(Object value){
+  public void set(Boolean value){
     if(value == null) throw new ByteStorableException("null value not allowed");
     if(!(value instanceof Boolean)) throw new ByteStorableException("not a Byte");
     this.value = (boolean) value;
@@ -98,12 +98,12 @@ public class CBBoolean extends ByteComparable {
   }
 
   @Override
-  public ByteStorable fromBytes(ByteBuffer bb) {
+  public ByteStorable <Boolean> fromBytes(ByteBuffer bb) {
     return fromBytes(bb, doNew);
   }
 
   @Override
-  public ByteStorable fromBytes(ByteBuffer bb, boolean doNew) {
+  public ByteStorable <Boolean> fromBytes(ByteBuffer bb, boolean doNew) {
     if (doNew)
       return new CBBoolean(bb.get());
     value = (bb.get() == 0) ? false : true;
@@ -111,7 +111,7 @@ public class CBBoolean extends ByteComparable {
   }
 
   @Override
-  public int compareTo(Object other) {
+  public int compareTo(ByteStorable<Boolean> other) {
     CBBoolean o = (CBBoolean) other;
     return Boolean.compare(this.value, o.value);
   }

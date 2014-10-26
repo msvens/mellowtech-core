@@ -44,18 +44,18 @@ public class StringMapping implements BCMapping<String> {
 
 
   @Override
-  public String fromByteComparable(ByteComparable bc) {
-    return ((CBString) bc).get();
+  public String fromByteComparable(ByteComparable <String> bc) {
+    return bc.get();
   }
 
   @Override
-  public ByteComparable toByteComparable(String key) {
+  public ByteComparable <String> toByteComparable(String key) {
     return new CBString(key);
   }
 
   @Override
-  public String fromByteStorable(ByteStorable bs) {
-    return ((CBString) bs).get();
+  public String fromByteStorable(ByteStorable <String> bs) {
+    return bs.get();
   }
 
   @Override
@@ -64,12 +64,12 @@ public class StringMapping implements BCMapping<String> {
   }
 
   @Override
-  public ByteStorable toByteStorable(String value) {
+  public ByteStorable <String> toByteStorable(String value) {
     return new CBString(value);
   }
 
   @Override
-  public ByteStorable getTemplate() {
+  public ByteComparable <String> getTemplate() {
     return new CBString();
   }
 

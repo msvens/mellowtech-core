@@ -36,9 +36,7 @@ import java.nio.ByteBuffer;
  *
  * @author Martin Svensson
  */
-public abstract class CBAuto extends ByteStorable{
-
-
+public abstract class CBAuto <T> extends ByteStorable <T>{
 
   /**
    * subclasses should always call this method
@@ -48,10 +46,10 @@ public abstract class CBAuto extends ByteStorable{
   }
 
   @Override
-  public ByteStorable fromBytes(ByteBuffer bb, boolean doNew) {
+  public ByteStorable <T> fromBytes(ByteBuffer bb, boolean doNew) {
     try{
-      Class clazz = getClass();
-      CBAuto toRet =  doNew ? getClass().newInstance() : this;
+      Class<? extends CBAuto> clazz = getClass();
+      CBAuto <T> toRet =  doNew ? clazz.newInstance() : this;
       bb.getInt(); //size indicator
       short elements = bb.getShort();
       PrimitiveObject po = new PrimitiveObject();
@@ -70,7 +68,7 @@ public abstract class CBAuto extends ByteStorable{
   @Override
   public void toBytes(ByteBuffer bb) {
     bb.putInt(byteSize());
-    Class clazz = getClass();
+    Class <? extends CBAuto> clazz = getClass();
     PrimitiveObject po = new PrimitiveObject();
     int pos = bb.position();
     bb.putShort((byte) 0); //num elements;
@@ -91,7 +89,7 @@ public abstract class CBAuto extends ByteStorable{
   @Override
   public int byteSize() {
     int size = 8; //size + num elements;
-    Class clazz = getClass();
+    Class <? extends CBAuto> clazz = getClass();
     PrimitiveObject po = new PrimitiveObject();
     for(Integer i : AutoBytes.I().getFieldIndexes(clazz)){
       Object toStore = AutoBytes.I().getField(clazz, i, this);

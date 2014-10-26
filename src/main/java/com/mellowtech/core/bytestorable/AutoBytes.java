@@ -99,7 +99,7 @@ class AutoBytes {
 
   private void parseField(Field f, TreeMap <Integer, Field> map){
     f.setAccessible(true);
-    int index = f.getAnnotation(BSField.class).index();
+    int index = f.getAnnotation(BSField.class).value();
     PrimitiveObject po = null;
     if(index < 0)
       throw new ByteStorableException("no index of field specified");

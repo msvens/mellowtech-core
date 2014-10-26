@@ -34,7 +34,7 @@ import java.nio.ByteBuffer;
  * @author Martin Svensson
  * @version 1.0
  */
-public class CBInt extends ByteComparable {
+public class CBInt extends ByteComparable <Integer> {
 
   /**
    * Value of this CBInt
@@ -60,10 +60,9 @@ public class CBInt extends ByteComparable {
 
   // ***********GET/SET**************
   @Override
-  public void set(Object value){
+  public void set(Integer value){
     if(value == null) throw new ByteStorableException("null value not allowed");
-    if(!(value instanceof Integer)) throw new ByteStorableException("not an integer");
-    this.value = (Integer) value;
+    this.value = value;
   }
 
   @Override
@@ -101,7 +100,7 @@ public class CBInt extends ByteComparable {
   }
 
   @Override
-  public ByteStorable fromBytes(ByteBuffer bb, boolean doNew) {
+  public ByteStorable <Integer> fromBytes(ByteBuffer bb, boolean doNew) {
     if (doNew)
       return new CBInt(bb.getInt());
     value = bb.getInt();
@@ -109,9 +108,8 @@ public class CBInt extends ByteComparable {
   }
 
   @Override
-  public int compareTo(Object other) {
-    CBInt o = (CBInt) other;
-    return this.value - o.value;
+  public int compareTo(ByteStorable <Integer> other) {
+    return this.value - other.get();
   }
 
   @Override

@@ -37,7 +37,7 @@ import java.util.*;
  *
  * @author Martin Svensson
  */
-public class CBList <E> extends ByteStorable implements List<E> {
+public class CBList <E> extends ByteStorable <List<E>> implements List<E> {
 
   private List <E> list;
 
@@ -46,17 +46,17 @@ public class CBList <E> extends ByteStorable implements List<E> {
   }
 
   @Override
-  public ByteStorable fromBytes(ByteBuffer bb, boolean doNew) {
-    CBList toRet = doNew ? new CBList() : this;
+  public ByteStorable <List<E>> fromBytes(ByteBuffer bb, boolean doNew) {
+    CBList <E> toRet = doNew ? new CBList <E> () : this;
     toRet.list.clear();
 
 
-    int size = bb.getInt();
+    bb.getInt(); //read past size
     int elems = bb.getInt();
     if(elems < 1) return toRet;
     //unpack elements:
     PrimitiveType pt = PrimitiveType.fromOrdinal(bb.get());
-    ByteStorable template =PrimitiveType.fromType(pt);
+    ByteStorable <E> template = (ByteStorable <E>) PrimitiveType.fromType(pt);
     for(int i = 0; i < elems; i++){
       toRet.list.add((E) template.fromBytes(bb, false).get());
     }
@@ -73,8 +73,8 @@ public class CBList <E> extends ByteStorable implements List<E> {
     PrimitiveType pt = PrimitiveType.type(list.get(0));
     if(pt == null) throw new ByteStorableException("Unrecognized type");
     bb.put(pt.getByte());
-    ByteStorable template = PrimitiveType.fromType(pt);
-    for(Object o : list){
+    ByteStorable <E> template = (ByteStorable <E>) PrimitiveType.fromType(pt);
+    for(E o : list){
       template.set(o);
       template.toBytes(bb);
     }
@@ -87,8 +87,8 @@ public class CBList <E> extends ByteStorable implements List<E> {
       PrimitiveType pt = PrimitiveType.type(list.get(0));
       if(pt == null) throw new ByteStorableException("Unrecognized type");
       byteSize += 1;
-      ByteStorable temp = PrimitiveType.fromType(pt);
-      for(Object o : list){
+      ByteStorable <E> temp = (ByteStorable <E>) PrimitiveType.fromType(pt);
+      for(E o : list){
         temp.set(o);
         byteSize += temp.byteSize();
       }
@@ -102,13 +102,13 @@ public class CBList <E> extends ByteStorable implements List<E> {
   }
 
   @Override
-  public List get(){
+  public List <E> get(){
     return this.list;
   }
 
   @Override
-  public void set(Object l){
-    this.list = (List) l;
+  public void set(List <E> l){
+    this.list = l;
   }
 
   @Override
@@ -223,14 +223,9 @@ public class CBList <E> extends ByteStorable implements List<E> {
 
   @Override
   public List<E> subList(int fromIndex, int toIndex) {
-    ArrayList <E> sub = (ArrayList) list.subList(fromIndex, toIndex);
-    CBList toRet = new CBList();
+    ArrayList <E> sub = (ArrayList <E>) list.subList(fromIndex, toIndex);
+    CBList <E> toRet = new CBList <E> ();
     toRet.list = sub;
     return toRet;
-  }
-
-  private void check(Object obj){
-    if(PrimitiveType.type(obj) == null)
-      throw new ByteStorableException("Unknown Object Type");
   }
 }

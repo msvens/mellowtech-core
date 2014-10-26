@@ -38,46 +38,51 @@ import java.nio.ByteBuffer;
  *
  * @author Martin Svensson
  */
-public class BlobPointer extends ByteStorable {
+public class BlobPointer extends ByteStorable <BlobPointer.Entry> {
 
-  long fPointer;
-  int bSize;
+  public class Entry {
+    long fPointer;
+    int bSize;
+  }
 
-  public BlobPointer(){}
+  public BlobPointer(){
+    obj = new Entry();
+  }
 
   public BlobPointer(long fPointer, int bSize){
-    this.fPointer = fPointer;
-    this.bSize = bSize;
+    this();
+    this.obj.fPointer = fPointer;
+    this.obj.bSize = bSize;
   }
 
   public long getfPointer() {
-    return fPointer;
+    return obj.fPointer;
   }
 
   public void setfPointer(long fPointer) {
-    this.fPointer = fPointer;
+    obj.fPointer = fPointer;
   }
 
   public int getbSize() {
-    return bSize;
+    return obj.bSize;
   }
 
   public void setbSize(int bSize) {
-    this.bSize = bSize;
+    obj.bSize = bSize;
   }
 
   @Override
-  public ByteStorable fromBytes(ByteBuffer bb, boolean doNew) {
+  public ByteStorable <Entry> fromBytes(ByteBuffer bb, boolean doNew) {
     BlobPointer toRet = doNew ? new BlobPointer(): this;
-    toRet.fPointer = bb.getLong();
-    toRet.bSize = bb.getInt();
+    toRet.obj.fPointer = bb.getLong();
+    toRet.obj.bSize = bb.getInt();
     return toRet;
   }
 
   @Override
   public void toBytes(ByteBuffer bb) {
-    bb.putLong(fPointer);
-    bb.putInt(bSize);
+    bb.putLong(obj.fPointer);
+    bb.putInt(obj.bSize);
   }
 
   @Override
@@ -91,6 +96,6 @@ public class BlobPointer extends ByteStorable {
   }
 
   public String toString(){
-    return fPointer+":"+bSize;
+    return obj.fPointer+":"+obj.bSize;
   }
 }

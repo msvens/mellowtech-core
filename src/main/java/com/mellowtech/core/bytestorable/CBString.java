@@ -45,7 +45,7 @@ import java.util.Locale;
  * @author Martin Svensson
  * @version 1.0
  */
-public class CBString extends ByteComparable {
+public class CBString extends ByteComparable <String> {
 
   private static char[] charMap = null;
   private static Locale locale = null;
@@ -131,8 +131,7 @@ public class CBString extends ByteComparable {
    *          the String that it represents.
    */
   public CBString(String str) {
-    this.str = (str == null) ? "" : str;
-    utfLength = getUTFLength();
+    set(str);
   }
 
   /**
@@ -143,19 +142,12 @@ public class CBString extends ByteComparable {
    *          new string
    */
   @Override
-  public void set(Object value){
+  public void set(String value){
     if(value == null){
       this.str = "";
     }
-    else if(!(value instanceof CharSequence))
-      throw new ByteStorableException("not a CharSequence");
     else
-      this.str = ((CharSequence) value).toString();
-    utfLength = getUTFLength();
-  }
-
-  private void setStr(String str){
-    this.str = (str == null) ? "" : str;
+      this.str = value;
     utfLength = getUTFLength();
   }
 
@@ -188,8 +180,8 @@ public class CBString extends ByteComparable {
    * @see String#equals(Object)
    */
   public boolean equals(Object o) {
-    if (0 == compareTo(o))
-      return true;
+    if(o instanceof CBString)
+      return compareTo((CBString)o) == 0 ? true : false;
     return false;
   }
 
@@ -435,7 +427,7 @@ public class CBString extends ByteComparable {
   }
 
   // Overwritten ByteStorable
-  public int compareTo(Object o) {
+  public int compareTo(ByteStorable <String> o) {
 
     if (charMap == null)
       return compareToNoLocale(o);
@@ -482,13 +474,13 @@ public class CBString extends ByteComparable {
     encodeUTF(bb);
   }
 
-  public ByteStorable fromBytes(ByteBuffer bb, boolean doNew) {
+  public ByteStorable <String> fromBytes(ByteBuffer bb, boolean doNew) {
     if (doNew) {
       return new CBString(decodeUTF(bb));
     }
     else {
 
-        this.setStr(decodeUTF(bb));
+        this.set(decodeUTF(bb));
     }
     return this;
   }
@@ -509,7 +501,8 @@ public class CBString extends ByteComparable {
    *          a <code>ByteStorable</code> value
    * @return the smallest separator
    */
-  public ByteStorable separate(ByteStorable str1, ByteStorable str2) {
+  public ByteStorable <String> separate(ByteStorable <String> str1, 
+      ByteStorable <String> str2) {
     String small, large;
 
     if (str1.compareTo(str2) < 0) {
@@ -538,18 +531,15 @@ public class CBString extends ByteComparable {
 
     CBString newStr = new CBString();
     if (small.length() == large.length() && i == large.length()) {
-      newStr.setStr(large);
+      newStr.set(large);
       return newStr;
     }
-    newStr.setStr(new String(large.substring(0, i + 1)));
+    newStr.set(new String(large.substring(0, i + 1)));
 
     return newStr;
 
   }
 
-  /** *****************COPIED FROM OLD XCBString***************** */
-  /** *****************METHOD NAMES ETC. WILL BE SYNCHED WITH***** */
-  /** *****************DECODE UTF ETC***************************** */
   static public char[] fromUTF(ByteBuffer bb, int pLength) {
     if (pLength == 0)
       return new char[0];

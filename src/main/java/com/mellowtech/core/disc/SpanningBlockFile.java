@@ -36,6 +36,7 @@ import java.util.NoSuchElementException;
 import java.util.TreeMap;
 
 import com.mellowtech.core.bytestorable.ByteStorable;
+import com.mellowtech.core.bytestorable.io.StorableFile;
 
 /**
  * The Spanning file allows for insertion of variable length records of any size
@@ -87,7 +88,7 @@ public class SpanningBlockFile {
   /**
    * Iterator over the logical blocks in this file
    */
-  public Iterator iterator() {
+  public Iterator <byte[]> iterator() {
     return new SBFIterator();
   }
 
@@ -100,7 +101,7 @@ public class SpanningBlockFile {
    *          a byte array converter
    * @return Iterator with Map.CompResult objects
    */
-  public Iterator entryIterator(ByteStorable template) {
+  public Iterator <Map.Entry<Integer, ByteStorable <?>>> entryIterator(ByteStorable <?> template) {
     return new MappingIterator(template);
   }
 
@@ -114,7 +115,7 @@ public class SpanningBlockFile {
    *          a byte array converter
    * @return Iterator with Map.CompResult objects
    */
-  public Iterator entryIterator(int start, ByteStorable template) {
+  public Iterator <Map.Entry<Integer, ByteStorable <?>>> entryIterator(int start, ByteStorable <?> template) {
     return new MappingIterator(new Integer(start), template);
   }
 
@@ -135,14 +136,14 @@ public class SpanningBlockFile {
 
   public void deleteFile() throws IOException{
     //delete header file:
-    String FileName = fileName + SPANNING_FILE_HEADER_EXTENSION;
-    File f = new File(fileName);
+    String fName = fileName + SPANNING_FILE_HEADER_EXTENSION;
+    File f = new File(fName);
     f.delete();
 
     //delete record file:
     file.close();
-    fileName = fileName + SPANNING_FILE_EXTENSION;
-    f = new File(fileName);
+    fName = fileName + SPANNING_FILE_EXTENSION;
+    f = new File(fName);
     f.delete();
 
   }
@@ -258,7 +259,7 @@ public class SpanningBlockFile {
    */
   public int insert(byte[] b, int length) throws IOException {
 
-    int rrn = highLBlock;
+    //int rrn = highLBlock;
     int bytesWritten = 0;
     int pBlock;
     Mapping m = new Mapping();
@@ -378,7 +379,7 @@ public class SpanningBlockFile {
    */
   public void setLength(int rrn, int newLength) {
     Mapping m = getMapping(rrn);
-    int oldSize = m.size;
+    //int oldSize = m.size;
     m.size = newLength;
     int i = getCount(m.size);
     if (i < m.count) { // now delete some records if possible
@@ -416,7 +417,7 @@ public class SpanningBlockFile {
     sbuff.append("\nMapping: ");
     Mapping m;
     Integer rrn;
-    for (Iterator i = mapping.keySet().iterator(); i.hasNext();) {
+    for (Iterator <Integer> i = mapping.keySet().iterator(); i.hasNext();) {
       rrn = (Integer) i.next();
       m = (Mapping) mapping.get(rrn);
       sbuff.append("Logical Block: " + rrn + " size: " + m.size
@@ -513,10 +514,10 @@ public class SpanningBlockFile {
    * the header all recno:blockno mappings are stored, together with an array of
    * deleted blocks and other state related data.
    */
-  class HeaderFile extends ByteStorable {
+  class HeaderFile extends ByteStorable <HeaderFile> {
 
-    public ByteStorable fromBytes(ByteBuffer bb, boolean doNew) {
-      int bytesize = bb.getInt();
+    public ByteStorable <HeaderFile> fromBytes(ByteBuffer bb, boolean doNew) {
+      bb.getInt(); //past header
       blockSize = bb.getInt(); // block size
       highLBlock = bb.getInt(); // highest logical record number
       highPBlock = bb.getInt(); // highest pysical block
@@ -561,7 +562,7 @@ public class SpanningBlockFile {
       bb.putInt(mapping.size());
       Mapping m;
       Integer integer;
-      for (Iterator it = mapping.keySet().iterator(); it.hasNext();) {
+      for (Iterator <Integer> it = mapping.keySet().iterator(); it.hasNext();) {
         integer = (Integer) it.next();
         m = (Mapping) mapping.get(integer);
         bb.putInt(integer.intValue());
@@ -579,7 +580,7 @@ public class SpanningBlockFile {
       size += 4; // mapping count
       Mapping m;
       Integer integer;
-      for (Iterator it = mapping.keySet().iterator(); it.hasNext();) {
+      for (Iterator <Integer> it = mapping.keySet().iterator(); it.hasNext();) {
         integer = (Integer) it.next();
         m = (Mapping) mapping.get(integer);
         size += 4 * 3; // key, size, count
@@ -597,12 +598,13 @@ public class SpanningBlockFile {
   }
 
   /** *******************************INNER CLASSES************************* */
-  class Mapping extends ByteStorable {
+  //TODO: Change to CBAuto
+  class Mapping extends ByteStorable <Mapping> {
     int[] ptrs = new int[10];
     int count = 0;
     int size = 0;
 
-    public ByteStorable fromBytes(ByteBuffer bb, boolean doNew) {
+    public ByteStorable <Mapping> fromBytes(ByteBuffer bb, boolean doNew) {
       Mapping mp = doNew ? new Mapping() : this;
       mp.size = bb.getInt();
       mp.count = bb.getInt();
@@ -634,14 +636,14 @@ public class SpanningBlockFile {
     }
   }
 
-  class SBFIterator implements Iterator {
-    Iterator mapIterator = mapping.values().iterator();
+  class SBFIterator implements Iterator <byte[]> {
+    Iterator <Mapping> mapIterator = mapping.values().iterator();
 
     public boolean hasNext() {
       return mapIterator.hasNext();
     }
 
-    public Object next() {
+    public byte[] next() {
       try {
         Mapping m = (Mapping) mapIterator.next();
         byte b[] = new byte[m.size];
@@ -662,22 +664,22 @@ public class SpanningBlockFile {
     }
   }
 
-  class MappingIterator implements Iterator {
+  class MappingIterator implements Iterator <Map.Entry<Integer, ByteStorable <?>>> {
 
-    Iterator iterator;
-    MapEntry me;
-    Map.Entry realEntry;
-    ByteStorable mTemplate;
+    Iterator <Map.Entry<Integer, Mapping>> iterator;
+    MapEntry <Integer, ByteStorable<?>> me;
+    Map.Entry <Integer, Mapping> realEntry;
+    ByteStorable <?> mTemplate;
 
-    public MappingIterator(Integer startFrom, ByteStorable template) {
+    public MappingIterator(Integer startFrom, ByteStorable <?> template) {
       iterator = mapping.tailMap(startFrom).entrySet().iterator();
-      me = new MapEntry();
+      me = new MapEntry <Integer, ByteStorable<?>>();
       mTemplate = template;
     }
 
-    public MappingIterator(ByteStorable template) {
+    public MappingIterator(ByteStorable <?> template) {
       iterator = mapping.entrySet().iterator();
-      me = new MapEntry();
+      me = new MapEntry <Integer, ByteStorable<?>>();
       mTemplate = template;
     }
 
@@ -685,9 +687,9 @@ public class SpanningBlockFile {
       return iterator.hasNext();
     }
 
-    public Object next() {
+    public Map.Entry<Integer, ByteStorable<?>> next() {
       try {
-        realEntry = (Map.Entry) iterator.next();
+        realEntry = iterator.next();
         Mapping m = (Mapping) realEntry.getValue();
         byte b[] = new byte[m.size];
         int offset = 0;
@@ -695,10 +697,7 @@ public class SpanningBlockFile {
           offset += readBytes(m.ptrs[i], b, offset);
         }
         me.k = realEntry.getKey();
-        if (mTemplate == null)
-          me.v = b;
-        else
-          me.v = mTemplate.fromBytes(b, 0);
+        me.v = mTemplate.fromBytes(b, 0);
         return me;
       }
       catch (IOException e) {

@@ -29,6 +29,9 @@ package com.mellowtech.core.io;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.MappedByteBuffer;
+import java.util.Iterator;
+import java.util.Map;
 
 /**
  * Date: 2013-04-06
@@ -36,9 +39,13 @@ import java.nio.ByteBuffer;
  *
  * @author Martin Svensson
  */
-public class SpannedBlockFile{
+public class SpannedBlockFile implements RecordFile{
 
-  private RecordFile bf;
+  protected RecordFile bf;
+
+  public SpannedBlockFile(RecordFile rf){
+    this.bf = rf;
+  }
 
   public SpannedBlockFile(String fileName) throws IOException {
     bf = new BlockFile(fileName);
@@ -48,95 +55,60 @@ public class SpannedBlockFile{
     bf = new BlockFile(fileName, blockSize, maxBlocks, reserve);
   }
 
-  public SpannedBlockFile(RecordFile rf){
-    this.bf = rf;
+  @Override
+  public void clear() throws IOException {
+    bf.clear();
   }
 
-  public int getFreeBlocks(){
-    return bf.getFreeBlocks();
+  @Override
+  public void close() throws IOException{
+    bf.close();
   }
 
-  public int size(){
-    return bf.size();
+  @Override
+  public Map<Integer, Integer> compact() throws IOException {
+    return bf.compact();
   }
-
-  public void save() throws IOException{
-    bf.save();
+  
+  @Override
+  public boolean contains(int record) throws IOException {
+    return bf.contains(record);
   }
-
-  public int insertBlock(byte[] block) throws IOException{
-
-    int numBlocks = numBlocks(block);
-
-    if(bf.getFreeBlocks() < numBlocks)
-      throw new IOException("not enough space to store block");
-
-    //store data:
-    int currBlock = bf.insert(null);
-    int toRet = currBlock;
-    int nextBlock = numBlocks > 1 ? bf.insert(null) : -1;
-    int offset = 0;
-    int bs = bf.getBlockSize();
-    ByteBuffer bb = ByteBuffer.allocate(bs);
-
-    //first block (store size as well)
-    int toStore = block.length > bs - 8 ? bs - 8 : block.length;
-    bb.putInt(block.length);
-    bb.putInt(nextBlock);
-    bb.put(block, 0, toStore);
-    bf.update(currBlock, bb.array());
-    offset += toStore;
-
-    while(nextBlock != -1){
-      currBlock = nextBlock;
-      toStore = offset + bs - 4 > block.length ? block.length - offset : bs - 4;
-      bb.clear();
-      nextBlock = offset + toStore >= block.length ? -1 : bf.insert(null);
-      bb.putInt(nextBlock);
-      bb.put(block, offset, toStore);
-      offset+=toStore;
-      bf.update(currBlock, bb.array(), 0, toStore+4);
+  
+  private void delButFirst(int record) throws IOException{
+    //Delete record
+    ByteBuffer bb;
+    byte b[] = bf.get(record);
+    bb = ByteBuffer.wrap(b);
+    bb.getInt(); //length
+    int next = bb.getInt();
+    //bf.delete(record);
+    while(next != -1){
+      bb = ByteBuffer.wrap(bf.get(next));
+      bf.delete(next);
+      next = bb.getInt();
+    }
+  }
+  
+  @Override
+  public boolean delete(int record) throws IOException{
+    //Delete record
+    ByteBuffer bb;
+    byte b[] = bf.get(record);
+    bb = ByteBuffer.wrap(b);
+    bb.getInt(); //length
+    int next = bb.getInt();
+    boolean toRet;
+    toRet = bf.delete(record);
+    while(next != -1){
+      bb = ByteBuffer.wrap(bf.get(next));
+      toRet = bf.delete(next);
+      next = bb.getInt();
     }
     return toRet;
   }
-
-  public void update(int record, byte[] block) throws IOException{
-    delButFirst(record);
-    int numBlocks = numBlocks(block);
-    if(bf.getFreeBlocks() < numBlocks - 1){ //we alrady have one block allocated
-      bf.delete(record);
-      throw new IOException("not enough space to store block");
-    }
-
-    //store data:
-    int currBlock = record;
-    //int toRet = currBlock;
-    int nextBlock = numBlocks > 1 ? bf.insert(null) : -1;
-    int offset = 0;
-    int bs = bf.getBlockSize();
-    ByteBuffer bb = ByteBuffer.allocate(bs);
-
-    //first block (store size as well)
-    int toStore = block.length > bs - 8 ? bs - 8 : block.length;
-    bb.putInt(block.length);
-    bb.putInt(nextBlock);
-    bb.put(block, 0, toStore);
-
-    bf.update(currBlock, bb.array());
-    offset += toStore;
-
-    while(nextBlock != -1){
-      currBlock = nextBlock;
-      toStore = offset + bs - 4 > block.length ? block.length - offset : bs - 4;
-      bb.clear();
-      nextBlock = offset + toStore >= block.length ? -1 : bf.insert(null);
-      bb.putInt(nextBlock);
-      bb.put(block, offset, toStore);
-      offset += toStore;
-      bf.update(currBlock, bb.array(), 0, toStore+4);
-    }
-  }
-
+  
+  @Override
   public byte[] get(int record) throws IOException{
     ByteBuffer bb;
     //read first block
@@ -167,39 +139,180 @@ public class SpannedBlockFile{
     return toRet;
   }
 
-  public void del(int record) throws IOException{
-    //Delete record
+  @Override
+  public boolean get(int record, byte[] buffer) throws IOException {
     ByteBuffer bb;
+    //read first block
     byte b[] = bf.get(record);
     bb = ByteBuffer.wrap(b);
-    bb.getInt(); //length
-    int next = bb.getInt();
-    bf.delete(record);
-    while(next != -1){
-      bb = ByteBuffer.wrap(bf.get(next));
-      bf.delete(next);
-      next = bb.getInt();
+    int length = bb.getInt();
+    int nextBlock = bb.getInt();
+
+    //byte toRet[] = new byte[length];
+    int bs = bf.getBlockSize();
+    int offset = 0;
+    int toRead = length >= bs - 8 ? bs - 8 : length;
+
+    System.arraycopy(b, 8, buffer, offset, toRead);
+
+    offset += toRead;
+
+    while(nextBlock != -1){
+
+      b = bf.get(nextBlock);
+      bb = ByteBuffer.wrap(b);
+      nextBlock = bb.getInt();
+      toRead = length >= offset + bs - 4 ? bs - 4 : length - offset;
+      System.arraycopy(b, 4, buffer, offset, toRead);
+      offset += toRead;
     }
+    return true;
   }
 
-  public void delButFirst(int record) throws IOException{
-    //Delete record
-    ByteBuffer bb;
-    byte b[] = bf.get(record);
-    bb = ByteBuffer.wrap(b);
-    bb.getInt(); //length
-    int next = bb.getInt();
-    //bf.delete(record);
-    while(next != -1){
-      bb = ByteBuffer.wrap(bf.get(next));
-      bf.delete(next);
-      next = bb.getInt();
+  @Override
+  public int getBlockSize() {
+    return bf.getBlockSize();
+  }
+  
+  @Override
+  public int getFirstRecord() {
+    return bf.getBlockSize();
+  }
+
+  @Override
+  public int getFreeBlocks(){
+    return bf.getFreeBlocks();
+  }
+
+  @Override
+  public byte[] getReserve() throws IOException {
+    return bf.getReserve();
+  }
+
+  @Override
+  public int insert(byte[] block, int offset, int length) throws IOException{
+
+    int numBlocks = numBlocks(block);
+
+    if(bf.getFreeBlocks() < numBlocks)
+      throw new IOException("not enough space to store block");
+
+    //store data:
+    int currBlock = bf.insert(null);
+    int toRet = currBlock;
+    int nextBlock = numBlocks > 1 ? bf.insert(null) : -1;
+    //int offset = 0;
+    int bs = bf.getBlockSize();
+    ByteBuffer bb = ByteBuffer.allocate(bs);
+
+    //first block (store size as well)
+    int toStore = length > bs - 8 ? bs - 8 : length;
+    bb.putInt(length);
+    bb.putInt(nextBlock);
+    bb.put(block, 0, toStore);
+    bf.update(currBlock, bb.array());
+    offset += toStore;
+
+    while(nextBlock != -1){
+      currBlock = nextBlock;
+      toStore = offset + bs - 4 > length ? length - offset : bs - 4;
+      bb.clear();
+      nextBlock = offset + toStore >= length ? -1 : bf.insert(null);
+      bb.putInt(nextBlock);
+      bb.put(block, offset, toStore);
+      offset+=toStore;
+      bf.update(currBlock, bb.array(), 0, toStore+4);
     }
+    return toRet;
+  }
+
+  @Override
+  public int insert(byte[] bytes) throws IOException {
+    return insert(bytes, 0, bytes.length);
+  }
+
+  @Override
+  public void insert(int record, byte[] bytes) throws IOException {
+    throw new IOException("cannot insert at specific record");
+  }
+
+  @Override
+  public Iterator<Record> iterator() throws UnsupportedOperationException {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public Iterator<Record> iterator(int record) throws UnsupportedOperationException {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public MappedByteBuffer mapReserve() throws IOException {
+    return bf.mapReserve();
   }
 
   private int numBlocks(byte[] b){
     double bSize = b != null ? b.length : bf.getBlockSize();
     return (int) Math.ceil(bSize / (double) bf.getBlockSize());
+  }
+  
+  @Override
+  public boolean save() throws IOException{
+    return bf.save();
+  }
+
+  @Override
+  public void setReserve(byte[] b) throws IOException {
+    bf.setReserve(b);
+  }
+
+  @Override
+  public int size(){
+    return bf.size();
+  }
+
+  @Override
+  public boolean update(int record, byte[] block) throws IOException{
+    return update(record, block, 0, block.length);
+  }
+
+  @Override
+  public boolean update(int record, byte[] block, int offset, int length) throws IOException{
+    delButFirst(record);
+    int numBlocks = numBlocks(block);
+    if(bf.getFreeBlocks() < numBlocks - 1){ //we alrady have one block allocated
+      bf.delete(record);
+      throw new IOException("not enough space to store block");
+    }
+
+    //store data:
+    int currBlock = record;
+    //int toRet = currBlock;
+    int nextBlock = numBlocks > 1 ? bf.insert(null) : -1;
+    //int offset = 0;
+    int bs = bf.getBlockSize();
+    ByteBuffer bb = ByteBuffer.allocate(bs);
+
+    //first block (store size as well)
+    int toStore = length > bs - 8 ? bs - 8 : length;
+    bb.putInt(length);
+    bb.putInt(nextBlock);
+    bb.put(block, 0, toStore);
+
+    bf.update(currBlock, bb.array());
+    offset += toStore;
+
+    while(nextBlock != -1){
+      currBlock = nextBlock;
+      toStore = offset + bs - 4 > length ? length - offset : bs - 4;
+      bb.clear();
+      nextBlock = offset + toStore >= length ? -1 : bf.insert(null);
+      bb.putInt(nextBlock);
+      bb.put(block, offset, toStore);
+      offset += toStore;
+      bf.update(currBlock, bb.array(), 0, toStore+4);
+    }
+    return true;
   }
 
 

@@ -51,7 +51,7 @@ public class MemMappedBPBlobTreeImpTest {
     TestUtils.createTempDir(dir);
 
     String fileName = TestUtils.getAbsolutDir(dir+"/"+name);
-    this.dbMap = new MemMappedBPBlobTreeImp(fileName,  new CBString(), new CBInt(), 1024, 1024);
+    this.dbMap = new MemMappedBPBlobTreeImp <> (fileName,  new CBString(), new CBInt(), 1024, 1024, false, 1024*1024);
     tt = new TestTree(dbMap);
 
   }
@@ -67,7 +67,7 @@ public class MemMappedBPBlobTreeImpTest {
     tt.testIterator();
     dbMap.save();
     String fileName = TestUtils.getAbsolutDir(dir+"/"+name);
-    dbMap = new MemMappedBPBlobTreeImp(fileName,  new CBString(), new CBInt());
+    dbMap = new MemMappedBPBlobTreeImp <> (fileName,  new CBString(), new CBInt(), false);
     tt.setDbMap(dbMap);
     tt.testValues();
     tt.testDeleteAll();

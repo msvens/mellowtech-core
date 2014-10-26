@@ -35,40 +35,58 @@ import com.mellowtech.core.bytestorable.ByteStorable;
 import com.mellowtech.core.collections.KeyValue;
 
 
-public class Bucket extends ByteStorable {
-  public int depth;
+public class Bucket <K extends ByteStorable <?>,V extends ByteStorable <?>> extends ByteStorable <Bucket <K,V>.BE> {
+  
+  public class BE {
+    public int depth;
+    public LinkedList<KeyValue <K,V>> keyValues;
+    
+    public String toString(){
+      StringBuffer sb = new StringBuffer();
+      sb.append("bucket depth: " + depth + " ");
+      for (Iterator <KeyValue <K,V>> it = iterator(); it.hasNext();) {
+        sb.append(it.next() + "\n");
+      }
+      return sb.toString();
+    }
+  }
+  
+  private BE be;
+  
+  
   private int bSize;
-  private LinkedList<KeyValue> keyValues;
-  private KeyValue keyValueTemplate;
+  
+  private KeyValue <K, V> kvTemplate;
 
   public Bucket() {
-    keyValues = new LinkedList<KeyValue>();
+    be = new BE();
+    be.keyValues = new LinkedList<KeyValue <K,V>>();
     bSize = 12; // size, depth, number of keys
-    depth = 0;
+    be.depth = 0;
+  }
+  
+  public Bucket(KeyValue <K,V> template){
+    this();
+    kvTemplate = template;
   }
 
-  public void setKeyValueTemplate(KeyValue kv) {
-    keyValueTemplate = kv;
+  public void setKeyValueTemplate(KeyValue <K,V> template) {
+    kvTemplate = template;
   }
 
   public String toString() {
-    StringBuffer sb = new StringBuffer();
-    sb.append("bucket depth: " + depth + " ");
-    for (Iterator it = iterator(); it.hasNext();) {
-      sb.append(it.next() + "\n");
-    }
-    return sb.toString();
+    return be.toString();
   }
 
-  public Iterator <KeyValue> iterator() {
+  public Iterator <KeyValue <K,V>> iterator() {
     return new BucketIterator();
   }
 
-  public KeyValue getKey(KeyValue keyValue) {
+  public KeyValue <K,V> getKey(KeyValue  <K,V> keyValue) {
     int cmp = -1;
-    KeyValue toGet;
-    for (ListIterator it = keyValues.listIterator(); it.hasNext();) {
-      toGet = (KeyValue) it.next();
+    KeyValue <K,V> toGet;
+    for (ListIterator <KeyValue <K,V>> it = be.keyValues.listIterator(); it.hasNext();) {
+      toGet = it.next();
       cmp = keyValue.compareTo(toGet);
       if (cmp == 0)
         return toGet;
@@ -79,16 +97,16 @@ public class Bucket extends ByteStorable {
   }
 
   public int size() {
-    return keyValues.size();
+    return be.keyValues.size();
   }
 
-  public void addKey(KeyValue keyValue) {
+  public void addKey(KeyValue <K,V> keyValue) {
     // first remove:
     int cmp = -1;
-    KeyValue toRemove;
+    KeyValue <K,V> toRemove;
     bSize += keyValue.byteSize();
-    for (ListIterator<KeyValue> it = keyValues.listIterator(); it.hasNext();) {
-      toRemove = (KeyValue) it.next();
+    for (ListIterator<KeyValue <K,V>> it = be.keyValues.listIterator(); it.hasNext();) {
+      toRemove = it.next();
       cmp = keyValue.compareTo(toRemove);
       if (cmp == 0) { // replace old value
         bSize -= toRemove.byteSize();
@@ -101,14 +119,14 @@ public class Bucket extends ByteStorable {
         return;
       }
     }
-    keyValues.add(keyValue);
+    be.keyValues.add(keyValue);
   }
 
-  public KeyValue removeKey(KeyValue keyValue) {
+  public KeyValue <K,V> removeKey(KeyValue <K,V> keyValue) {
     int cmp = -1;
-    KeyValue toRemove;
-    for (ListIterator<KeyValue> it = keyValues.listIterator(); it.hasNext();) {
-      toRemove = (KeyValue) it.next();
+    KeyValue <K,V> toRemove;
+    for (ListIterator<KeyValue <K,V>> it = be.keyValues.listIterator(); it.hasNext();) {
+      toRemove = it.next();
       cmp = keyValue.compareTo(toRemove);
       if (cmp == 0) { // key was found...remove
         bSize -= toRemove.byteSize();
@@ -122,12 +140,12 @@ public class Bucket extends ByteStorable {
     return null;
   }
 
-  public KeyValue getKey(int index) {
-    return (KeyValue) keyValues.get(index);
+  public KeyValue <K,V> getKey(int index) {
+    return be.keyValues.get(index);
   }
 
-  public void addLast(KeyValue keyValue) {
-    keyValues.add(keyValue);
+  public void addLast(KeyValue <K,V> keyValue) {
+    be.keyValues.add(keyValue);
     bSize += keyValue.byteSize();
   }
 
@@ -137,50 +155,56 @@ public class Bucket extends ByteStorable {
   }
 
   public int byteSize(ByteBuffer bb) {
-    int bSize = bb.getInt();
-    bb.position(bb.position() - 4);
-    return bSize;
+    return ByteStorable.getSizeFour(bb);
   }
 
   public void toBytes(ByteBuffer bb) {
     bb.putInt(bSize);
-    bb.putInt(depth);
-    bb.putInt(keyValues.size());
-    KeyValue tmp;
-    for (Iterator i = keyValues.iterator(); i.hasNext();) {
-      tmp = (KeyValue) i.next();
+    bb.putInt(be.depth);
+    bb.putInt(be.keyValues.size());
+    KeyValue <K,V> tmp;
+    for (Iterator <KeyValue <K,V>> i = be.keyValues.iterator(); i.hasNext();) {
+      tmp = i.next();
       tmp.toBytes(bb);
     }
   }
 
-  public ByteStorable fromBytes(ByteBuffer bb, boolean doNew) {
-    Bucket bucket = doNew ? new Bucket() : this;
+  public ByteStorable <BE> fromBytes(ByteBuffer bb, boolean doNew) {
+    Bucket <K,V> bucket = doNew ? new Bucket <K,V>() : this;
     int numKeys = -1;
-    bucket.setKeyValueTemplate(keyValueTemplate);
-    bucket.keyValues.clear();
+    bucket.setKeyValueTemplate(kvTemplate);
+    bucket.be.keyValues.clear();
     bucket.bSize = bb.getInt();
-    bucket.depth = bb.getInt();
+    bucket.be.depth = bb.getInt();
     numKeys = bb.getInt();
     for (int i = 0; i < numKeys; i++)
-      bucket.keyValues.add((KeyValue) bucket.keyValueTemplate.fromBytes(bb,
+      bucket.be.keyValues.add((KeyValue <K,V>) bucket.kvTemplate.fromBytes(bb,
           doNew));
     return bucket;
   }
+  
+  
 
-  class BucketIterator implements Iterator <KeyValue> {
-    Iterator <KeyValue> keyValueIterator;
-    KeyValue lastReturned;
+  @Override
+  public Bucket<K, V>.BE get() {
+    return be;
+  }
+
+
+
+  class BucketIterator implements Iterator <KeyValue <K,V>> {
+    Iterator <KeyValue <K,V>> keyValueIterator;
+    KeyValue <K,V> lastReturned;
 
     public BucketIterator() {
-      keyValueIterator = keyValues.iterator();
-
+      keyValueIterator = be.keyValues.iterator();
     }
 
     public boolean hasNext() {
       return keyValueIterator.hasNext();
     }
 
-    public KeyValue next() {
+    public KeyValue <K,V> next() {
       lastReturned = keyValueIterator.next();
       return lastReturned;
     }

@@ -40,6 +40,7 @@ import java.nio.ByteBuffer;
  * this class will require that the comparison is done by means of comparing
  * the actual contents of the object. 
  */
+@Deprecated
 public class ByteStorablePtr extends ByteComparable {
   int ptr;
   ByteComparable object;

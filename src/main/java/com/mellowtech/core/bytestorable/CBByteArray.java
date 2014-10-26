@@ -33,7 +33,7 @@ import java.nio.ByteBuffer;
  * retrieval of byte arrays.
  */
 
-public class CBByteArray extends ByteComparable <CBByteArray> {
+public class CBByteArray extends ByteComparable <byte[]> {
   private byte[] fByteArray = null;
 
   /**
@@ -95,9 +95,8 @@ public class CBByteArray extends ByteComparable <CBByteArray> {
    * @param byteArray
    */
   @Override
-  public void set(Object byteArray){
+  public void set(byte[] byteArray){
     if(byteArray == null) throw new ByteStorableException("null is not allowed");
-    if(!(byteArray instanceof CBByte[])) throw new ByteStorableException("not a byte array");
     this.fByteArray = (byte[]) byteArray;
   }
 
@@ -128,7 +127,7 @@ public class CBByteArray extends ByteComparable <CBByteArray> {
     }
   }
 
-  public ByteStorable fromBytes(ByteBuffer bb, boolean doNew) {
+  public ByteStorable <byte[]> fromBytes(ByteBuffer bb, boolean doNew) {
 	  CBByteArray aByteArray = this;
 	  if(doNew)
 		  aByteArray = new CBByteArray();

@@ -46,16 +46,14 @@ import java.util.logging.Level;
 public class BlobHashMap <K,V> implements DiscMap <K,V> {
 
   private Map <K,DynamicFilePointer> pointerMap;
-  private DynamicFile valueFile;
-  private DynamicFilePointer fileIndexTemplate;
-  private BSMapping <K> keyMapping;
+  private DynamicFile <V> valueFile;
   private BSMapping <V> valueMapping;
 
   public BlobHashMap(String fileName, BSMapping <K> keyMapping, BSMapping <V> valueMapping,
                      boolean discKeyMap) throws IOException{
-    this.keyMapping = keyMapping;
+    //this.keyMapping = keyMapping;
     this.valueMapping = valueMapping;
-    this.valueFile = new DynamicFile(fileName+"-valueFiles", this.valueMapping.getTemplate());
+    this.valueFile = new DynamicFile <V> (fileName+"-valueFiles", this.valueMapping.getTemplate());
     if(!discKeyMap){
        pointerMap = new HashMap<K, DynamicFilePointer>() ;
     }
@@ -71,7 +69,7 @@ public class BlobHashMap <K,V> implements DiscMap <K,V> {
   public void save() throws IOException {
     this.valueFile.flush();
     if(pointerMap instanceof DiscMap){
-      ((DiscMap) pointerMap).save();
+      ((DiscMap <K, DynamicFilePointer>) pointerMap).save();
     }
   }
 
@@ -84,7 +82,7 @@ public class BlobHashMap <K,V> implements DiscMap <K,V> {
   public void delete() throws IOException {
     this.valueFile.delete();
     if(pointerMap instanceof DiscMap)
-      ((DiscMap) pointerMap).delete();
+      ((DiscMap <K, DynamicFilePointer>) pointerMap).delete();
     else
       pointerMap.clear();
   }
@@ -119,7 +117,7 @@ public class BlobHashMap <K,V> implements DiscMap <K,V> {
     Iterator<Entry<K, DynamicFilePointer>> iter;
 
     if(pointerMap instanceof DiscMap){
-      iter = ((DiscMap)pointerMap).iterator();
+      iter = ((DiscMap <K, DynamicFilePointer>)pointerMap).iterator();
     }
     else{
       iter = pointerMap.entrySet().iterator();
@@ -127,7 +125,7 @@ public class BlobHashMap <K,V> implements DiscMap <K,V> {
     while(iter.hasNext()){
       Entry<K, DynamicFilePointer> entry = iter.next();
       try{
-        ByteStorable bs = this.valueFile.get(entry.getValue());
+        ByteStorable <V> bs = this.valueFile.get(entry.getValue());
         V v = valueMapping.fromByteStorable(bs);
         if(v.equals(value))
           return true;
@@ -230,7 +228,7 @@ public class BlobHashMap <K,V> implements DiscMap <K,V> {
 
     public BlobHashMapIterator(){
       if(pointerMap instanceof DiscBasedHashMap)
-        iter = ((DiscBasedHashMap) pointerMap).iterator();
+        iter = ((DiscBasedHashMap <K, DynamicFilePointer>) pointerMap).iterator();
       else
         iter = pointerMap.entrySet().iterator();
     }

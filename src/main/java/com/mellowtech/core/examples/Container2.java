@@ -38,10 +38,10 @@ import java.nio.ByteBuffer;
  * @author Martin Svensson
  */
 //START SNIPPET: c2-class
-public class Container2 extends CBAuto {
+public class Container2 extends CBAuto <Container2> {
 
-  @BSField(index = 2) private Integer f1;
-  @BSField(index = 1) private String f2;
+  @BSField(2) private Integer f1;
+  @BSField(1) private String f2;
 
   public Container2(){
     super();

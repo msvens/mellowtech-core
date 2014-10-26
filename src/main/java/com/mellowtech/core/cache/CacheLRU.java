@@ -75,7 +75,7 @@ public class CacheLRU <K, V> extends AbstractCache <K,V> {
   }
 
   public void notDirty(K key) {
-    CacheValue cv = null;
+    CacheValue <V> cv = null;
     try {
       cv = lru.get(key);
       if (cv == null)

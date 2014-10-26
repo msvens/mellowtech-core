@@ -40,6 +40,6 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 @Retention(RUNTIME)
 public @interface BSField {
 
-  int index() default -1;
+  int value() default -1;
 
 }

@@ -70,7 +70,7 @@ public class MapEntry <K,V> implements Map.Entry<K,V> {
    * @return true if both the key and value are equal
    */
   public boolean equals(Object o) {
-    Map.Entry e2 = (Map.Entry) o;
+    Map.Entry <K,V> e2 = (Map.Entry <K,V>) o;
     return (this.getKey() == null ? e2.getKey() == null : this.getKey().equals(
         e2.getKey()))
         && (this.getValue() == null ? e2.getValue() == null : this.getValue()

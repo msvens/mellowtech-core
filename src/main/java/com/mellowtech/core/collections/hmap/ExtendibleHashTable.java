@@ -28,16 +28,20 @@ package com.mellowtech.core.collections.hmap;
 
 import java.io.*;
 import java.util.Iterator;
+import java.util.Map;
 
 import com.mellowtech.core.CoreLog;
 import com.mellowtech.core.bytestorable.ByteStorable;
 import com.mellowtech.core.collections.KeyValue;
 import com.mellowtech.core.disc.SpanningBlockFile;
+import com.mellowtech.core.io.Record;
+import com.mellowtech.core.io.RecordFile;
+import com.mellowtech.core.io.RecordFileBuilder;
 import com.mellowtech.core.util.DataTypeUtils;
 
 
 
-public class ExtendibleHashTable {
+public class ExtendibleHashTable <K extends ByteStorable <?>, V extends ByteStorable <?>> {
   public static final int VERSION = 10;
 
 	private static final String dirExt = ".directory";
@@ -45,13 +49,14 @@ public class ExtendibleHashTable {
 	private int dirDepth;
 	private int bucketSize;
 	private int maxKeyValueSize;
-	private SpanningBlockFile bucketFile;
+	//private SpanningBlockFile bucketFile;
+	private RecordFile bucketFile;
 	private int[] directory;
-	private KeyValue dbKey;
-	private Bucket bucketTemplate;
+	private KeyValue <K, V> dbKey;
+	private Bucket <K, V> bucketTemplate;
 	private String fName;
-	private ByteStorable keyType;
-	private ByteStorable valueType;
+	private K keyType;
+	private V valueType;
 	private int lastCreatedBucket;
   public int size;
 
@@ -59,25 +64,25 @@ public class ExtendibleHashTable {
 
 	public ExtendibleHashTable(String fName) throws Exception {
 		this.fName = fName;
-		bucketTemplate = new Bucket();
+		bucketTemplate = new Bucket <> ();
 		openFiles();
 	}
 
-	public ExtendibleHashTable(String fName, ByteStorable keyType,
-			ByteStorable valueType, int bucketSize, int maxKeyValueSize)
+	public ExtendibleHashTable(String fName, K keyType,
+			V valueType, int bucketSize, int maxKeyValueSize)
 			throws Exception {
 		this.fName = fName;
-		bucketTemplate = new Bucket();
+		
 		this.keyType = keyType;
 		this.valueType = valueType;
 		this.bucketSize = bucketSize;
 		this.maxKeyValueSize = maxKeyValueSize;
-		dbKey = new KeyValue(keyType, valueType);
-		bucketTemplate.setKeyValueTemplate(dbKey);
+		dbKey = new KeyValue <> (keyType, valueType);
+		bucketTemplate = new Bucket <> (dbKey);
 		dirDepth = 0;
 		directory = new int[1];
 		createHashFiles();
-		Bucket bucket = createNewBucket();
+		Bucket <K,V> bucket = createNewBucket();
 		directory[0] = lastCreatedBucket;
 		writeBucket(directory[0], bucket);
     this.size = 0;
@@ -95,23 +100,23 @@ public class ExtendibleHashTable {
     }
   }
 
-	public ByteStorable search(ByteStorable key) throws IOException {
+	public V search(K key) throws IOException {
 		synchronized (fLocker) {
-			KeyValue keyValue = new KeyValue(key, null);
+			KeyValue <K, V> keyValue = new KeyValue <>(key, null);
 			int rrn = find(keyValue);
-			Bucket bucket = readBucket(rrn);
-			KeyValue tmp = (KeyValue) bucket.getKey(keyValue);
+			Bucket <K, V> bucket = readBucket(rrn);
+			KeyValue <K,V> tmp = bucket.getKey(keyValue);
 			if (tmp != null)
 				return tmp.getValue();
 		}
 		return null;
 	}
 
-	public boolean containsKey(ByteStorable key) throws IOException {
+	public boolean containsKey(K key) throws IOException {
 		synchronized (fLocker) {
-			KeyValue keyValue = new KeyValue(key, null);
+			KeyValue <K,V> keyValue = new KeyValue <> (key, null);
 			int rrn = find(keyValue);
-			Bucket bucket = readBucket(rrn);
+			Bucket <K,V> bucket = readBucket(rrn);
       return bucket.getKey(keyValue) != null;
     }
 	}
@@ -124,29 +129,29 @@ public class ExtendibleHashTable {
     return this.size == 0 ? true : false;
   }
 
-	public ByteStorable insert(ByteStorable key, ByteStorable value, boolean update)
+	public V insert(K key, V value, boolean update)
 			throws IOException {
 		synchronized (fLocker) {
 			return _insert(key, value, update);
 		}
 	}
 
-	private ByteStorable _insert(ByteStorable key, ByteStorable value, boolean update)
+	private V _insert(K key, V value, boolean update)
 			throws IOException {
 		// first check the maxSize:
 		if (key.byteSize() + value.byteSize() > maxKeyValueSize)
 			throw new IOException("Size of key and value to large");
 
-		KeyValue keyValue = new KeyValue(key, value);
+		KeyValue <K,V> keyValue = new KeyValue <> (key, value);
 		int rrn = find(keyValue);
-		Bucket bucket;
+		Bucket <K,V> bucket;
 		try {
 			bucket = readBucket(rrn);
 		} catch (IOException e) {
 			throw e;
 		}
 		// for now dont update:
-    KeyValue prev = bucket.getKey(keyValue);
+    KeyValue <K,V> prev = bucket.getKey(keyValue);
     if(prev != null){
       if(update){
         bucket.addKey(keyValue);
@@ -171,16 +176,16 @@ public class ExtendibleHashTable {
 		}
 	}
 
-	public Iterator <KeyValue> iterator() {
+	public Iterator <KeyValue <K,V>> iterator() {
 		return new EHTIterator();
 	}
 
-	public KeyValue delete(ByteStorable key) throws IOException {
+	public KeyValue <K,V> delete(K key) throws IOException {
 		synchronized (fLocker) {
-			KeyValue toDelete = new KeyValue(key, null);
+			KeyValue <K,V> toDelete = new KeyValue <> (key, null);
 			int rrn = find(toDelete);
-			Bucket bucket = readBucket(rrn);
-			KeyValue deleted = bucket.removeKey(toDelete);
+			Bucket <K,V> bucket = readBucket(rrn);
+			KeyValue <K,V> deleted = bucket.removeKey(toDelete);
 			if (deleted == null)
 				return null;
       size--;
@@ -192,12 +197,12 @@ public class ExtendibleHashTable {
 
 	public String toString() {
 		StringBuffer sb = new StringBuffer();
-		int currAddr = -1;
+		//int currAddr = -1;
 		int totSize = 0;
 		int totBuckets = 0;
 		for (int i = 0; i < directory.length; i++) {
 			// if (currAddr != directory[i]) {
-			currAddr = directory[i];
+			//currAddr = directory[i];
 			sb.append("index: " + i + " ");
 			sb.append("bucket number: " + directory[i] + " ");
 			try {
@@ -221,7 +226,7 @@ public class ExtendibleHashTable {
 	}
 
 	/** ***************PRIVATE METHODS******************************** */
-	private int makeAdress(ByteStorable key, int depth) {
+	private int makeAdress(K key, int depth) {
 		int hashVal = key.hashCode();
 		int ret = 0;
 		int mask = 1;
@@ -236,15 +241,15 @@ public class ExtendibleHashTable {
 	}
 
 	/** *********for deletion************************************* */
-	private void combine(Bucket bucket, int rrn) throws IOException {
+	private void combine(Bucket <K,V> bucket, int rrn) throws IOException {
 		int bAdress = findBuddy(bucket);
 		if (bAdress == -1)
 			return;
 		int brrn = directory[bAdress];
-		Bucket bBucket = readBucket(brrn);
+		Bucket <K,V> bBucket = readBucket(brrn);
 		if (bBucket.size() + bucket.size() <= bucketSize) {
-			for (Iterator it = bBucket.iterator(); it.hasNext();) {
-				bucket.addKey((KeyValue) it.next());
+			for (Iterator <KeyValue <K,V>> it = bBucket.iterator(); it.hasNext();) {
+				bucket.addKey(it.next());
 			}
 			directory[bAdress] = rrn;
 			writeBucket(rrn, bucket);
@@ -254,12 +259,12 @@ public class ExtendibleHashTable {
 		}
 	}
 
-	private int findBuddy(Bucket bucket) {
+	private int findBuddy(Bucket <K,V> bucket) {
 		if (dirDepth == 0)
 			return -1;
-		if (bucket.depth < dirDepth)
+		if (bucket.get().depth < dirDepth)
 			return -1;
-		int sharedAdress = makeAdress(bucket.getKey(0), bucket.depth);
+		int sharedAdress = makeAdress(bucket.getKey(0).getKey(), bucket.get().depth);
 		return sharedAdress ^ 1;
 	}
 
@@ -280,24 +285,24 @@ public class ExtendibleHashTable {
 		return true;
 	}
 
-	private void splitBucket(Bucket bucket, KeyValue tmp) throws IOException {
+	private void splitBucket(Bucket <K,V> bucket, KeyValue <K,V> tmp) throws IOException {
 		int bucketAddr = find(bucket.getKey(0));
 
 			CoreLog.L().finest(DataTypeUtils.printBits((short) find(bucket
-					.getKey(0))) + " " + ((KeyValue) bucket.getKey(0)).getKey());
+					.getKey(0))) + " " + (bucket.getKey(0)).getKey());
 
-		if (bucket.depth == dirDepth) {
+		if (bucket.get().depth == dirDepth) {
 			doubleDir();
 		}
-		Bucket newBucket = createNewBucket();
+		Bucket <K,V> newBucket = createNewBucket();
 		Range r = findRange(bucket);
 
 		CoreLog.L().finest("Bucket Range: " + r.from + " " + r.to + " "
 					+ bucketAddr + " " + find(tmp));
 
 		insertBucket(lastCreatedBucket, r);
-		bucket.depth = bucket.depth + 1;
-		newBucket.depth = bucket.depth;
+		bucket.get().depth = bucket.get().depth + 1;
+		newBucket.get().depth = bucket.get().depth;
 		redistribute(bucket, newBucket, bucketAddr);
 		writeBucket(bucketAddr, bucket);
 		writeBucket(lastCreatedBucket, newBucket);
@@ -308,9 +313,9 @@ public class ExtendibleHashTable {
 			directory[i] = bucketAddr;
 	}
 
-	private Range findRange(Bucket bucket) {
-		int shared = makeAdress(bucket.getKey(0), bucket.depth);
-		int toFill = dirDepth - (bucket.depth + 1);
+	private Range findRange(Bucket <K,V> bucket) {
+		int shared = makeAdress(bucket.getKey(0).getKey(), bucket.get().depth);
+		int toFill = dirDepth - (bucket.get().depth + 1);
 		int newShared = shared << 1;
 		newShared = newShared | 1;
 		Range r = new Range();
@@ -323,10 +328,10 @@ public class ExtendibleHashTable {
 		return r;
 	}
 
-	private void redistribute(Bucket oldBucket, Bucket newBucket, int oldAddr) {
-		KeyValue keyValue;
-		for (Iterator it = oldBucket.iterator(); it.hasNext();) {
-			keyValue = (KeyValue) it.next();
+	private void redistribute(Bucket <K,V> oldBucket, Bucket <K,V> newBucket, int oldAddr) {
+		KeyValue <K,V> keyValue;
+		for (Iterator <KeyValue <K,V>> it = oldBucket.iterator(); it.hasNext();) {
+			keyValue = it.next();
 			if (find(keyValue) != oldAddr) {
 				it.remove();
 				newBucket.addLast(keyValue);
@@ -346,23 +351,23 @@ public class ExtendibleHashTable {
 		dirDepth++;
 	}
 
-	private int find(ByteStorable key) {
-		return directory[makeAdress(key, dirDepth)];
+	private int find(KeyValue <K,V> kv) {
+		return directory[makeAdress(kv.getKey(), dirDepth)];
 	}
 
-	private Bucket createNewBucket() throws IOException {
-		Bucket b = new Bucket();
+	private Bucket <K,V> createNewBucket() throws IOException {
+		Bucket <K,V> b = new Bucket <> ();
 		byte bb[] = new byte[b.byteSize()];
 		b.toBytes(bb, 0);
 		lastCreatedBucket = bucketFile.insert(bb);
 		return b;
 	}
 
-	private Bucket readBucket(int rrn) throws IOException {
-		return (Bucket) bucketTemplate.fromBytes(bucketFile.get(rrn), 0);
+	private Bucket <K, V> readBucket(int rrn) throws IOException {
+		return (Bucket <K,V>) bucketTemplate.fromBytes(bucketFile.get(rrn), 0);
 	}
 
-	private void writeBucket(int rrn, Bucket bucket) throws IOException {
+	private void writeBucket(int rrn, Bucket <K, V> bucket) throws IOException {
 		int bSize = bucket.byteSize();
 		byte[] b = new byte[bSize];
 		bucket.toBytes(b, 0);
@@ -375,55 +380,54 @@ public class ExtendibleHashTable {
 
 	// private initializers:
 	private void createHashFiles() throws IOException {
-		bucketFile = new SpanningBlockFile(256, fName + bucketExt);
-		//directoryFile = new RandomAccessFile(fName + dirExt, "rw");
+	  bucketFile = new RecordFileBuilder().span(true).blockSize(512).maxBlocks(1024*2048).build(fName + bucketExt);
 	}
 
   private void openFiles() throws Exception{
     //retrive header information
     FileInputStream fis = new FileInputStream(fName + dirExt);
-    TableHeader th = new TableHeader();
+    TableHeader <K,V> th = new TableHeader <K,V> ();
     th.fromBytes(fis);
 
     //make sure version is the same!
-    if(VERSION != th.getTableVersion())
+    if(VERSION != th.get().getTableVersion())
       throw new IOException("wrong table version");
 
-    this.bucketSize = th.getBucketSize();
-    this.maxKeyValueSize = th.getMaxKeyValueSize();
-    this.dirDepth = th.getDirDepth();
+    this.bucketSize = th.get().getBucketSize();
+    this.maxKeyValueSize = th.get().getMaxKeyValueSize();
+    this.dirDepth = th.get().getDirDepth();
     this.keyType = th.getKeyType();
     this.valueType = th.getValueType();
     this.directory = th.getDirectory();
-    this.size = th.getNumElements();
+    this.size = th.get().getNumElements();
 
     //open bucket file
-    bucketFile = new SpanningBlockFile(fName + bucketExt);
+    bucketFile = new RecordFileBuilder().span(true).build(fName + bucketExt);
 
     // finally create various templates:
-    dbKey = new KeyValue(keyType, valueType);
-    bucketTemplate = new Bucket();
+    dbKey = new KeyValue <> (keyType, valueType);
+    bucketTemplate = new Bucket <> ();
     bucketTemplate.setKeyValueTemplate(dbKey);
   }
 
   private void saveFiles() throws IOException {
-    bucketFile.flushFile();
-    TableHeader th = new TableHeader();
-    th.setBucketSize(this.bucketSize);
-    th.setDirDepth(this.dirDepth);
+    bucketFile.save();
+    TableHeader <K,V> th = new TableHeader <> ();
+    th.get().setBucketSize(this.bucketSize);
+    th.get().setDirDepth(this.dirDepth);
     th.setDirectory(this.directory);
-    th.setTableVersion(VERSION);
+    th.get().setTableVersion(VERSION);
     th.setKeyType(this.keyType);
     th.setValueType(this.valueType);
-    th.setMaxKeyValueSize(this.maxKeyValueSize);
-    th.setNumElements(this.size);
+    th.get().setMaxKeyValueSize(this.maxKeyValueSize);
+    th.get().setNumElements(this.size);
     FileOutputStream fos = new FileOutputStream(fName + dirExt);
     th.toBytes(fos);
     fos.close();
   }
 
   private void deleteHashFiles() throws IOException{
-    bucketFile.deleteFile();
+    bucketFile.clear();
     File f = new File(fName + dirExt);
     f.delete();
 
@@ -433,17 +437,18 @@ public class ExtendibleHashTable {
 	 * ****************inner
 	 * classes*********************************************
 	 */
-	class EHTIterator implements Iterator <KeyValue> {
-		Iterator fileIterator = bucketFile.iterator();
-		Bucket bucket = new Bucket();
-		Iterator <KeyValue> bucketIterator;
+	class EHTIterator implements Iterator <KeyValue<K, V>> {
+		Iterator <Record> fileIterator = bucketFile.iterator();
+		
+		Bucket <K,V> bucket = new Bucket <> ();
+		Iterator <KeyValue <K,V>> bucketIterator;
 		byte b[];
 
 		public EHTIterator() {
 			if (!fileIterator.hasNext())
 				return;
-			b = (byte[]) fileIterator.next();
-			bucket = (Bucket) bucketTemplate.fromBytes(b, 0);
+			b = fileIterator.next().data;
+			bucket = (Bucket <K,V>) bucketTemplate.fromBytes(b, 0);
 			bucketIterator = bucket.iterator();
 		}
 
@@ -451,8 +456,8 @@ public class ExtendibleHashTable {
 			if (bucketIterator.hasNext())
 				return true;
 			while (fileIterator.hasNext()) {
-				b = (byte[]) fileIterator.next();
-				bucket = (Bucket) bucketTemplate.fromBytes(b, 0);
+				b = fileIterator.next().data;
+				bucket = (Bucket <K,V>) bucketTemplate.fromBytes(b, 0);
 				bucketIterator = bucket.iterator();
 				if (bucketIterator.hasNext())
 					return true;
@@ -460,7 +465,7 @@ public class ExtendibleHashTable {
 			return false;
 		}
 
-		public KeyValue next() {
+		public KeyValue <K,V> next() {
 			return bucketIterator.next();
 		}
 

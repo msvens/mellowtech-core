@@ -37,24 +37,23 @@ import com.mellowtech.core.bytestorable.CBShort;
  */
 public class ShortMapping implements BCMapping <Short> {
 
-  //private CBString template;
 
   public ShortMapping(){
   }
 
   @Override
-  public Short fromByteComparable(ByteComparable bc) {
-    return ((CBShort) bc).get();
+  public Short fromByteComparable(ByteComparable <Short> bc) {
+    return bc.get();
   }
 
   @Override
-  public ByteComparable toByteComparable(Short key) {
+  public ByteComparable <Short> toByteComparable(Short key) {
     return new CBShort(key);
   }
 
   @Override
-  public Short fromByteStorable(ByteStorable bs) {
-    return ((CBShort) bs).get();
+  public Short fromByteStorable(ByteStorable <Short> bs) {
+    return bs.get();
   }
 
   @Override
@@ -63,12 +62,12 @@ public class ShortMapping implements BCMapping <Short> {
   }
 
   @Override
-  public ByteStorable toByteStorable(Short value) {
+  public ByteStorable <Short> toByteStorable(Short value) {
     return new CBShort(value);
   }
 
   @Override
-  public ByteStorable getTemplate() {
+  public ByteComparable <Short> getTemplate() {
     return new CBShort();
   }
 

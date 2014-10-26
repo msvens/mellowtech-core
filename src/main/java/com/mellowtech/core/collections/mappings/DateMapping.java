@@ -45,18 +45,18 @@ public class DateMapping implements BCMapping <Date> {
   }
 
   @Override
-  public Date fromByteComparable(ByteComparable bc) {
-    return ((CBDate) bc).get();
+  public Date fromByteComparable(ByteComparable <Date> bc) {
+    return bc.get();
   }
 
   @Override
-  public ByteComparable toByteComparable(Date key) {
+  public ByteComparable <Date> toByteComparable(Date key) {
     return new CBDate(key);
   }
 
   @Override
-  public Date fromByteStorable(ByteStorable bs) {
-    return ((CBDate) bs).get();
+  public Date fromByteStorable(ByteStorable <Date> bs) {
+    return bs.get();
   }
 
   @Override
@@ -65,12 +65,12 @@ public class DateMapping implements BCMapping <Date> {
   }
 
   @Override
-  public ByteStorable toByteStorable(Date value) {
+  public ByteStorable <Date> toByteStorable(Date value) {
     return new CBDate(value);
   }
 
   @Override
-  public ByteStorable getTemplate() {
+  public ByteComparable <Date> getTemplate() {
     return new CBDate();
   }
 

@@ -28,19 +28,32 @@
 package com.mellowtech.core.disc.blockfile;
 
 import java.io.IOException;
+import java.util.BitSet;
 
-import com.mellowtech.core.bytestorable.ext.AutoByteStorable;
-import com.mellowtech.core.bytestorable.CBInt;
-import com.mellowtech.core.bytestorable.ext.IntegerSet;
-import com.mellowtech.core.disc.StorableFile;
+import com.mellowtech.core.bytestorable.AutoRecord;
+import com.mellowtech.core.bytestorable.BSField;
+import com.mellowtech.core.bytestorable.CBRecord;
+import com.mellowtech.core.bytestorable.io.StorableFile;
 
-public class DynamicFileInfo extends AutoByteStorable {
-  public CBInt smallObjectMaxBytes = new CBInt();
+public class DynamicFileInfo extends CBRecord <DynamicFileInfo.Record> {
+  
+  public class Record implements AutoRecord {
+  
+    @BSField(1) public int smallObjectMaxBytes;
+    @BSField(2) public int smallObjectBlockSize;
+    @BSField(3) public int largeObjectBlockSize;
+    @BSField(4) public int highestId;
+    @BSField(5) public BitSet freeSmallObjectIds = new BitSet(1024);
+  }
+  
+  
+ /* public CBInt smallObjectMaxBytes = new CBInt();
   public CBInt smallObjectBlockSize = new CBInt();
   public CBInt largeObjectBlockSize = new CBInt();
   public CBInt highestId = new CBInt();
   public IntegerSet freeSmallObjectIds = new IntegerSet(1024);
-
+  */
+  
   public static DynamicFileInfo read(String file) throws IOException {
     return (DynamicFileInfo) StorableFile.readFileAsByteStorable(file,
         new DynamicFileInfo());
@@ -49,5 +62,14 @@ public class DynamicFileInfo extends AutoByteStorable {
   public static void write(String file, DynamicFileInfo fileInfo)
       throws IOException {
     StorableFile.writeFileAsByteStorable(file, fileInfo);
+  }
+  
+  public DynamicFileInfo() {
+    super();
+  }
+
+  @Override
+  protected Record newT() {
+    return new Record();
   }
 }

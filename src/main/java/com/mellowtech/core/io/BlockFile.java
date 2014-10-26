@@ -37,6 +37,7 @@ import java.nio.ByteBuffer;
 import java.nio.LongBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.channels.FileChannel.MapMode;
 import java.util.BitSet;
 import java.util.Iterator;
 import java.util.Map;
@@ -111,7 +112,7 @@ public class BlockFile implements RecordFile {
     start = 20 + bitSize + reserve;
 
 
-    bitBuffer = fc.map(FileChannel.MapMode.READ_WRITE, 16, start);
+    bitBuffer = fc.map(FileChannel.MapMode.READ_WRITE, 16, start - reserve);
     int numLongs = bitBuffer.getInt();
     LongBuffer lb = bitBuffer.asLongBuffer();
 
@@ -200,11 +201,9 @@ public class BlockFile implements RecordFile {
   public int getBlockSize() {
     return blockSize;
   }
-
-
-  @Override
-  public void reserve(int bytes) throws IOException {
-    //To change body of implemented methods use File | Settings | File Templates.
+  
+  public MappedByteBuffer mapReserve() throws IOException {
+    return fc.map(MapMode.READ_WRITE, 20+bitSize, reserve);
   }
 
   @Override
@@ -249,14 +248,6 @@ public class BlockFile implements RecordFile {
   @Override
   public boolean update(int record, byte[] bytes) throws IOException {
     return update(record, bytes, 0, bytes.length);
-    /*if(bitSet.get(record)){
-      long offset = getOffset(record);
-      ByteBuffer bb = ByteBuffer.wrap(bytes);
-      if(bytes.length > blockSize) bb.limit(blockSize);
-      fc.write(bb, offset);
-      return true;
-    }
-    return false;*/
   }
 
   @Override
@@ -339,9 +330,8 @@ public class BlockFile implements RecordFile {
   protected void saveBitSet() throws IOException{
     bitBuffer.clear();
     long[] bits = bitSet.toLongArray();
-
     bitBuffer.putInt(bits.length);
-    bitBuffer.asLongBuffer().put(bitSet.toLongArray());
+    bitBuffer.asLongBuffer().put(bits);
   }
 
   class BlockFileIterator implements Iterator<Record>{

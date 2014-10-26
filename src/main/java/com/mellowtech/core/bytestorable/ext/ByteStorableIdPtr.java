@@ -37,10 +37,11 @@ import java.nio.ByteBuffer;
  * and a ByteComparable object.
  * 
  */
-public class ByteStorableIdPtr extends ByteComparable {
+@Deprecated
+public class ByteStorableIdPtr extends ByteComparable <ByteStorableIdPtr> {
   int id;
   int ptr;
-  ByteStorable object;
+  ByteStorable <?> object;
   
   public ByteStorableIdPtr() {
     this.id = -1;
@@ -48,7 +49,7 @@ public class ByteStorableIdPtr extends ByteComparable {
     this.object = null;
   }
   
-  public ByteStorableIdPtr(int id, int ptr, ByteStorable object) {
+  public ByteStorableIdPtr(int id, int ptr, ByteStorable <?> object) {
     this.id = id;
     this.ptr = ptr;
     this.object = object;
@@ -62,11 +63,11 @@ public class ByteStorableIdPtr extends ByteComparable {
     this.id = id;
   }
 
-  public ByteStorable getObject() {
+  public ByteStorable <?> getObject() {
     return object;
   }
 
-  public void setObject(ByteStorable object) {
+  public void setObject(ByteStorable <?> object) {
     this.object = object;
   }
 
@@ -93,7 +94,7 @@ public class ByteStorableIdPtr extends ByteComparable {
   }
 
   @Override
-  public ByteStorable fromBytes(ByteBuffer bb, boolean doNew) {
+  public ByteStorable <ByteStorableIdPtr> fromBytes(ByteBuffer bb, boolean doNew) {
     int dataSize = getSize(bb);
     ByteStorableIdPtr ibs = doNew ? new ByteStorableIdPtr() : this;
     ibs.id = getSize(bb);

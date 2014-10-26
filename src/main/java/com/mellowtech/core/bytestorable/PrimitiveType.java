@@ -40,7 +40,7 @@ public enum PrimitiveType {
   StringObject, ByteObject, ShortObject,
   IntObject, LongObject, FloatObject, DoubleObject,
   CharObject, BooleanObject, ByteArrayObject, DateObject,
-  ListObject, MapObject, SortedMapObject;
+  ListObject, MapObject, SortedMapObject, BitSetObject, SetObject;
 
   public static final ByteStorable fromType(PrimitiveType pt){
     switch(pt){
@@ -67,11 +67,15 @@ public enum PrimitiveType {
       case ByteArrayObject:
         return new CBByteArray();
       case ListObject:
-        return new CBList();
+        return new CBList <> ();
       case MapObject:
         return new CBMap<>();
       case SortedMapObject:
         return new CBSortedMap<>();
+      case BitSetObject:
+        return new CBBitSet();
+      case SetObject:
+        return new CBSet <>();
     }
     return null;
   }
@@ -107,6 +111,10 @@ public enum PrimitiveType {
       return PrimitiveType.SortedMapObject;
     else if(obj instanceof Map)
       return PrimitiveType.MapObject;
+    else if(obj instanceof BitSet)
+      return PrimitiveType.BitSetObject;
+    else if(obj instanceof Set)
+      return PrimitiveType.SetObject;
     return null;
   }
 
@@ -139,6 +147,10 @@ public enum PrimitiveType {
       return PrimitiveType.SortedMapObject;
     else if(clazz == HashMap.class)
       return PrimitiveType.MapObject;
+    else if(clazz == BitSet.class)
+      return PrimitiveType.BitSetObject;
+    else if(clazz == Set.class)
+      return PrimitiveType.SetObject;
     return null;
   }
 
@@ -171,6 +183,10 @@ public enum PrimitiveType {
       return MapObject;
     else if(ordinal == SortedMapObject.ordinal())
       return SortedMapObject;
+    else if(ordinal == BitSetObject.ordinal())
+      return BitSetObject;
+    else if(ordinal == SetObject.ordinal())
+      return SetObject;
     else
       return null;
   }

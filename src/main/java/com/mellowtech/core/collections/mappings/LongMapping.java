@@ -42,18 +42,18 @@ public class LongMapping implements BCMapping <Long> {
   }
 
   @Override
-  public Long fromByteComparable(ByteComparable bc) {
-    return ((CBLong) bc).get();
+  public Long fromByteComparable(ByteComparable <Long> bc) {
+    return bc.get();
   }
 
   @Override
-  public ByteComparable toByteComparable(Long key) {
+  public ByteComparable <Long> toByteComparable(Long key) {
     return new CBLong(key);
   }
 
   @Override
-  public Long fromByteStorable(ByteStorable bs) {
-    return ((CBLong) bs).get();
+  public Long fromByteStorable(ByteStorable <Long> bs) {
+    return bs.get();
   }
 
   @Override
@@ -62,12 +62,12 @@ public class LongMapping implements BCMapping <Long> {
   }
 
   @Override
-  public ByteStorable toByteStorable(Long value) {
+  public ByteStorable <Long> toByteStorable(Long value) {
     return new CBLong(value);
   }
 
   @Override
-  public ByteStorable getTemplate() {
+  public ByteComparable <Long> getTemplate() {
     return new CBLong();
   }
 

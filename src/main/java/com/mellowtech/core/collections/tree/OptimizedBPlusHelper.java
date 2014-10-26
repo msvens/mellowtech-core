@@ -30,9 +30,9 @@ package com.mellowtech.core.collections.tree;
 import com.mellowtech.core.CoreLog;
 import com.mellowtech.core.bytestorable.ByteComparable;
 import com.mellowtech.core.bytestorable.ByteStorable;
+import com.mellowtech.core.bytestorable.io.SortedBlock;
 import com.mellowtech.core.collections.KeyValue;
 import com.mellowtech.core.disc.MapEntry;
-import com.mellowtech.core.disc.SortedBlock;
 import com.mellowtech.core.io.Record;
 
 import java.io.IOException;
@@ -49,6 +49,8 @@ import java.util.logging.Level;
  *
  * @author Martin Svensson
  */
+@Deprecated
+@SuppressWarnings("rawtypes")
 public class OptimizedBPlusHelper<K extends ByteComparable,V extends ByteStorable> {
   private final OptimizedBPTreeImp<K,V> tree;
 
@@ -66,30 +68,30 @@ public class OptimizedBPlusHelper<K extends ByteComparable,V extends ByteStorabl
 
   }
 
-  public void putValueBlock(int blockNo, SortedBlock sb)
+  public void putValueBlock(int blockNo, SortedBlock <KeyValue <K,V>> sb)
     throws IOException{
     tree.splitFile.update(blockNo, sb.getBlock());
   }
 
-  public void putIndexBlock(int blockNo, SortedBlock sb) throws IOException{
-    tree.splitFile.updateMapped(blockNo, sb.getBlock());
+  public void putIndexBlock(int blockNo, SortedBlock <BTreeKey <K>> sb) throws IOException{
+    tree.splitFile.updateRegion(blockNo, sb.getBlock());
   }
 
-  public SortedBlock toValueBlock(byte[] data){
-    SortedBlock sb = new SortedBlock();
+  public SortedBlock <KeyValue <K,V>> toValueBlock(byte[] data){
+    SortedBlock <KeyValue <K,V>> sb = new SortedBlock <> ();
     sb.setBlock(data, tree.keyValues, false, SortedBlock.PTR_NORMAL, (short) 0);
     return sb;
   }
 
-  public SortedBlock toIndexBlock(byte[] data){
-    SortedBlock sb = new SortedBlock();
+  public SortedBlock <BTreeKey <K>> toIndexBlock(byte[] data){
+    SortedBlock <BTreeKey <K>> sb = new SortedBlock <> ();
     sb.setBlock(data, tree.indexKeys, false, SortedBlock.PTR_NORMAL, (short) 0);
     return sb;
   }
 
-  public SortedBlock getValueBlock(int blockNo)
+  public SortedBlock <KeyValue <K,V>> getValueBlock(int blockNo)
     throws IOException{
-    SortedBlock sb = new SortedBlock();
+    SortedBlock <KeyValue <K,V>> sb = new SortedBlock <> ();
     try {
       sb.setBlock(tree.splitFile.get(blockNo), tree.keyValues, false,
               SortedBlock.PTR_NORMAL, (short) 0);
@@ -101,11 +103,11 @@ public class OptimizedBPlusHelper<K extends ByteComparable,V extends ByteStorabl
     }
   }
 
-  public SortedBlock getIndexBlock(int blockNo)
+  public SortedBlock <BTreeKey <K>> getIndexBlock(int blockNo)
           throws IOException{
-    SortedBlock sb = new SortedBlock();
+    SortedBlock <BTreeKey <K>> sb = new SortedBlock <> ();
     try {
-      sb.setBlock(tree.splitFile.getMapped(blockNo), tree.indexKeys, false,
+      sb.setBlock(tree.splitFile.getRegion(blockNo), tree.indexKeys, false,
               SortedBlock.PTR_NORMAL, (short) 0);
       return sb;
     }
@@ -136,30 +138,30 @@ public class OptimizedBPlusHelper<K extends ByteComparable,V extends ByteStorabl
    *          the parent node in the index.
    * @return true if at least one key was shifted
    */
-  public static boolean shiftLeft(SortedBlock left, SortedBlock right,
-                              BTreeKey parent) {
+  public boolean shiftLeft(SortedBlock <BTreeKey <K>> left, SortedBlock <BTreeKey <K>> right,
+                              BTreeKey <K> parent) {
     // check if we gain anything from a shift, i.e. the minimum shift:
     if (parent.byteSize() + left.getDataBytes() >= right.getDataBytes()
             - right.getFirstKey().byteSize()) {
       return false;
     }
     // first set parent lefkey to first left key in right and save the old left:
-    BTreeKey oldParent = parent;
-    int parentLeft = parent.leftNode;
-    int tmp;
+    //BTreeKey <K> oldParent = parent;
+    int parentLeft = parent.get().leftNode;
+    //int tmp;
     for (;;) {
-      parent.leftNode = getLastPointer(left);
+      parent.get().leftNode = getLastPointer(left);
       left.insertKeyUnsorted(parent);
-      BTreeKey newParent = (BTreeKey) right.deleteKey(0);
-      parent.leftNode = newParent.leftNode;
-      parent.key = newParent.key;
-      setLastPointer(left, parent.leftNode);
+      BTreeKey <K> newParent = right.deleteKey(0);
+      parent.get().leftNode = newParent.get().leftNode;
+      parent.get().key = newParent.get().key;
+      setLastPointer(left, parent.get().leftNode);
       // now check if to continue:
       if (parent.byteSize() + left.getDataBytes() >= right.getDataBytes()
               - right.getFirstKey().byteSize())
         break;
     }
-    parent.leftNode = parentLeft;
+    parent.get().leftNode = parentLeft;
     return true;
   }
 
@@ -175,28 +177,28 @@ public class OptimizedBPlusHelper<K extends ByteComparable,V extends ByteStorabl
    * @return true if at least one key was shifted
    * @see #shiftLeft
    */
-  public boolean shiftRight(SortedBlock left, SortedBlock right,
-                               BTreeKey parent) {
+  public boolean shiftRight(SortedBlock <BTreeKey <K>> left, SortedBlock <BTreeKey <K>> right,
+                               BTreeKey <K> parent) {
     // check if we gain anything from a shift, i.e. the minimum shift:
     if (parent.byteSize() + right.getDataBytes() >= left.getDataBytes()
             - left.getLastKey().byteSize()) {
       return false;
     }
     // first set parent lefkey to first left key in right and save the old left:
-    int parentLeft = parent.leftNode;
+    int parentLeft = parent.get().leftNode;
     for (;;) {
-      parent.leftNode = getLastPointer(left);
+      parent.get().leftNode = getLastPointer(left);
       right.insertKey(parent);
-      BTreeKey newParent = (BTreeKey) left.deleteKey(left.getNumberOfElements() - 1);
-      parent.leftNode = newParent.leftNode;
-      parent.key = newParent.key;
-      setLastPointer(left, parent.leftNode);
+      BTreeKey <K> newParent = left.deleteKey(left.getNumberOfElements() - 1);
+      parent.get().leftNode = newParent.get().leftNode;
+      parent.get().key = newParent.get().key;
+      setLastPointer(left, parent.get().leftNode);
       // now check if to continue:
       if (parent.byteSize() + right.getDataBytes() >= left.getDataBytes()
               - left.getLastKey().byteSize())
         break;
     }
-    parent.leftNode = parentLeft;
+    parent.get().leftNode = parentLeft;
     return true;
   }
 
@@ -207,7 +209,7 @@ public class OptimizedBPlusHelper<K extends ByteComparable,V extends ByteStorabl
    *          sorted block of BTree keys.
    * @return the last pointer.
    */
-  public static int getLastPointer(SortedBlock sb) {
+  public int getLastPointer(SortedBlock <BTreeKey <K>> sb) {
     ByteBuffer buffer = sb.getByteBuffer();
     return buffer.getInt(sb.getReservedSpaceStart());
   }
@@ -220,7 +222,7 @@ public class OptimizedBPlusHelper<K extends ByteComparable,V extends ByteStorabl
    * @param pointer
    *          a pointer (i.e block number).
    */
-  public static void setLastPointer(SortedBlock sb, int pointer) {
+  public void setLastPointer(SortedBlock <BTreeKey <K>> sb, int pointer) {
     ByteBuffer buffer = sb.getByteBuffer();
     buffer.putInt(sb.getReservedSpaceStart(), pointer);
   }
@@ -234,9 +236,9 @@ public class OptimizedBPlusHelper<K extends ByteComparable,V extends ByteStorabl
    * @param sb
    *          a block of sotred BTree keys.
    */
-  public static void deleteAndReplace(BTreeKey keyIndex, SortedBlock sb) {
+  public void deleteAndReplace(BTreeKey  <K> keyIndex, SortedBlock <BTreeKey <K>> sb) {
     if (keyIndex.compareTo(sb.getLastKey()) == 0)
-      setLastPointer(sb, keyIndex.leftNode);
+      setLastPointer(sb, keyIndex.get().leftNode);
     sb.deleteKey(keyIndex);
   }
 
@@ -249,27 +251,27 @@ public class OptimizedBPlusHelper<K extends ByteComparable,V extends ByteStorabl
    * @param sb
    *          a block of sorted BTree keys
    */
-  public static void insertAndReplace(BTreeKey keyIndex, SortedBlock sb) {
+  public void insertAndReplace(BTreeKey <K> keyIndex, SortedBlock <BTreeKey <K>> sb) {
     int index = sb.insertKey(keyIndex);
-    int tmp = keyIndex.leftNode;
+    int tmp = keyIndex.get().leftNode;
     if (index == sb.getNumberOfElements() - 1) { // last key
-      keyIndex.leftNode = getLastPointer(sb);
+      keyIndex.get().leftNode = getLastPointer(sb);
       setLastPointer(sb, tmp);
       sb.updateKey(keyIndex, index);
       return;
     }
-    BTreeKey nextKey = (BTreeKey) sb.getKey(index + 1);
-    keyIndex.leftNode = nextKey.leftNode;
-    nextKey.leftNode = tmp;
+    BTreeKey <K> nextKey = sb.getKey(index + 1);
+    keyIndex.get().leftNode = nextKey.get().leftNode;
+    nextKey.get().leftNode = tmp;
     sb.updateKey(keyIndex, index);
     sb.updateKey(nextKey, index + 1);
   }
 
 
 
-  public void redistributeValueBlocks(SortedBlock small, SortedBlock large, int bSmall,
+  public void redistributeValueBlocks(SortedBlock <KeyValue <K,V>> small, SortedBlock <KeyValue <K,V>> large, int bSmall,
                             int bLarge) throws IOException {
-    SortedBlock blocks[] = new SortedBlock[2];
+    SortedBlock <KeyValue <K,V>> blocks[] = (SortedBlock <KeyValue <K,V>> []) new SortedBlock <?> [2];
     blocks[0] = small;
     blocks[1] = large;
     SortedBlock.redistribute(blocks);
@@ -292,11 +294,11 @@ public class OptimizedBPlusHelper<K extends ByteComparable,V extends ByteStorabl
    *          a block with larger keys
    * @return a separator
    */
-  public BTreeKey generateSeparator(SortedBlock small, SortedBlock large) {
-    BTreeKey nKey = new BTreeKey();
-    nKey.key = tree.keyValues.getKey().separate(
-            ((KeyValue) small.getLastKey()).getKey(),
-            ((KeyValue) large.getFirstKey()).getKey());
+  public BTreeKey <K> generateSeparator(SortedBlock <KeyValue <K,V>> small, SortedBlock <KeyValue<K,V>> large) {
+    BTreeKey <K> nKey = new BTreeKey <> ();
+    nKey.get().key =  (K) tree.keyValues.getKey().separate(
+            small.getLastKey().getKey(),
+            large.getFirstKey().getKey());
     return nKey;
   }
 
@@ -309,12 +311,12 @@ public class OptimizedBPlusHelper<K extends ByteComparable,V extends ByteStorabl
    *          the larger value to compare with
    * @return a separator.
    */
-  public BTreeKey generateSeparator(SortedBlock small, KeyValue large) {
+  public BTreeKey <K> generateSeparator(SortedBlock <KeyValue <K,V>> small, KeyValue <K,V> large) {
     // this should change to use the provided separator function.
     // for now take the small one:
-    BTreeKey nKey = new BTreeKey();
-    nKey.key = tree.keyValues.getKey().separate(
-            ((KeyValue) small.getLastKey()).getKey(), large.getKey());
+    BTreeKey <K> nKey = new BTreeKey <> ();
+    nKey.get().key = (K) tree.keyValues.getKey().separate(
+            small.getLastKey().getKey(), large.getKey());
     return nKey;
   }
 
@@ -326,7 +328,7 @@ public class OptimizedBPlusHelper<K extends ByteComparable,V extends ByteStorabl
    *          a sorted block to check
    * @return true if the block has the minimum amount of information
    */
-  public static boolean checkUnderflow(SortedBlock sb) {
+  public boolean checkUnderflow(SortedBlock <?> sb) {
     return sb.getDataAndPointersBytes() > (sb.storageCapacity() / 2) ? true
             : false;
   }
@@ -341,11 +343,11 @@ public class OptimizedBPlusHelper<K extends ByteComparable,V extends ByteStorabl
    * @return the node (i.e block number) to the left child or -1 if there are no
    *         left child.
    */
-  public static int getPreviousNeighbor(int search, SortedBlock sb) {
+  public int getPreviousNeighbor(int search, SortedBlock <BTreeKey <K>> sb) {
     int pos = getPreviousPos(search);
     if (pos == -1)
       return -1;
-    return ((BTreeKey) sb.getKey(pos)).leftNode;
+    return sb.getKey(pos).get().leftNode;
   }
 
   /**
@@ -355,7 +357,7 @@ public class OptimizedBPlusHelper<K extends ByteComparable,V extends ByteStorabl
    *          a search for a key
    * @return position
    */
-  public static int getPreviousPos(int search) {
+  public int getPreviousPos(int search) {
     int pos = getPos(search);
     return pos - 1;
   }
@@ -367,7 +369,7 @@ public class OptimizedBPlusHelper<K extends ByteComparable,V extends ByteStorabl
    *          a search for a key
    * @return position
    */
-  public static int getNextPos(int search) {
+  public int getNextPos(int search) {
     int pos = getPos(search);
     return pos + 1;
   }
@@ -381,13 +383,13 @@ public class OptimizedBPlusHelper<K extends ByteComparable,V extends ByteStorabl
    *          the sorted block where to find the neighbor.
    * @return the node (i.e block number) to the right neighbor.
    */
-  public static int getNextNeighbor(int search, SortedBlock sb) {
+  public int getNextNeighbor(int search, SortedBlock <BTreeKey <K>> sb) {
     int pos = getNextPos(search);
     if (pos > sb.getNumberOfElements())
       return -1;
     if (pos == sb.getNumberOfElements())
       return getLastPointer(sb);
-    return ((BTreeKey) sb.getKey(pos)).leftNode;
+    return sb.getKey(pos).get().leftNode;
   }
 
   /**
@@ -398,7 +400,7 @@ public class OptimizedBPlusHelper<K extends ByteComparable,V extends ByteStorabl
    *          a search for a key.
    * @return the position for the key just after the key searched for.
    */
-  public static int getPos(int search) {
+  public int getPos(int search) {
     if (search >= 0)
       return search + 1;
     else
@@ -416,19 +418,19 @@ public class OptimizedBPlusHelper<K extends ByteComparable,V extends ByteStorabl
    *          the block to search
    * @return node
    */
-  public static int getNode(int search, SortedBlock sb) {
+  public int getNode(int search, SortedBlock <BTreeKey <K>> sb) {
     int pos = getPos(search);
     if (pos == sb.getNumberOfElements())
       return getLastPointer(sb);
-    return ((BTreeKey) sb.getKey(pos)).leftNode;
+    return sb.getKey(pos).get().leftNode;
   }
 
 
-  public static void extractPointers(List<Integer> list, SortedBlock sb){
-    BTreeKey bKey;
+  public void extractPointers(List<Integer> list, SortedBlock <BTreeKey <K>> sb){
+    BTreeKey <K> bKey;
     for (int i = 0; i < sb.getNumberOfElements(); i++) {
-      bKey = (BTreeKey) sb.getKey(i);
-      list.add(bKey.leftNode);
+      bKey = sb.getKey(i);
+      list.add(bKey.get().leftNode);
       if (i + 1 == sb.getNumberOfElements())
         list.add(getLastPointer(sb));
     }
@@ -452,11 +454,11 @@ public class OptimizedBPlusHelper<K extends ByteComparable,V extends ByteStorabl
   }
 
   public void printIndexBlocks(StringBuilder sb) throws IOException{
-    Iterator<Record> iter = tree.splitFile.mappedIterator();
+    Iterator<Record> iter = tree.splitFile.iteratorRegion();
     while(iter.hasNext()){
       int record = iter.next().record;
       sb.append("RECORD: "+record+'\n');
-      SortedBlock block = getIndexBlock(record);
+      SortedBlock <BTreeKey<K>> block = getIndexBlock(record);
       sb.append(block.toString()+'\n');
     }
   }
@@ -466,8 +468,8 @@ public class OptimizedBPlusHelper<K extends ByteComparable,V extends ByteStorabl
           throws IOException {
     if (pNo == -1) // no root
       return;
-    SortedBlock sb = getIndexBlock(pNo);
-    BTreeKey bKey;
+    SortedBlock <BTreeKey <K>> sb = getIndexBlock(pNo);
+    BTreeKey <K> bKey;
     preTab(level, buff);
     if (level == tree.leafLevel) { // final level
       if (printLeaf) {
@@ -480,8 +482,8 @@ public class OptimizedBPlusHelper<K extends ByteComparable,V extends ByteStorabl
       buff.append("rightMostPointer: " + getLastPointer(sb) + "\n");
       buff.append(sb);
       for (int i = 0; i < sb.getNumberOfElements(); i++) {
-        bKey = (BTreeKey) sb.getKey(i);
-        buildOutputTree(bKey.leftNode, buff, level + 1, printLeaf);
+        bKey = sb.getKey(i);
+        buildOutputTree(bKey.get().leftNode, buff, level + 1, printLeaf);
         if (i + 1 == sb.getNumberOfElements())
           buildOutputTree(getLastPointer(sb), buff, level + 1, printLeaf);
       }
@@ -496,7 +498,7 @@ public class OptimizedBPlusHelper<K extends ByteComparable,V extends ByteStorabl
   public void printValueBlocks(StringBuilder sb) throws IOException{
     Iterator <Record> iter = tree.splitFile.iterator();
     while(iter.hasNext()){
-      SortedBlock block = getValueBlock(iter.next().record);
+      SortedBlock <KeyValue <K,V>> block = getValueBlock(iter.next().record);
       sb.append(block.toString()+'\n');
     }
   }
@@ -504,16 +506,16 @@ public class OptimizedBPlusHelper<K extends ByteComparable,V extends ByteStorabl
 
   //Logical iteration
   private boolean countValueBlock(int stopBlock, MapEntry<Integer, Integer> entry,
-                                  SortedBlock sb) throws IOException{
+                                  SortedBlock <BTreeKey <K>> sb) throws IOException{
     boolean foundStop = false;
-    BTreeKey bKey;
+    BTreeKey <K> bKey;
     for(int i = 0; i < sb.getNumberOfElements(); i++){
-      bKey = (BTreeKey) sb.getKey(i);
-      if(bKey.leftNode == stopBlock){
+      bKey = sb.getKey(i);
+      if(bKey.get().leftNode == stopBlock){
         foundStop = true;
         break;
       }
-      SortedBlock valBlock = getValueBlock(bKey.leftNode);
+      SortedBlock <KeyValue <K,V>>valBlock = getValueBlock(bKey.get().leftNode);
       entry.setValue(entry.getValue() + valBlock.getNumberOfElements());
       entry.setKey(entry.getKey()+1);
       if(i + 1 == sb.getNumberOfElements()){
@@ -522,7 +524,7 @@ public class OptimizedBPlusHelper<K extends ByteComparable,V extends ByteStorabl
           foundStop = true;
           break;
         }
-        valBlock = getValueBlock(bKey.leftNode);
+        valBlock = getValueBlock(bKey.get().leftNode);
         entry.setValue(entry.getValue() + valBlock.getNumberOfElements());
         entry.setKey(entry.getKey()+1);
       }
@@ -530,19 +532,19 @@ public class OptimizedBPlusHelper<K extends ByteComparable,V extends ByteStorabl
     return foundStop;
   }
 
-  private boolean count(int pNo, int level, int leafLevel, MapEntry result, int highBlock)
+  private boolean count(int pNo, int level, int leafLevel, MapEntry <Integer, Integer> result, int highBlock)
     throws IOException{
     if(leafLevel == -1) return true;
     if(pNo == -1) return true;
-    BTreeKey bKey;
-    SortedBlock sb = getIndexBlock(pNo);
+    BTreeKey <K> bKey;
+    SortedBlock <BTreeKey <K>> sb = getIndexBlock(pNo);
     if(level == leafLevel){
       return countValueBlock(highBlock, result, sb);
     }
     else {
       for (int i = 0; i < sb.getNumberOfElements(); i++) {
-        bKey = (BTreeKey) sb.getKey(i);
-        if(count(bKey.leftNode, level + 1, leafLevel, result, highBlock))
+        bKey = sb.getKey(i);
+        if(count(bKey.get().leftNode, level + 1, leafLevel, result, highBlock))
           return true;
 
         if (i + 1 == sb.getNumberOfElements())
@@ -554,14 +556,14 @@ public class OptimizedBPlusHelper<K extends ByteComparable,V extends ByteStorabl
 
   public Map.Entry <Integer, Integer> countSmaller(int pNo, int level,
                                                    int leafLevel, int stopBlock) throws IOException{
-    MapEntry <Integer, Integer> entry = new MapEntry(0,0);
+    MapEntry <Integer, Integer> entry = new MapEntry <> (0,0);
     count(pNo, level, leafLevel, entry, stopBlock);
     return entry;
   }
 
 
   public List <Integer> getLogicalBlocks(int rootPage, int leafLevel) throws IOException{
-    ArrayList<Integer> toRet = new ArrayList();
+    ArrayList<Integer> toRet = new ArrayList <> ();
     buildPointers(rootPage, toRet, 0, leafLevel);
     return toRet;
   }
@@ -576,15 +578,15 @@ public class OptimizedBPlusHelper<K extends ByteComparable,V extends ByteStorabl
     }
 
     if(pNo == -1) return;
-    BTreeKey bKey;
-    SortedBlock sb = getIndexBlock(pNo);
+    BTreeKey <K> bKey;
+    SortedBlock <BTreeKey <K>> sb = getIndexBlock(pNo);
     if(level == leafLevel){
-      OptimizedBPlusHelper.extractPointers(ptr, sb);
+      extractPointers(ptr, sb);
     }
     else{
       for (int i = 0; i < sb.getNumberOfElements(); i++) {
-        bKey = (BTreeKey) sb.getKey(i);
-        buildPointers(bKey.leftNode, ptr, level + 1, leafLevel);
+        bKey = sb.getKey(i);
+        buildPointers(bKey.get().leftNode, ptr, level + 1, leafLevel);
         if (i + 1 == sb.getNumberOfElements())
           buildPointers(getLastPointer(sb), ptr, level + 1, leafLevel);
       }

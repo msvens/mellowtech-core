@@ -13,7 +13,6 @@ import java.nio.ByteBuffer;
  */
 public class BBInputStream extends InputStream{
 
-  Integer reset;
   private final ByteBuffer bb;
   
   public BBInputStream(ByteBuffer bb){

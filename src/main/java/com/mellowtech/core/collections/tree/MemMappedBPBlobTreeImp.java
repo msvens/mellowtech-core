@@ -56,18 +56,21 @@ public class MemMappedBPBlobTreeImp<K extends ByteComparable, V extends ByteStor
   String fName;
 
 
-  public MemMappedBPBlobTreeImp(String fName, K keyType, V valueType) throws Exception {
-    tree = new MemMappedBPTreeImp<>(fName, keyType, new BlobPointer());
+  public MemMappedBPBlobTreeImp(String fName, K keyType, V valueType, boolean inMemory) throws Exception {
+    tree = new MemMappedBPTreeImp<>(fName, keyType, new BlobPointer(), inMemory);
     this.template = valueType;
     this.fName = fName;
+    @SuppressWarnings("resource")
     RandomAccessFile raf = new RandomAccessFile(fName+".blb", "rw");
     blobs = raf.getChannel();
   }
 
-  public MemMappedBPBlobTreeImp(String fName, K keyType, V valueType, int indexSize, int valueSize) throws IOException {
-    tree = new MemMappedBPTreeImp <> (fName, keyType, new BlobPointer(), indexSize, valueSize);
+  public MemMappedBPBlobTreeImp(String fName, K keyType, V valueType, int indexSize, int valueSize,
+      boolean inMemory, int maxBlocks) throws IOException {
+    tree = new MemMappedBPTreeImp <> (fName, keyType, new BlobPointer(), indexSize, valueSize, inMemory, maxBlocks);
     this.template = valueType;
     this.fName = fName;
+    @SuppressWarnings("resource")
     RandomAccessFile raf = new RandomAccessFile(fName+".blb", "rw");
     raf.setLength(0);
     blobs = raf.getChannel();

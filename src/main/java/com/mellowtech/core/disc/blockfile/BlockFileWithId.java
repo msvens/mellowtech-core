@@ -52,24 +52,24 @@ import com.mellowtech.core.util.Platform;
  * @author rickard.coster@asimus.se
  * @version 1.0
  */
-public class BlockFileWithId {
+public class BlockFileWithId <E> {
   protected int cacheSize;
-  protected CacheLRU <Integer, BlockWithId> cache;
+  protected CacheLRU <Integer, BlockWithId <E>> cache;
   protected ByteBuffer blockBuffer;
   protected FileChannel fc;
   protected final int blockSize;
   protected final String fileName;
   protected IOException exception = null;
   protected int highestBlockno = 0;
-  protected final ByteStorable template;
+  protected final ByteStorable <E> template;
 
-  public BlockFileWithId(String fileName, int blockSize, ByteStorable template)
+  public BlockFileWithId(String fileName, int blockSize, ByteStorable <E> template)
       throws IOException {
     this(fileName, blockSize, 10, template);
   }
 
   public BlockFileWithId(String fileName, int blockSize, int cacheSize,
-      ByteStorable template) throws IOException {
+      ByteStorable <E> template) throws IOException {
 
     this.fileName = fileName;
     this.cacheSize = cacheSize;
@@ -101,10 +101,10 @@ public class BlockFileWithId {
 
   public void flush() throws IOException {
     if(cache != null){
-      for (Iterator <Map.Entry<Integer,CacheValue <BlockWithId>>> iter = cache.iterator(); iter.hasNext();) {
-        Map.Entry <Integer, CacheValue<BlockWithId>> e = iter.next();
+      for (Iterator <Map.Entry<Integer,CacheValue <BlockWithId <E>>>> iter = cache.iterator(); iter.hasNext();) {
+        Map.Entry <Integer, CacheValue<BlockWithId <E>>> e = iter.next();
         Integer key = e.getKey();
-        CacheValue <BlockWithId> cv = e.getValue();
+        CacheValue <BlockWithId <E>> cv = e.getValue();
         if (cv.isDirty()) {
           writeToFile(key.intValue(), cv.getValue());
           cv.setDirty(false);
@@ -121,7 +121,7 @@ public class BlockFileWithId {
     return highestBlockno;
   }
 
-  public synchronized void write(int blockno, BlockWithId block) throws IOException {
+  public synchronized void write(int blockno, BlockWithId <E> block) throws IOException {
     if(cache != null){
       cache.put(blockno, block);
     }
@@ -132,20 +132,20 @@ public class BlockFileWithId {
       highestBlockno = blockno;
   }
 
-  public synchronized BlockWithId read(int blockno) throws IOException {
+  public synchronized BlockWithId <E> read(int blockno) throws IOException {
     if(cache != null){
       try{
-        BlockWithId block = cache.get(blockno);
+        BlockWithId <E> block = cache.get(blockno);
         return block;
       }
       catch(NoSuchValueException e){
         throw new IOException("could not find value");
       }
     }
-    return readFromFile(blockno, new BlockWithId(blockSize, template));
+    return readFromFile(blockno, new BlockWithId <E> (blockSize, template));
   }
 
-  protected synchronized void writeToFile(int blockno, BlockWithId block)
+  protected synchronized void writeToFile(int blockno, BlockWithId <E> block)
       throws IOException {
     fc.position(blockno * blockSize);
     blockBuffer.clear();
@@ -154,14 +154,13 @@ public class BlockFileWithId {
     fc.write(blockBuffer);
   }
 
-  protected synchronized BlockWithId readFromFile(int blockno, BlockWithId block)
+  protected synchronized BlockWithId <E> readFromFile(int blockno, BlockWithId <E> block)
       throws IOException {
     fc.position(blockno * blockSize);
     blockBuffer.clear();
-    int read = fc.read(blockBuffer);
+    fc.read(blockBuffer);
     blockBuffer.flip();
-    block = (BlockWithId) block.fromBytes(blockBuffer);
-    int byteSize = block.byteSize();
+    block = (BlockWithId<E>) block.fromBytes(blockBuffer);
     return block;
   }
 
@@ -170,7 +169,7 @@ public class BlockFileWithId {
     String sep = Platform.getLineSeparator();
     for (int b = 0; b <= highestBlockno; b++) {
       try {
-        BlockWithId block = read(b);
+        BlockWithId <E> block = read(b);
         sb.append("block " + b + " byteSize()= " + block.byteSize() + sep);
       }
       catch (Exception e) {
@@ -184,7 +183,7 @@ public class BlockFileWithId {
     BlockUtilization totalUtilization = new BlockUtilization();
     for (int b = 0; b <= highestBlockno; b++) {
       try {
-        BlockWithId block = read(b);
+        BlockWithId <E> block = read(b);
         BlockUtilization u = block.utilization();
         totalUtilization.add(u);
       }
@@ -199,7 +198,7 @@ public class BlockFileWithId {
     StringBuffer sb = new StringBuffer();
     for (int b = 0; b <= highestBlockno; b++) {
       try {
-        BlockWithId block = read(b);
+        BlockWithId <E> block = read(b);
         sb.append("block " + b + "\n" + block.toString() + "\n");
       }
       catch (Exception e) {
@@ -216,16 +215,16 @@ public class BlockFileWithId {
       return;
     }
 
-    Loader<Integer, BlockWithId> loader = new Loader<Integer, BlockWithId>() {
+    Loader<Integer, BlockWithId <E>> loader = new Loader<Integer, BlockWithId <E>>() {
       @Override
-      public BlockWithId get(Integer key) throws Exception {
-        return readFromFile(key, new BlockWithId(blockSize, template));
+      public BlockWithId <E> get(Integer key) throws Exception {
+        return readFromFile(key, new BlockWithId <E>(blockSize, template));
       }
     };
 
-    Remover<Integer, BlockWithId> remover = new Remover<Integer, BlockWithId>() {
+    Remover<Integer, BlockWithId <E>> remover = new Remover<Integer, BlockWithId <E>>() {
       @Override
-      public void remove(Integer key, CacheValue<BlockWithId> value) {
+      public void remove(Integer key, CacheValue<BlockWithId <E>> value) {
         try {
           writeToFile(key, value.getValue());
         } catch (IOException e) {
@@ -234,6 +233,6 @@ public class BlockFileWithId {
       }
     };
 
-    cache = new CacheLRU<Integer, BlockWithId> (remover, loader, cacheSize);
+    cache = new CacheLRU<Integer, BlockWithId <E>> (remover, loader, cacheSize);
   }
 }

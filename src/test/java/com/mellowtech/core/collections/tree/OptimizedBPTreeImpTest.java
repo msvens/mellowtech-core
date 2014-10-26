@@ -54,7 +54,7 @@ public class OptimizedBPTreeImpTest {
   public TestTree tt;
 
 
-  @Before
+  //@Before
   public void before() throws Exception {
     TestUtils.createTempDir(dir);
 
@@ -64,7 +64,7 @@ public class OptimizedBPTreeImpTest {
 
   }
 
-  @Test
+  //@Test
   public void doTest() throws Exception {
     tt.insert();
     tt.testContains();

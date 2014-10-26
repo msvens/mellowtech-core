@@ -37,7 +37,7 @@ import java.nio.ByteBuffer;
  * @author rickard.coster@asimus.se
  * @version 1.0
  */
-public class MemoryFit extends ByteStorable {
+public class MemoryFit extends ByteStorable <MemoryFit> {
 
   protected int[] ids;
   protected int[] bytearray;
@@ -238,7 +238,7 @@ public class MemoryFit extends ByteStorable {
     }
   }
 
-  public ByteStorable fromBytes(ByteBuffer bb) {
+  public ByteStorable <MemoryFit> fromBytes(ByteBuffer bb) {
     MemoryFit m = new MemoryFit();
     m.count = bb.getInt();
     m.ids = new int[m.count];
@@ -259,7 +259,7 @@ public class MemoryFit extends ByteStorable {
     return sb.toString();
   }
 
-  public ByteStorable fromBytes(ByteBuffer bb, boolean doNew) {
+  public ByteStorable <MemoryFit> fromBytes(ByteBuffer bb, boolean doNew) {
     return fromBytes(bb);
   }
 

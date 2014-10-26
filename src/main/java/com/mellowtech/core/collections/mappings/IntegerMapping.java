@@ -43,18 +43,18 @@ public class IntegerMapping implements BCMapping <Integer> {
   }
 
   @Override
-  public Integer fromByteComparable(ByteComparable bc) {
-    return ((CBInt) bc).get();
+  public Integer fromByteComparable(ByteComparable <Integer> bc) {
+    return bc.get();
   }
 
   @Override
-  public ByteComparable toByteComparable(Integer key) {
+  public ByteComparable <Integer> toByteComparable(Integer key) {
     return new CBInt(key);
   }
 
   @Override
-  public Integer fromByteStorable(ByteStorable bs) {
-    return ((CBInt) bs).get();
+  public Integer fromByteStorable(ByteStorable <Integer> bs) {
+    return bs.get();
   }
 
   @Override
@@ -63,12 +63,12 @@ public class IntegerMapping implements BCMapping <Integer> {
   }
 
   @Override
-  public ByteStorable toByteStorable(Integer value) {
+  public ByteStorable <Integer> toByteStorable(Integer value) {
     return new CBInt(value);
   }
 
   @Override
-  public ByteStorable getTemplate() {
+  public ByteComparable <Integer> getTemplate() {
     return new CBInt();
   }
 

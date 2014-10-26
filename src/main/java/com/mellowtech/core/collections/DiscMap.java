@@ -42,26 +42,26 @@ import java.util.NoSuchElementException;
 public interface DiscMap <K,V> extends Map<K,V> {
 
   /**
-   * persist the hmap
+   * persist the disc map
    * @throws IOException
    */
   public void save() throws IOException;
 
 
   /**
-   * Perform a compaction of this hmap
+   * Perform a compaction of this disc map
    * @throws IOException
    */
   public void compact() throws IOException, UnsupportedOperationException;
 
   /**
-   * Delete this hmap on disc
+   * Delete this disc map on disc
    * @throws IOException
    */
   public void delete() throws IOException;
 
   /**
-   * Iterate over the entries of this hmap...
+   * Iterate over the entries of this disc map...
    * @return
    */
   public Iterator <Entry <K,V>> iterator();

@@ -43,18 +43,18 @@ public class FloatMapping implements BCMapping <Float> {
   }
 
   @Override
-  public Float fromByteComparable(ByteComparable bc) {
-    return ((CBFloat) bc).get();
+  public Float fromByteComparable(ByteComparable <Float> bc) {
+    return bc.get();
   }
 
   @Override
-  public ByteComparable toByteComparable(Float key) {
+  public ByteComparable <Float> toByteComparable(Float key) {
     return new CBFloat(key);
   }
 
   @Override
-  public Float fromByteStorable(ByteStorable bs) {
-    return ((CBFloat) bs).get();
+  public Float fromByteStorable(ByteStorable <Float> bs) {
+    return bs.get();
   }
 
   @Override
@@ -63,12 +63,12 @@ public class FloatMapping implements BCMapping <Float> {
   }
 
   @Override
-  public ByteStorable toByteStorable(Float value) {
+  public ByteStorable <Float> toByteStorable(Float value) {
     return new CBFloat(value);
   }
 
   @Override
-  public ByteStorable getTemplate() {
+  public ByteComparable <Float> getTemplate() {
     return new CBFloat();
   }
 

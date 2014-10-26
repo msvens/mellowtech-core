@@ -34,7 +34,7 @@ import java.nio.ByteBuffer;
  * @author Martin Svensson
  * @version 1.0
  */
-public class CBChar extends ByteComparable <CBChar>{
+public class CBChar extends ByteComparable <Character>{
 
   /**
    * Value of this CBInt
@@ -61,9 +61,8 @@ public class CBChar extends ByteComparable <CBChar>{
 
   // ***********GET/SET**************
   @Override
-  public void set(Object value){
+  public void set(Character value){
     if(value == null) throw new ByteStorableException("null value not allowed");
-    if(!(value instanceof Character)) throw new ByteStorableException("not a Character");
     this.value = (char) value;
   }
 
@@ -107,12 +106,12 @@ public class CBChar extends ByteComparable <CBChar>{
    * return 4; }
    */
   @Override
-  public ByteStorable <CBChar> fromBytes(ByteBuffer bb) {
+  public ByteStorable <Character> fromBytes(ByteBuffer bb) {
     return fromBytes(bb, doNew);
   }
 
   @Override
-  public ByteStorable <CBChar> fromBytes(ByteBuffer bb, boolean doNew) {
+  public ByteStorable <Character> fromBytes(ByteBuffer bb, boolean doNew) {
     if (doNew)
       return new CBChar(bb.getChar());
     value = bb.getChar();
@@ -120,8 +119,8 @@ public class CBChar extends ByteComparable <CBChar>{
   }
 
   @Override
-  public int compareTo(CBChar other) {
-    return this.value - other.value;
+  public int compareTo(ByteStorable<Character> other) {
+    return this.value - other.get();
   }
 
   @Override

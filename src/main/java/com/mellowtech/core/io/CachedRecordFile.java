@@ -31,6 +31,8 @@ import com.mellowtech.core.CoreLog;
 import com.mellowtech.core.cache.*;
 
 import java.io.IOException;
+import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel.MapMode;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.logging.Level;
@@ -98,18 +100,18 @@ public class CachedRecordFile implements RecordFile {
   }
 
   @Override
-  public void reserve(int bytes) throws IOException {
-    //To change body of implemented methods use File | Settings | File Templates.
-  }
-
-  @Override
   public void setReserve(byte[] bytes) throws IOException {
-    //To change body of implemented methods use File | Settings | File Templates.
+    file.setReserve(bytes);
+  }
+  
+  @Override
+  public MappedByteBuffer mapReserve() throws IOException {
+    return file.mapReserve();
   }
 
   @Override
   public byte[] getReserve() throws IOException {
-    return new byte[0];  //To change body of implemented methods use File | Settings | File Templates.
+    return file.getReserve();
   }
 
   @Override

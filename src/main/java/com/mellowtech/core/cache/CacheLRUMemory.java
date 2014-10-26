@@ -37,11 +37,11 @@ import com.mellowtech.core.collections.mappings.BSMapping;
  *
  * @author Martin Svensson
  */
-public class CacheLRUMemory <K extends ByteStorable, V extends ByteStorable> extends CacheLRU <K, V> {
+public class CacheLRUMemory <K extends ByteStorable <?>, V extends ByteStorable <?>> extends CacheLRU <K, V> {
 
    private long memoryFootPrint;
-   private BSMapping keyMapping = null;
-   private BSMapping valueMapping = null;
+   //private BSMapping <?> keyMapping = null;
+   //private BSMapping <?> valueMapping = null;
 
 
   public CacheLRUMemory(Remover<K, V> remover, Loader<K, V> loader, long size,

@@ -59,6 +59,7 @@ public class BPBlobTreeImp <K extends ByteComparable, V extends ByteStorable>
     tree = new BPTreeImp<>(fName, keyType, new BlobPointer());
     this.template = valueType;
     this.fName = fName;
+    @SuppressWarnings("resource")
     RandomAccessFile raf = new RandomAccessFile(fName+".blb", "rw");
     blobs = raf.getChannel();
   }
@@ -67,6 +68,7 @@ public class BPBlobTreeImp <K extends ByteComparable, V extends ByteStorable>
     tree = new BPTreeImp <>(fName, keyType, new BlobPointer(), valueBlockSize, indexBlockSize);
     this.template = valueType;
     this.fName = fName;
+    @SuppressWarnings("resource")
     RandomAccessFile raf = new RandomAccessFile(fName+".blb", "rw");
     raf.setLength(0);
     blobs = raf.getChannel();

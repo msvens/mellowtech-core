@@ -40,22 +40,22 @@ import java.nio.ByteBuffer;
  * @author Martin Svensson
  */
 //START SNIPPET: c1-class
-public class Container1 extends ByteStorable {
+public class Container1 extends ByteStorable <Container1> {
 
   private CBInt f1 = new CBInt();
   private CBString f2 = new CBString();
 
   public Container1(){;}
 
-  public Container1(String field1, String field2){
+  public Container1(Integer field1, String field2){
     f1.set(field1);
     f2.set(field2);
   }
 
   @Override
-  public ByteStorable fromBytes(ByteBuffer bb, boolean doNew) {
+  public ByteStorable <Container1> fromBytes(ByteBuffer bb, boolean doNew) {
     Container1 toRet = doNew ? new Container1() : this;
-    int size = bb.getInt(); //read past size indicator
+    bb.getInt(); //read past size indicator
     toRet.f1.fromBytes(bb, false); //no need to create a new object
     toRet.f2.fromBytes(bb, false); //no need to create a new object
     return toRet;

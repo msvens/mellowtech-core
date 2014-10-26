@@ -29,6 +29,7 @@ package com.mellowtech.core.collections;
 import java.nio.ByteBuffer;
 
 import com.mellowtech.core.bytestorable.ByteStorable;
+import com.mellowtech.core.collections.PointerClassId.Pointer;
 
 
 
@@ -40,15 +41,25 @@ import com.mellowtech.core.bytestorable.ByteStorable;
  * @author rickard.coster@asimus.se
  * @see ObjectManager
  */
-public class PointerClassId extends ByteStorable {
-  int classId = -1;
-  int pointer = -1;
+public class PointerClassId extends ByteStorable <PointerClassId.Pointer>{
+
+  public class Pointer {
+    short classId = -1;
+    byte[] bytes;
+    
+    public String toString() {
+      return "classid=" + classId;
+    }
+  }
+  
+  private Pointer p;
 
   /**
    * Creates a new <code>PointerClassId</code> instance.
    * 
    */
   public PointerClassId() {
+    p = new Pointer();
   }
 
   /**
@@ -59,9 +70,10 @@ public class PointerClassId extends ByteStorable {
    * @param classid
    *          a pointer to an id corresponing to a class name
    */
-  public PointerClassId(int pointer, int classid) {
-    this.pointer = pointer;
-    this.classId = classid;
+  public PointerClassId(short classid, byte[] b) {
+    this();
+    this.p.bytes = b;
+    this.p.classId = classid;
   }
 
   /**
@@ -69,17 +81,8 @@ public class PointerClassId extends ByteStorable {
    * 
    * @return class identifier
    */
-  public int getClassId() {
-    return classId;
-  }
-
-  /**
-   * Get th pointer to a location of bytes.
-   * 
-   * @return the pointer
-   */
-  public int getPointer() {
-    return pointer;
+  public short getClassId() {
+    return p.classId;
   }
 
   /**
@@ -88,34 +91,48 @@ public class PointerClassId extends ByteStorable {
    * @param classId
    *          the class identifer
    */
-  public void setClassId(int classId) {
-    this.classId = classId;
-  }
-
-  public int byteSize() {
-    return 8;
-  }
-
-  public int byteSize(ByteBuffer bb) {
-    return 8;
-  }
-
-  public ByteStorable fromBytes(ByteBuffer bb) {
-    int ptr = bb.getInt();
-    int cid = bb.getInt();
-    return new PointerClassId(ptr, cid);
-  }
-
-  public ByteStorable fromBytes(ByteBuffer bb, boolean doNew) {
-    return fromBytes(bb);
-  }
-
-  public void toBytes(ByteBuffer bb) {
-    bb.putInt(pointer);
-    bb.putInt(classId);
+  public void setClassId(short classId) {
+    p.classId = classId;
   }
 
   public String toString() {
-    return "ptr=" + pointer + "\tclassid=" + classId;
+    return p.toString();
+  }
+  
+  @Override
+  public Pointer get() {
+    return p;
+  }
+
+  @Override
+  public void set(Pointer obj) {
+    p = obj;
+  }
+  
+  @Override
+  public int byteSize() {
+    return 4 + 2 + p.bytes.length;
+  }
+
+  @Override
+  public int byteSize(ByteBuffer bb) {
+    return ByteStorable.getSizeFour(bb);
+  }
+
+  @Override
+  public void toBytes(ByteBuffer bb) {
+    bb.putInt(byteSize());
+    bb.putShort(p.classId);
+    bb.put(p.bytes);
+  }
+
+  @Override
+  public ByteStorable <Pointer> fromBytes(ByteBuffer bb, boolean doNew) {
+    PointerClassId  toRet = doNew ? new PointerClassId() : this;
+    int size = bb.getInt(); //size
+    toRet.p.classId = bb.getShort();
+    toRet.p.bytes = new byte[size - 6];
+    bb.get(toRet.p.bytes);
+    return toRet;
   }
 }

@@ -39,7 +39,7 @@ import java.util.Set;
  *
  * @author Martin Svensson
  */
-public class CBMap <K,V> extends ByteStorable implements Map<K,V> {
+public class CBMap <K,V> extends ByteStorable <Map<K,V>> implements Map<K,V> {
 
   private Map<K,V> map;
 
@@ -49,8 +49,8 @@ public class CBMap <K,V> extends ByteStorable implements Map<K,V> {
   }
 
   @Override
-  public ByteStorable fromBytes(ByteBuffer bb, boolean doNew) {
-    CBMap toRet = doNew ? new CBMap() : this;
+  public ByteStorable <Map<K,V>> fromBytes(ByteBuffer bb, boolean doNew) {
+    CBMap <K,V> toRet = doNew ? new CBMap <K,V>() : this;
     toRet.clear();
     bb.getInt(); //past size;
     int elems = bb.getInt();
@@ -61,8 +61,8 @@ public class CBMap <K,V> extends ByteStorable implements Map<K,V> {
     if(keyType == null || valType == null)
       throw new ByteStorableException("Unrecognized types");
 
-    ByteStorable keyTemp = PrimitiveType.fromType(keyType);
-    ByteStorable valTemp = PrimitiveType.fromType(valType);
+    ByteStorable <K> keyTemp = PrimitiveType.fromType(keyType);
+    ByteStorable <V> valTemp = PrimitiveType.fromType(valType);
 
     for(int i = 0; i < elems; i++){
       K k = (K) keyTemp.fromBytes(bb).get();
@@ -83,7 +83,8 @@ public class CBMap <K,V> extends ByteStorable implements Map<K,V> {
     if(map.size() < 1)
       return;
 
-    ByteStorable keyTemp = null, valTemp = null;
+    ByteStorable <K> keyTemp = null;
+    ByteStorable <V> valTemp = null;
     byte keyType = 0, valType = 0;
 
     int pos = bb.position(); //we will later write in here:
@@ -122,7 +123,8 @@ public class CBMap <K,V> extends ByteStorable implements Map<K,V> {
     int size = 8 + 2; //size + elems + types
     if(map.size() < 1)
       return size;
-    ByteStorable keyTemp = null, valTemp = null;
+    ByteStorable <K> keyTemp = null;
+    ByteStorable <V> valTemp = null;
     byte keyType, valType;
 
     for(Map.Entry <K,V> entry : map.entrySet()){
@@ -160,8 +162,8 @@ public class CBMap <K,V> extends ByteStorable implements Map<K,V> {
   }
 
   @Override
-  public void set(Object map){
-    this.map = (Map <K,V>) map;
+  public void set(Map <K,V> map){
+    this.map = map;
   }
 
   @Override

@@ -43,18 +43,18 @@ public class CharacterMapping implements BCMapping <Character> {
   }
 
   @Override
-  public Character fromByteComparable(ByteComparable bc) {
-    return ((CBChar) bc).get();
+  public Character fromByteComparable(ByteComparable <Character> bc) {
+    return bc.get();
   }
 
   @Override
-  public ByteComparable toByteComparable(Character key) {
+  public ByteComparable <Character> toByteComparable(Character key) {
     return new CBChar(key);
   }
 
   @Override
-  public Character fromByteStorable(ByteStorable bs) {
-    return ((CBChar) bs).get();
+  public Character fromByteStorable(ByteStorable <Character> bs) {
+    return bs.get();
   }
 
   @Override
@@ -63,12 +63,12 @@ public class CharacterMapping implements BCMapping <Character> {
   }
 
   @Override
-  public ByteStorable toByteStorable(Character value) {
+  public ByteStorable <Character> toByteStorable(Character value) {
     return new CBChar(value);
   }
 
   @Override
-  public ByteStorable getTemplate() {
+  public ByteComparable <Character> getTemplate() {
     return new CBChar();
   }
 

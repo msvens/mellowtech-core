@@ -28,18 +28,14 @@ package com.mellowtech.core.disc.blockfile;
 
 import com.mellowtech.core.CoreLog;
 import com.mellowtech.core.bytestorable.ByteStorable;
-import com.mellowtech.core.bytestorable.CBString;
-import com.mellowtech.core.util.Platform;
 
+import java.io.FileOutputStream;
 import java.io.RandomAccessFile;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Scanner;
-import java.util.TreeMap;
+
 
 /**
  * Stores ByteStorable objects in a BlockFile, where each Block is of fixed
@@ -48,15 +44,16 @@ import java.util.TreeMap;
  * in memory at all times, and only written when close() is called.
  * 
  * @author rickard.coster@asimus.se
- * @version 1.0
+ * @author msvens@gmail.com
+ * @version 2.0 
  */
-public class ByteStorableBlockFile {
+public class ByteStorableBlockFile <E> {
 
-  protected BlockFileWithId blockFile;
+  protected BlockFileWithId <E> blockFile;
   protected MemoryFit memoryFit;
   protected String fileName;
   protected IOException exception = null;
-  protected ByteStorable template = null;
+  protected ByteStorable <E> template = null;
   protected int blockSize;
 
   /**
@@ -73,7 +70,7 @@ public class ByteStorableBlockFile {
    * @exception IOException
    *              if an error occurs
    */
-  public ByteStorableBlockFile(String fileName, ByteStorable template,
+  public ByteStorableBlockFile(String fileName, ByteStorable <E> template,
       int numBlocksToCache) throws IOException {
     this(fileName, 1024 * 64, template, numBlocksToCache);
   }
@@ -94,14 +91,14 @@ public class ByteStorableBlockFile {
    *              if an error occurs
    */
   public ByteStorableBlockFile(String fileName, int blockSize,
-      ByteStorable template, int numBlocksToCache) throws IOException {
+      ByteStorable <E> template, int numBlocksToCache) throws IOException {
 
     this.template = template;
     this.fileName = fileName;
     this.blockSize = blockSize;
 
     // open or create BlockFile
-    blockFile = new BlockFileWithId(fileName + ".blk", blockSize, numBlocksToCache,
+    blockFile = new BlockFileWithId <E> (fileName + ".blk", blockSize, numBlocksToCache,
         template);
 
     // check if memory fit file exists
@@ -120,7 +117,7 @@ public class ByteStorableBlockFile {
       memoryFit = new MemoryFit();
 
       // create first Block in BlockFile.
-      BlockWithId block = new BlockWithId(blockSize, template);
+      BlockWithId <E> block = new BlockWithId <E> (blockSize, template);
       blockFile.write(0, block);
 
       // store number of free bytes for Block 0 in memory fit.
@@ -128,23 +125,26 @@ public class ByteStorableBlockFile {
       memoryFit.set(0, bytes);
 
       // create empty memory fit file
-      FileChannel fc = new RandomAccessFile(fileName + ".mef", "rw")
+      file.createNewFile();
+      /*FileChannel fc = new RandomAccessFile(fileName + ".mef", "rw")
           .getChannel();
-      fc.close();
+      fc.close();*/
     }
     else {
       // memory fit file exists, read from it.
-      FileChannel fc = new RandomAccessFile(fileName + ".mef", "r")
-          .getChannel();
+      try(RandomAccessFile raf = new RandomAccessFile(fileName + ".mef", "r")){
+        FileChannel fc = raf.getChannel();
+        memoryFit = new MemoryFit();
+        ByteBuffer bb = ByteBuffer.allocate((int) fc.size());
 
-      memoryFit = new MemoryFit();
-      ByteBuffer bb = ByteBuffer.allocate((int) fc.size());
-
-      // read from memory fit file
-      fc.read(bb);
-      bb.flip();
-      memoryFit = (MemoryFit) memoryFit.fromBytes(bb);
-      fc.close();
+        // read from memory fit file
+        fc.read(bb);
+        bb.flip();
+        memoryFit = (MemoryFit) memoryFit.fromBytes(bb);
+      }
+      catch(IOException e){
+        throw e;
+      }
     }
   }
 
@@ -163,9 +163,13 @@ public class ByteStorableBlockFile {
    */
   public void flush() throws IOException {
     blockFile.flush();
-    FileChannel fc = new RandomAccessFile(fileName + ".mef", "rw").getChannel();
-    fc.write((ByteBuffer) memoryFit.toBytes().flip());
-    fc.close();
+    try(FileOutputStream fos = new FileOutputStream(fileName + ".mef")){
+      FileChannel fc = fos.getChannel();
+      fc.write((ByteBuffer) memoryFit.toBytes().flip());
+    }
+    catch(IOException e){
+      throw e;
+    }
   }
 
   /**
@@ -177,9 +181,13 @@ public class ByteStorableBlockFile {
    */
   public void close() throws IOException {
     blockFile.close();
-    FileChannel fc = new RandomAccessFile(fileName + ".mef", "rw").getChannel();
-    fc.write((ByteBuffer) memoryFit.toBytes().flip());
-    fc.close();
+    try(FileOutputStream fos = new FileOutputStream(fileName + ".mef")){
+      FileChannel fc = fos.getChannel();
+      fc.write((ByteBuffer) memoryFit.toBytes().flip());
+    }
+    catch(IOException e){
+      throw e;
+    }
   }
 
   /**
@@ -194,13 +202,13 @@ public class ByteStorableBlockFile {
    * @exception IOException
    *              if an error occurs
    */
-  public synchronized int write(int id, ByteStorable value) throws IOException {
+  public synchronized int write(int id, ByteStorable <E> value) throws IOException {
     int byteSize = value.byteSize();
     int blockno = memoryFit.firstFit(byteSize);
-    BlockWithId block = null;
+    BlockWithId <E> block = null;
     if (blockno < 0) {
       // create new Block
-      block = new BlockWithId(blockSize, template);
+      block = new BlockWithId <E> (blockSize, template);
       if (!block.insert(id, value)) {
         CoreLog.L().info("value to large to fit");
         return -1; // value did not fit in an empty Block.
@@ -239,10 +247,10 @@ public class ByteStorableBlockFile {
    * @exception IOException
    *              if an error occurs
    */
-  public synchronized int update(int blockno, int id, ByteStorable value)
+  public synchronized int update(int blockno, int id, ByteStorable <E> value)
       throws IOException {
 
-    BlockWithId block = blockFile.read(blockno);
+    BlockWithId <E> block = blockFile.read(blockno);
 
     if (block == null)
       throw new IOException("Blockno " + blockno + " is invalid."
@@ -278,17 +286,17 @@ public class ByteStorableBlockFile {
    * @exception IOException
    *              if an error occurs
    */
-  public synchronized ByteStorable delete(int blockno, int id)
+  public synchronized ByteStorable <E> delete(int blockno, int id)
       throws IOException {
 
-    BlockWithId block = blockFile.read(blockno);
+    BlockWithId <E> block = blockFile.read(blockno);
 
     if (block == null)
       throw new IOException("Blockno " + blockno + " is invalid."
           + "Highest Blockno in file is " + blockFile.highestBlockno());
 
     // delete object from block.
-    ByteStorable deletedObject = block.remove(id);
+    ByteStorable <E> deletedObject = block.remove(id);
 
     if (deletedObject != null) {
       // Object was found, write changed block
@@ -311,9 +319,9 @@ public class ByteStorableBlockFile {
    * @exception IOException
    *              if an error occurs
    */
-  public synchronized ByteStorable read(int blockno, int id) throws IOException {
-    BlockWithId block = blockFile.read(blockno);
-    ByteStorable value = block.get(id);
+  public synchronized ByteStorable <E> read(int blockno, int id) throws IOException {
+    BlockWithId <E> block = blockFile.read(blockno);
+    ByteStorable <E> value = block.get(id);
     return value;
   }
 }

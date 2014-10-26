@@ -59,7 +59,7 @@ public class DynamicFileTest {
     DelDir.d(testDir);
   }
 
-  @Test
+  //@Test
   public void test() throws Exception {
     int sizeMin = 64;
     int[] sizesMax = new int[]{/*128, 256, 512,*/ 1024, 2048, 4096, 8192, 16384};

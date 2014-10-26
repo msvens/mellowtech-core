@@ -36,7 +36,7 @@ import java.util.*;
  *
  * @author Martin Svensson
  */
-public class CBSortedMap<K,V> extends ByteStorable implements SortedMap<K,V> {
+public class CBSortedMap<K,V> extends ByteStorable <SortedMap <K,V>> implements SortedMap<K,V> {
 
   private SortedMap<K,V> map;
 
@@ -50,8 +50,8 @@ public class CBSortedMap<K,V> extends ByteStorable implements SortedMap<K,V> {
   }
 
   @Override
-  public ByteStorable fromBytes(ByteBuffer bb, boolean doNew) {
-    CBSortedMap toRet = doNew ? new CBSortedMap() : this;
+  public ByteStorable <SortedMap <K,V>> fromBytes(ByteBuffer bb, boolean doNew) {
+    CBSortedMap <K,V> toRet = doNew ? new CBSortedMap <K,V>() : this;
     toRet.clear();
     bb.getInt(); //past size;
     int elems = bb.getInt();
@@ -62,8 +62,8 @@ public class CBSortedMap<K,V> extends ByteStorable implements SortedMap<K,V> {
     if(keyType == null || valType == null)
       throw new ByteStorableException("Unrecognized types");
 
-    ByteStorable keyTemp = PrimitiveType.fromType(keyType);
-    ByteStorable valTemp = PrimitiveType.fromType(valType);
+    ByteStorable <K> keyTemp = PrimitiveType.fromType(keyType);
+    ByteStorable <V> valTemp = PrimitiveType.fromType(valType);
 
     for(int i = 0; i < elems; i++){
       K k = (K) keyTemp.fromBytes(bb).get();
@@ -84,7 +84,8 @@ public class CBSortedMap<K,V> extends ByteStorable implements SortedMap<K,V> {
     if(map.size() < 1)
       return;
 
-    ByteStorable keyTemp = null, valTemp = null;
+    ByteStorable <K> keyTemp = null;
+    ByteStorable <V> valTemp = null;
     byte keyType = 0, valType = 0;
 
     int pos = bb.position(); //we will later write in here:
@@ -123,7 +124,8 @@ public class CBSortedMap<K,V> extends ByteStorable implements SortedMap<K,V> {
     int size = 8 + 2; //size + elems + types
     if(map.size() < 1)
       return size;
-    ByteStorable keyTemp = null, valTemp = null;
+    ByteStorable <K> keyTemp = null;
+    ByteStorable <V> valTemp = null;
     byte keyType, valType;
 
     for(Entry <K,V> entry : map.entrySet()){
@@ -161,8 +163,8 @@ public class CBSortedMap<K,V> extends ByteStorable implements SortedMap<K,V> {
   }
 
   @Override
-  public void set(Object map){
-    this.map = (SortedMap <K,V>) map;
+  public void set(SortedMap <K,V> map){
+    this.map = map;
   }
 
   @Override
@@ -218,21 +220,21 @@ public class CBSortedMap<K,V> extends ByteStorable implements SortedMap<K,V> {
   @Override
   public SortedMap<K, V> subMap(K fromKey, K toKey) {
     SortedMap <K, V> sub = map.subMap(fromKey, toKey);
-    CBSortedMap <K,V> toRet = new CBSortedMap(sub);
+    CBSortedMap <K,V> toRet = new CBSortedMap <K,V>(sub);
     return toRet;
   }
 
   @Override
   public SortedMap<K, V> headMap(K toKey) {
     SortedMap <K, V> sub = map.headMap(toKey);
-    CBSortedMap <K,V> toRet = new CBSortedMap(sub);
+    CBSortedMap <K,V> toRet = new CBSortedMap <K,V>(sub);
     return toRet;
   }
 
   @Override
   public SortedMap<K, V> tailMap(K fromKey) {
     SortedMap <K, V> sub = map.tailMap(fromKey);
-    CBSortedMap <K,V> toRet = new CBSortedMap(sub);
+    CBSortedMap <K,V> toRet = new CBSortedMap <K,V>(sub);
     return toRet;
   }
 

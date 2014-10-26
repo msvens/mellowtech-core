@@ -34,10 +34,10 @@ import java.nio.ByteBuffer;
  * @author Martin Svensson
  * @version 1.0
  */
-public class CBDouble extends ByteComparable <CBDouble>{
+public class CBDouble extends ByteComparable <Double>{
 
 
-  private double value;
+  
 
   public CBDouble() {}
 
@@ -48,22 +48,15 @@ public class CBDouble extends ByteComparable <CBDouble>{
    *          the value
    */
   public CBDouble(double value) {
-    this.value = value;
+    this.obj = value;
   }
 
   // ***********GET/SET**************
   @Override
-  public void set(Object value){
+  public void set(Double value){
     if(value == null)
       throw new ByteStorableException("null values not exepted");
-    else if(!(value instanceof Double))
-      throw new ByteStorableException("Object is not Double");
-    this.value = (Double) value;
-  }
-
-  @Override
-  public Double get() {
-    return value;
+    this.obj = value;
   }
 
   @Override
@@ -72,7 +65,7 @@ public class CBDouble extends ByteComparable <CBDouble>{
   }
 
   public int hashCode() {
-    long bits = Double.doubleToLongBits(value);
+    long bits = Double.doubleToLongBits(obj);
     return (int) (bits ^ (bits >>> 32));
   }
 
@@ -88,25 +81,25 @@ public class CBDouble extends ByteComparable <CBDouble>{
 
   @Override
   public void toBytes(ByteBuffer bb) {
-    bb.putDouble(value);
+    bb.putDouble(obj);
   }
 
   @Override
-  public ByteStorable <CBDouble> fromBytes(ByteBuffer bb) {
+  public ByteStorable <Double> fromBytes(ByteBuffer bb) {
     return fromBytes(bb, doNew);
   }
 
   @Override
-  public ByteStorable <CBDouble> fromBytes(ByteBuffer bb, boolean doNew) {
+  public ByteStorable <Double> fromBytes(ByteBuffer bb, boolean doNew) {
     if (doNew)
       return new CBDouble(bb.getDouble());
-    value = bb.getDouble();
+    obj = bb.getDouble();
     return this;
   }
 
   @Override
-  public int compareTo(CBDouble other) {
-    return Double.compare(this.value, other.value);
+  public int compareTo(ByteStorable <Double> other) {
+    return Double.compare(obj, other.get());
   }
 
   @Override
@@ -118,7 +111,7 @@ public class CBDouble extends ByteComparable <CBDouble>{
 
   @Override
   public String toString() {
-    return "" + value;
+    return "" + obj;
   }
 
   @Override

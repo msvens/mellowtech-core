@@ -34,12 +34,12 @@ import com.mellowtech.core.bytestorable.ByteComparable;
  * @author Martin Svensson
  * @version 1.0
  */
-public class ByteHeap implements BufferHeap {
+public class ByteHeap <E> implements BufferHeap {
   private int heap[];
   private float inc;
   private int size;
   private byte[] bb;
-  private ByteComparable bc;
+  private ByteComparable <E> bc;
 
   /**
    * Create a new heap that uses a specified byte[] for comparing objects and a
@@ -52,7 +52,7 @@ public class ByteHeap implements BufferHeap {
    * @exception Exception
    *              if an error occurs
    */
-  public ByteHeap(byte[] bb, ByteComparable bc) throws Exception {
+  public ByteHeap(byte[] bb, ByteComparable <E> bc) throws Exception {
     this(100, 2.0f, bb, bc);
   }
 
@@ -69,7 +69,7 @@ public class ByteHeap implements BufferHeap {
    * @exception Exception
    *              if an error occurs
    */
-  public ByteHeap(int initSize, byte[] bb, ByteComparable bc) throws Exception {
+  public ByteHeap(int initSize, byte[] bb, ByteComparable <E> bc) throws Exception {
     this(initSize, 2.0f, bb, bc);
   }
 
@@ -90,7 +90,7 @@ public class ByteHeap implements BufferHeap {
    *              if an error occurs
    */
   public ByteHeap(int initSize, float incrementFactor, byte[] bb,
-      ByteComparable bc) throws Exception {
+      ByteComparable <E> bc) throws Exception {
 
     if (bb == null || bc == null)
       throw new Exception("The ByteBuffer and ByteComparable can not be null");
@@ -176,10 +176,10 @@ public class ByteHeap implements BufferHeap {
    * @exception Exception
    *              if an error occurs
    */
-  public static final ByteHeap heapify(int[] objs, byte[] bb, ByteComparable bc)
+  public static final ByteHeap <?> heapify(int[] objs, byte[] bb, ByteComparable <?> bc)
       throws Exception {
 
-    ByteHeap h = new ByteHeap(bb, bc);
+    ByteHeap <?> h = new ByteHeap <> (bb, bc);
     int N = objs.length;
     for (int k = N / 2; k > 0; k--) {
       bubbleDown(objs, k, N, bb, bc);
@@ -199,7 +199,7 @@ public class ByteHeap implements BufferHeap {
    * @param bc
    *          a byte comparator
    */
-  public static final void heapSort(int[] objs, byte[] bb, ByteComparable bc) {
+  public static final void heapSort(int[] objs, byte[] bb, ByteComparable <?> bc) {
     int N = objs.length;
     for (int k = N / 2; k > 0; k--) {
       bubbleDownReverse(objs, k, N, bb, bc);
@@ -228,7 +228,7 @@ public class ByteHeap implements BufferHeap {
   }
 
   private static final void bubbleDown(int[] objs, int node, int max,
-      byte[] bb, ByteComparable bc) {
+      byte[] bb, ByteComparable <?> bc) {
 
     int T = objs[node - 1];
     int half = max / 2;
@@ -250,7 +250,7 @@ public class ByteHeap implements BufferHeap {
   }
 
   private static final void bubbleDownReverse(int[] objs, int k, int N,
-      byte[] bb, ByteComparable bc) {
+      byte[] bb, ByteComparable <?> bc) {
     // int T = a[k - 1];
     int T = objs[k - 1];
     while (k <= N / 2) {

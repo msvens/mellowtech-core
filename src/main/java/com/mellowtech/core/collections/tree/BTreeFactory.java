@@ -45,66 +45,24 @@ public class BTreeFactory {
   public static final int DEFAULT_INDEX_BLOCK = 1024 * 2;
   public static final int DEFAULT_VALUE_BLOCK = 1024 * 4;
 
-  /**
-   * An Optimized Btree uses only one backing file to store
-   * the index and key/value blocks. The index is kept in a
-   * memory mapped buffer for fast access i.e. no need to do
-   * any caching of the index. The BlockSize is set to
-   * DEFAULT_INDEX_SIZE AND DEFAULT_VALUE_SIZE
-   * @param fName filname (without) extension
-   * @param keyType template for creating keys
-   * @param valueType template for creating values
-   * @return the newly created btree
-   * @throws IOException
-   */
-  public static BTree createOptimized(String fName, ByteComparable keyType, ByteStorable valueType) throws IOException {
+
+  /*@Deprecated
+  public static BTree<?,?> createOptimized(String fName, ByteComparable <?> keyType, ByteStorable <?> valueType) throws IOException {
     return createOptimized(fName, keyType, valueType, DEFAULT_INDEX_BLOCK, DEFAULT_VALUE_BLOCK);
   }
 
-  /**
-   * An Optimized Btree uses only one backing file to store
-   * the index and key/value blocks. The index is kept in a
-   * memory mapped buffer for fast access i.e. no need to do
-   * any caching of the index.
-   * @param fName filname (without) extension
-   * @param keyType template for creating keys
-   * @param valueType template for creating values
-   * @return the newly created btree
-   * @throws IOException
-   */
+  @Deprecated
   public static BTree createOptimized(String fName, ByteComparable keyType, ByteStorable valueType,
                                       int indexSize, int valueSize) throws IOException{
     return new OptimizedBPTreeImp(fName, keyType, valueType, indexSize, valueSize);
   }
 
-  /**
-   * An Optimized Btree uses only one backing file to store
-   * the index and key/value blocks. The index is kept in a
-   * memory mapped buffer for fast access i.e. no need to do
-   * any caching of the index.
-   * Opens an existing btree, if that fails creates a new one
-   * @param fName filname (without) extension
-   * @param keyType template for creating keys
-   * @param valueType template for creating values
-   * @return the newly created btree
-   * @throws IOException
-   */
+  @Deprecated
   public static BTree openOptimized(String fName, ByteComparable keyType, ByteStorable valueType) throws IOException {
     return openOptimized(fName, keyType, valueType, DEFAULT_INDEX_BLOCK, DEFAULT_VALUE_BLOCK);
   }
 
-  /**
-   * An Optimized Btree uses only one backing file to store
-   * the index and key/value blocks. The index is kept in a
-   * memory mapped buffer for fast access i.e. no need to do
-   * any caching of the index.
-   * Opens an existing btree, if that fails creates a new one
-   * @param fName filname (without) extension
-   * @param keyType template for creating keys
-   * @param valueType template for creating values
-   * @return the newly created btree
-   * @throws IOException
-   */
+  @Deprecated
   public static BTree openOptimized(String fName, ByteComparable keyType, ByteStorable valueType, int indexBlockSize,
                                     int valueBlockSize) throws IOException{
     //first try to open
@@ -116,67 +74,23 @@ public class BTreeFactory {
     return createOptimized(fName, keyType, valueType, indexBlockSize, valueBlockSize);
   }
 
-
-  /**
-   * An Optimized Btree uses only one backing file to store
-   * the index and key/value blocks. The index is kept in a
-   * memory mapped buffer for fast access i.e. no need to do
-   * any caching of the index. The BlockSize is set to
-   * DEFAULT_INDEX_SIZE AND DEFAULT_VALUE_SIZE
-   * @param fName filname (without) extension
-   * @param keyType template for creating keys
-   * @param valueType template for creating values
-   * @return the newly created btree
-   * @throws IOException
-   */
+  @Deprecated
   public static BTree createOptimizedBlob(String fName, ByteComparable keyType, ByteStorable valueType) throws IOException {
     return createOptimizedBlob(fName, keyType, valueType, DEFAULT_INDEX_BLOCK, DEFAULT_VALUE_BLOCK);
   }
 
-  /**
-   * An Optimized Btree uses only one backing file to store
-   * the index and key/value blocks. The index is kept in a
-   * memory mapped buffer for fast access i.e. no need to do
-   * any caching of the index.
-   * @param fName filname (without) extension
-   * @param keyType template for creating keys
-   * @param valueType template for creating values
-   * @return the newly created btree
-   * @throws IOException
-   */
+  @Deprecated
   public static BTree createOptimizedBlob(String fName, ByteComparable keyType, ByteStorable valueType,
                                       int indexSize, int valueSize) throws IOException{
     return new OptimizedBPBlobTreeImp(fName, keyType, valueType, indexSize, valueSize);
   }
 
-  /**
-   * An Optimized Btree uses only one backing file to store
-   * the index and key/value blocks. The index is kept in a
-   * memory mapped buffer for fast access i.e. no need to do
-   * any caching of the index.
-   * Opens an existing btree, if that fails creates a new one
-   * @param fName filname (without) extension
-   * @param keyType template for creating keys
-   * @param valueType template for creating values
-   * @return the newly created btree
-   * @throws IOException
-   */
+  @Deprecated
   public static BTree openOptimizedBlob(String fName, ByteComparable keyType, ByteStorable valueType) throws IOException {
     return openOptimizedBlob(fName, keyType, valueType, DEFAULT_INDEX_BLOCK, DEFAULT_VALUE_BLOCK);
   }
 
-  /**
-   * An Optimized Btree uses only one backing file to store
-   * the index and key/value blocks. The index is kept in a
-   * memory mapped buffer for fast access i.e. no need to do
-   * any caching of the index.
-   * Opens an existing btree, if that fails creates a new one
-   * @param fName filname (without) extension
-   * @param keyType template for creating keys
-   * @param valueType template for creating values
-   * @return the newly created btree
-   * @throws IOException
-   */
+  @Deprecated
   public static BTree openOptimizedBlob(String fName, ByteComparable keyType, ByteStorable valueType, int indexBlockSize,
                                     int valueBlockSize) throws IOException{
     //first try to open
@@ -187,80 +101,7 @@ public class BTreeFactory {
 
     return createOptimizedBlob(fName, keyType, valueType, indexBlockSize, valueBlockSize);
   }
-
-  //FROM HERE
-
-  /**
-   * An Optimized Btree uses only one backing file to store
-   * the index and key/value blocks. The index is kept in a
-   * memory mapped buffer for fast access i.e. no need to do
-   * any caching of the index. The BlockSize is set to
-   * DEFAULT_INDEX_SIZE AND DEFAULT_VALUE_SIZE
-   * @param fName filname (without) extension
-   * @param keyType template for creating keys
-   * @param valueType template for creating values
-   * @return the newly created btree
-   * @throws IOException
-   */
-  public static BTree createMemMapped(String fName, ByteComparable keyType, ByteStorable valueType) throws IOException {
-    return createMemMapped(fName, keyType, valueType, DEFAULT_INDEX_BLOCK, DEFAULT_VALUE_BLOCK);
-  }
-
-  /**
-   * An Optimized Btree uses only one backing file to store
-   * the index and key/value blocks. The index is kept in a
-   * memory mapped buffer for fast access i.e. no need to do
-   * any caching of the index.
-   * @param fName filname (without) extension
-   * @param keyType template for creating keys
-   * @param valueType template for creating values
-   * @return the newly created btree
-   * @throws IOException
-   */
-  public static BTree createMemMapped(String fName, ByteComparable keyType, ByteStorable valueType,
-                                      int indexSize, int valueSize) throws IOException{
-    return new MemMappedBPTreeImp(fName, keyType, valueType, indexSize, valueSize);
-  }
-
-  /**
-   * An Optimized Btree uses only one backing file to store
-   * the index and key/value blocks. The index is kept in a
-   * memory mapped buffer for fast access i.e. no need to do
-   * any caching of the index.
-   * Opens an existing btree, if that fails creates a new one
-   * @param fName filname (without) extension
-   * @param keyType template for creating keys
-   * @param valueType template for creating values
-   * @return the newly created btree
-   * @throws IOException
-   */
-  public static BTree openMemMapped(String fName, ByteComparable keyType, ByteStorable valueType) throws IOException {
-    return openMemMapped(fName, keyType, valueType, DEFAULT_INDEX_BLOCK, DEFAULT_VALUE_BLOCK);
-  }
-
-  /**
-   * An Optimized Btree uses only one backing file to store
-   * the index and key/value blocks. The index is kept in a
-   * memory mapped buffer for fast access i.e. no need to do
-   * any caching of the index.
-   * Opens an existing btree, if that fails creates a new one
-   * @param fName filname (without) extension
-   * @param keyType template for creating keys
-   * @param valueType template for creating values
-   * @return the newly created btree
-   * @throws IOException
-   */
-  public static BTree openMemMapped(String fName, ByteComparable keyType, ByteStorable valueType, int indexBlockSize,
-                                    int valueBlockSize) throws IOException{
-    //first try to open
-    try{
-      return new MemMappedBPTreeImp(fName, keyType, valueType);
-    }
-    catch(Exception e){CoreLog.L().log(Level.FINER, "", e);}
-
-    return createMemMapped(fName, keyType, valueType, indexBlockSize, valueBlockSize);
-  }
-
+  */
 
   /**
    * An Optimized Btree uses only one backing file to store
@@ -274,8 +115,9 @@ public class BTreeFactory {
    * @return the newly created btree
    * @throws IOException
    */
-  public static BTree createMemMappedBlob(String fName, ByteComparable keyType, ByteStorable valueType) throws IOException {
-    return createMemMappedBlob(fName, keyType, valueType, DEFAULT_INDEX_BLOCK, DEFAULT_VALUE_BLOCK);
+  public static <K extends ByteComparable, V extends ByteStorable> BTree <K,V> createMemMapped(String fName, K keyType, V valueType) throws IOException {
+    return createMemMapped(fName, keyType, valueType, DEFAULT_INDEX_BLOCK, DEFAULT_VALUE_BLOCK,
+        false, MemMappedBPTreeImp.DEFAULT_MAX_BLOCKS);
   }
 
   /**
@@ -286,51 +128,67 @@ public class BTreeFactory {
    * @param fName filname (without) extension
    * @param keyType template for creating keys
    * @param valueType template for creating values
+   * @param inMemory keep the entire btree in a memory mapped file
+   * @param maxBlocks max number of value blocks
    * @return the newly created btree
    * @throws IOException
    */
-  public static BTree createMemMappedBlob(String fName, ByteComparable keyType, ByteStorable valueType,
-                                          int indexSize, int valueSize) throws IOException{
-    return new MemMappedBPBlobTreeImp(fName, keyType, valueType, indexSize, valueSize);
+  public static <K extends ByteComparable, V extends ByteStorable> BTree <K,V> createMemMapped(String fName, K keyType, V valueType,
+                                      int indexSize, int valueSize, boolean inMemory, int maxBlocks) throws IOException{
+    return new MemMappedBPTreeImp(fName, keyType, valueType, indexSize, valueSize, inMemory, maxBlocks);
   }
 
-  /**
-   * An Optimized Btree uses only one backing file to store
-   * the index and key/value blocks. The index is kept in a
-   * memory mapped buffer for fast access i.e. no need to do
-   * any caching of the index.
-   * Opens an existing btree, if that fails creates a new one
-   * @param fName filname (without) extension
-   * @param keyType template for creating keys
-   * @param valueType template for creating values
-   * @return the newly created btree
-   * @throws IOException
-   */
-  public static BTree openMemMappedBlob(String fName, ByteComparable keyType, ByteStorable valueType) throws IOException {
-    return openMemMappedBlob(fName, keyType, valueType, DEFAULT_INDEX_BLOCK, DEFAULT_VALUE_BLOCK);
+
+  public static <K extends ByteComparable, V extends ByteStorable> BTree<K,V> openMemMapped(String fName, K keyType, V valueType) throws IOException {
+    return openMemMapped(fName, keyType, valueType, DEFAULT_INDEX_BLOCK, DEFAULT_VALUE_BLOCK, false,
+        MemMappedBPTreeImp.DEFAULT_MAX_BLOCKS);
+  }
+  
+  public static <K extends ByteComparable, V extends ByteStorable> BTree<K,V> openMemMapped(String fName, K keyType, V valueType, boolean inMemory) throws IOException {
+    return openMemMapped(fName, keyType, valueType, DEFAULT_INDEX_BLOCK, DEFAULT_VALUE_BLOCK, inMemory,
+        MemMappedBPTreeImp.DEFAULT_MAX_BLOCKS);
   }
 
-  /**
-   * An Optimized Btree uses only one backing file to store
-   * the index and key/value blocks. The index is kept in a
-   * memory mapped buffer for fast access i.e. no need to do
-   * any caching of the index.
-   * Opens an existing btree, if that fails creates a new one
-   * @param fName filname (without) extension
-   * @param keyType template for creating keys
-   * @param valueType template for creating values
-   * @return the newly created btree
-   * @throws IOException
-   */
-  public static BTree openMemMappedBlob(String fName, ByteComparable keyType, ByteStorable valueType, int indexBlockSize,
-                                        int valueBlockSize) throws IOException{
+  public static <K extends ByteComparable, V extends ByteStorable> BTree<K,V>  openMemMapped(String fName, K keyType, V valueType, int indexBlockSize,
+                                    int valueBlockSize, boolean inMemory, int maxBlocks) throws IOException{
     //first try to open
     try{
-      return new MemMappedBPBlobTreeImp(fName, keyType, valueType);
+      return new MemMappedBPTreeImp(fName, keyType, valueType, inMemory);
     }
     catch(Exception e){CoreLog.L().log(Level.FINER, "", e);}
 
-    return createMemMappedBlob(fName, keyType, valueType, indexBlockSize, valueBlockSize);
+    return createMemMapped(fName, keyType, valueType, indexBlockSize, valueBlockSize, inMemory, maxBlocks);
+  }
+
+  public static <K extends ByteComparable, V extends ByteStorable> BTree<K,V> createMemMappedBlob(String fName, K keyType, V valueType) throws IOException {
+    return createMemMappedBlob(fName, keyType, valueType, DEFAULT_INDEX_BLOCK, DEFAULT_VALUE_BLOCK,
+        false, MemMappedBPTreeImp.DEFAULT_MAX_BLOCKS);
+  }
+
+  public static <K extends ByteComparable, V extends ByteStorable> BTree<K,V> createMemMappedBlob(String fName, K keyType, V valueType,
+                                          int indexSize, int valueSize, boolean inMemory, int maxBlocks) throws IOException{
+    return new MemMappedBPBlobTreeImp(fName, keyType, valueType, indexSize, valueSize, inMemory, maxBlocks);
+  }
+
+  public static <K extends ByteComparable, V extends ByteStorable> BTree<K,V> openMemMappedBlob(String fName, K keyType, V valueType) throws IOException {
+    return openMemMappedBlob(fName, keyType, valueType, DEFAULT_INDEX_BLOCK, DEFAULT_VALUE_BLOCK, 
+        false, MemMappedBPTreeImp.DEFAULT_MAX_BLOCKS);
+  }
+  
+  public static <K extends ByteComparable, V extends ByteStorable> BTree<K,V> openMemMappedBlob(String fName, K keyType, V valueType, boolean inMemory) throws IOException {
+    return openMemMappedBlob(fName, keyType, valueType, DEFAULT_INDEX_BLOCK, DEFAULT_VALUE_BLOCK, 
+        inMemory, MemMappedBPTreeImp.DEFAULT_MAX_BLOCKS);
+  }
+
+  public static <K extends ByteComparable, V extends ByteStorable> BTree<K,V> openMemMappedBlob(String fName, K keyType, V valueType, int indexBlockSize,
+                                        int valueBlockSize, boolean inMemory, int maxBlocks) throws IOException{
+    //first try to open
+    try{
+      return new MemMappedBPBlobTreeImp(fName, keyType, valueType, inMemory);
+    }
+    catch(Exception e){CoreLog.L().log(Level.FINER, "", e);}
+
+    return createMemMappedBlob(fName, keyType, valueType, indexBlockSize, valueBlockSize, inMemory, maxBlocks);
   }
 
 }

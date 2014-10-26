@@ -33,16 +33,16 @@ package com.mellowtech.core.bytestorable;
  *
  * @author Martin Svensson
  */
-public class AutoContainer2 extends CBAuto{
+public class AutoContainer2 extends CBAuto <AutoContainer2>{
 
-  @BSField(index = 1) public byte b;
-  @BSField(index = 2) public short s;
-  @BSField(index = 3) public int i;
-  @BSField(index = 4) public long l;
-  @BSField(index = 5) public float f;
-  @BSField(index = 6) public double d;
-  @BSField(index = 7) public char c;
-  @BSField(index = 8) public boolean bo;
+  @BSField(1) public byte b;
+  @BSField(2) public short s;
+  @BSField(3) public int i;
+  @BSField(4) public long l;
+  @BSField(5) public float f;
+  @BSField(6) public double d;
+  @BSField(7) public char c;
+  @BSField(8) public boolean bo;
 
   public AutoContainer2(){
     super();

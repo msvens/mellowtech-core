@@ -27,13 +27,15 @@
 
 package com.mellowtech.core.collections;
 
-import com.mellowtech.core.bytestorable.ext.CBArrayList;
-import com.mellowtech.core.bytestorable.ext.CBBitSet;
+import com.mellowtech.core.bytestorable.CBBitSet;
 import com.mellowtech.core.bytestorable.CBInt;
+import com.mellowtech.core.bytestorable.CBList;
 import com.mellowtech.core.bytestorable.CBString;
 import com.mellowtech.core.util.DelDir;
 import com.mellowtech.core.util.Platform;
+
 import junit.framework.Assert;
+
 import org.junit.Test;
 
 import java.io.File;
@@ -53,24 +55,21 @@ public class ObjectManagerTest {
       Assert.assertFalse(f.exists());
       f.mkdir();
 
-      ObjectManager m = new ObjectManager(f.getAbsolutePath());
-      m.create(new CBString("5"), new CBString(new java.util.Date().toString()));
-      m.create(new CBString("6"), new CBInt(100));
-      m.create(new CBString("7"), new CBArrayList(new CBString()));
-      m.create(new CBString("8"), new CBBitSet());
+      ObjectManager m = new ObjectManager(f.getAbsolutePath(), true, false);
+      m.put("5", new CBString(new java.util.Date().toString()));
+      m.put("6", new CBInt(100));
+      m.put("7", new CBList <String>());
+      m.put("8", new CBBitSet());
 
-      CBString str = new CBString();
-      str.set("5");
-      Assert.assertEquals(m.get(str).getClass().getName(),
+
+      Assert.assertEquals(m.get("5").getClass().getName(),
               new CBString().getClass().getName());
-      str.set("6");
-      Assert.assertEquals(m.get(str).getClass().getName(),
+      
+      Assert.assertEquals(m.get("6").getClass().getName(),
               new CBInt().getClass().getName());
-      str.set("7");
-      Assert.assertEquals(m.get(str).getClass().getName(),
-              new CBArrayList().getClass().getName());
-      str.set("8");
-      Assert.assertEquals(m.get(str).getClass().getName(),
+      Assert.assertEquals(m.get("7").getClass().getName(),
+              new CBList <String> ().getClass().getName());
+      Assert.assertEquals(m.get("8").getClass().getName(),
               new CBBitSet().getClass().getName());
       m.save();
       m = null;

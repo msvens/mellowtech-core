@@ -34,9 +34,9 @@ import com.mellowtech.core.bytestorable.ByteComparable;
  */
 public interface BCMapping <K> extends BSMapping <K>{
 
-  
-  public ByteComparable toByteComparable(K key);
-  public K fromByteComparable(ByteComparable bc);
+  public ByteComparable <K> getTemplate();
+  public ByteComparable <K> toByteComparable(K key);
+  public K fromByteComparable(ByteComparable <K> bc);
 
 
   

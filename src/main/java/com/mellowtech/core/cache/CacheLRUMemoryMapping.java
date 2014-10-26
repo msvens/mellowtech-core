@@ -28,7 +28,6 @@
 package com.mellowtech.core.cache;
 
 import com.google.common.cache.*;
-import com.mellowtech.core.bytestorable.ByteStorable;
 import com.mellowtech.core.collections.mappings.BSMapping;
 
 /**
@@ -40,8 +39,8 @@ import com.mellowtech.core.collections.mappings.BSMapping;
 public class CacheLRUMemoryMapping <K,V> extends CacheLRU <K, V> {
 
    private long memoryFootPrint;
-   private BSMapping keyMapping = null;
-   private BSMapping valueMapping = null;
+   private BSMapping <K> keyMapping = null;
+   private BSMapping <V> valueMapping = null;
 
 
   public CacheLRUMemoryMapping(Remover<K, V> remover, Loader<K, V> loader, long size,

@@ -43,18 +43,18 @@ public class ByteMapping implements BCMapping <Byte> {
   }
 
   @Override
-  public Byte fromByteComparable(ByteComparable bc) {
-    return ((CBByte) bc).get();
+  public Byte fromByteComparable(ByteComparable <Byte> bc) {
+    return bc.get();
   }
 
   @Override
-  public ByteComparable toByteComparable(Byte key) {
+  public ByteComparable <Byte> toByteComparable(Byte key) {
     return new CBByte(key);
   }
 
   @Override
-  public Byte fromByteStorable(ByteStorable bs) {
-    return ((CBByte) bs).get();
+  public Byte fromByteStorable(ByteStorable <Byte> bs) {
+    return bs.get();
   }
 
   @Override
@@ -63,12 +63,12 @@ public class ByteMapping implements BCMapping <Byte> {
   }
 
   @Override
-  public ByteStorable toByteStorable(Byte value) {
+  public ByteStorable <Byte> toByteStorable(Byte value) {
     return new CBByte(value);
   }
 
   @Override
-  public ByteStorable getTemplate() {
+  public ByteComparable <Byte> getTemplate() {
     return new CBByte();
   }
 

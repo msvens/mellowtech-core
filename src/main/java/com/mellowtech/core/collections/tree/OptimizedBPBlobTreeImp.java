@@ -47,6 +47,7 @@ import java.util.logging.Level;
  *
  * @author Martin Svensson
  */
+@Deprecated
 public class OptimizedBPBlobTreeImp<K extends ByteComparable, V extends ByteStorable>
   implements BTree <K, V>{
 
@@ -60,6 +61,7 @@ public class OptimizedBPBlobTreeImp<K extends ByteComparable, V extends ByteStor
     tree = new OptimizedBPTreeImp<>(fName, keyType, new BlobPointer());
     this.template = valueType;
     this.fName = fName;
+    @SuppressWarnings("resource")
     RandomAccessFile raf = new RandomAccessFile(fName+".blb", "rw");
     blobs = raf.getChannel();
   }
@@ -68,6 +70,7 @@ public class OptimizedBPBlobTreeImp<K extends ByteComparable, V extends ByteStor
     tree = new OptimizedBPTreeImp <> (fName, keyType, new BlobPointer(), indexSize, valueSize);
     this.template = valueType;
     this.fName = fName;
+    @SuppressWarnings("resource")
     RandomAccessFile raf = new RandomAccessFile(fName+".blb", "rw");
     raf.setLength(0);
     blobs = raf.getChannel();

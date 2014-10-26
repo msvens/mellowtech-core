@@ -128,7 +128,7 @@ public class DiscBasedHashMap <K, V> implements DiscMap<K,V>{
   @Override
   public boolean containsKey(Object key){
     try{
-      ByteStorable bs = keyMapping.toByteStorable((K) key);
+      ByteStorable <K> bs = keyMapping.toByteStorable((K) key);
       return eht.containsKey(bs);
     }
     catch(Exception e){

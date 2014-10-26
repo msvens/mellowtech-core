@@ -26,21 +26,29 @@
  */
 package com.mellowtech.core.collections;
 
-import java.io.BufferedWriter;
-import java.io.FileWriter;
+import java.io.File;
 import java.io.IOException;
-import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.Map.Entry;
 import java.util.logging.Level;
 
 import com.mellowtech.core.CoreLog;
+import com.mellowtech.core.bytestorable.ByteComparable;
 import com.mellowtech.core.bytestorable.ByteStorable;
-import com.mellowtech.core.bytestorable.ext.CBArrayList;
+import com.mellowtech.core.bytestorable.ByteStorableException;
+import com.mellowtech.core.bytestorable.CBList;
+import com.mellowtech.core.bytestorable.io.StorableFile;
 import com.mellowtech.core.bytestorable.CBString;
-import com.mellowtech.core.collections.tree.BPlusTree;
-import com.mellowtech.core.collections.tree.TreePosition;
+import com.mellowtech.core.collections.tree.BTree;
+import com.mellowtech.core.collections.tree.BTreeFactory;
 import com.mellowtech.core.disc.MapEntry;
-import com.mellowtech.core.disc.SpanningBlockFile;
+
 
 
 
@@ -55,14 +63,26 @@ import com.mellowtech.core.disc.SpanningBlockFile;
  * class, the class must have an empty constructor.
  * 
  * @author rickard.coster@asimus.se
+ * @author msvens@gmail.com
  */
-public class ObjectManager {
-  private SpanningBlockFile mObjectFile;
-  private String mFileName;
-  protected BPlusTree mIndex;
-  private CBArrayList mClassIdList = new CBArrayList(new CBString());
-  private String mClassIdListName = new CBArrayList(new CBString()).getClass()
-      .getName();
+public class ObjectManager implements DiscMap <String, ByteStorable>{
+  
+ 
+  
+
+  
+  private BTree <CBString, PointerClassId> mIndex;
+  
+  private CBList <String> mClassIds;
+  
+  private final boolean inMemory;
+  
+  private final String mFileName;
+  
+  private final boolean mBlobs;
+  
+  private final HashMap <Short, ByteStorable> templates;
+
 
   /**
    * Creates a new <code>ObjectManager</code> instance.
@@ -72,121 +92,276 @@ public class ObjectManager {
    * @exception Exception
    *              if an error occurs
    */
-  public ObjectManager(String fileName) throws Exception {
-    mFileName = fileName;
+  public ObjectManager(String fileName, boolean inMemory, boolean blobs) throws Exception {
+    this.mFileName = fileName;
+    this.inMemory = inMemory;
+    this.mBlobs = blobs;
+    this.templates = new HashMap <> ();
     open();
   }
 
-  /**
-   * Return the list of unique class identifiers for each object in list.
-   * 
-   * @return a list of class identifiers
-   */
-  public CBArrayList getClassIdList() {
-    return mClassIdList;
-  }
 
-  /**
-   * Open a list of objects stored on disc. If the list was not found a new list
-   * is created.
-   * 
-   * @exception Exception
-   *              if an error occurs
-   */
-  protected void open() throws Exception {
-    boolean newSPF = false;
-    boolean newIDX = false;
+  @Override
+  public int size() {
     try {
-      mObjectFile = new SpanningBlockFile(mFileName);
-      // Read class id list object
-      openObjectClassIdList();
+      return mIndex.size();
+    } catch (IOException e) {
+      throw new ByteStorableException(e);
     }
-    catch (IOException e) {
-      newSPF = true;
-      mObjectFile = new SpanningBlockFile(512, mFileName);
-      // Create class id list object (will get zero as pointer)
-      int pointer = createObject(mClassIdList);
-    }
+  }
+
+
+
+  @Override
+  public boolean isEmpty() {
     try {
-      mIndex = new BPlusTree(mFileName);
-    }
-    catch (IOException e) {
-      newIDX = true;
-      mIndex = new BPlusTree(mFileName, new CBString(), new PointerClassId(),
-          2048, 1024);
-    }
-    if (!newSPF && !newIDX) {
-      CoreLog.L().log(Level.FINE, "opened "+ mFileName);
-    }
-    else if (newSPF && newIDX) {
-      CoreLog.L().log(Level.FINE, "created " + mFileName);
-    }
-    else {
-      StringBuilder sb = new StringBuilder();
-      // some files are missing. notify this.
-      sb.append("Some files were missing when opening: ");
-      sb.append(mFileName);
-      sb.append(" SPF opened = " + !newSPF);
-      sb.append(" IDX opened = " + !newIDX);
-      sb.append(" One could be opened, the other could not");
-      sb.append(" (and was therefore created)");
-      CoreLog.L().warning(sb.toString());
+      return mIndex.isEmpty();
+    } catch (IOException e) {
+      throw new ByteStorableException(e);
     }
   }
 
-  /**
-   * Save a list of objects to disc and then reopen it.
-   * 
-   * @exception Exception
-   *              if an error occurs
-   */
-  public void save() throws Exception {
-    saveObjectClassIdList();
-    if (mObjectFile != null)
-      mObjectFile.closeFile();
-    if (mIndex != null)
-      mIndex.saveTree();
-    open();
+
+
+  @Override
+  public boolean containsKey(Object key) {
+    try {
+      return mIndex.containsKey((CBString)key);
+    } catch (IOException e) {
+      throw new ByteStorableException(e);
+    }
   }
 
-  /**
-   * Retrive an objects position in the list of object, i.e the bplus tree.
-   * 
-   * @param object
-   *          the object to search for
-   * @return a the objects position in the tree
-   * @exception Exception
-   *              if an error occurs
-   */
-  public TreePosition getPosition(ByteStorable object) throws Exception {
-    return mIndex.getPosition(object);
+
+
+  @Override
+  public boolean containsValue(Object value) {
+    return false;
   }
 
-  public CBString getKeyAtPostion(int pos) throws Exception {
-    return (CBString) mIndex.getKeyAtPosition(pos);
+
+
+  @Override
+  public ByteStorable get(Object key) {
+    PointerClassId id;
+    try {
+      id = mIndex.get(new CBString((String)key));
+      return id != null ? getObject(id) : null;
+    } catch (IOException e) {
+      CoreLog.L().log(Level.WARNING, "", e);
+    }
+    return null;
   }
 
-  public int getNumberOfKeys() throws Exception {
-    return mIndex.getNumberOfElements();
+
+
+  @Override
+  public ByteStorable put(String key, ByteStorable value) {
+    ByteStorable prev = get(key);
+    try{
+      short id = this.getTemplateId(value);
+      byte[] b = value.toBytes().array();
+      PointerClassId pci = new PointerClassId(id, b);
+      mIndex.put(new CBString(key), pci);
+    }
+    catch(Exception e){
+      CoreLog.L().log(Level.WARNING, "", e);
+    }
+    return prev;
+    
   }
 
-  /**
-   * Get the class id associated with an object.
-   * 
-   * @param object
-   *          the object to search for
-   * @return the unique class identifer
-   */
-  protected int getObjectClassId(ByteStorable object) {
-    int id = 0;
-    CBString className = new CBString(object.getClass().getName());
-    for (ByteStorable byteStorable : mClassIdList.getArrayList()) {
-      CBString cn = (CBString) byteStorable;
-      if (cn.compareTo(className) == 0)
-        return id;
+
+
+  @Override
+  public ByteStorable remove(Object key) {
+    try{
+      PointerClassId pci = mIndex.remove((CBString) key);
+      if(pci == null)
+        return null;
+      return getObject(pci);
+    }
+    catch(Exception e){
+      CoreLog.L().log(Level.WARNING, "", e);
+    }
+    return null;
+  }
+
+
+
+  @Override
+  public void putAll(Map<? extends String, ? extends ByteStorable> m) {
+    for(Map.Entry<? extends String, ? extends ByteStorable> entry : m.entrySet()){
+      put(entry.getKey(), entry.getValue());
+    }
+    
+  }
+
+
+
+  @Override
+  public void clear() { 
+    
+  }
+
+
+
+  @Override
+  public Set<String> keySet() {
+    TreeSet <String> ts = new TreeSet <> ();
+    for(Iterator <KeyValue <CBString, PointerClassId>> iter = mIndex.iterator(); iter.hasNext();){
+      ts.add(iter.next().getKey().get());
+    }
+    return ts;
+  }
+
+
+
+  @Override
+  public Collection<ByteStorable> values() {
+    ArrayList <ByteStorable> al = new ArrayList <> ();
+    KeyValue <CBString, PointerClassId> kv;
+    for(Iterator <KeyValue <CBString, PointerClassId>>iter = mIndex.iterator(); iter.hasNext();){
+      kv = iter.next();
+      al.add(getObject(kv.getValue()));
+    }
+    return al; 
+  }
+
+
+
+  @Override
+  public Set<java.util.Map.Entry<String, ByteStorable>> entrySet() {
+    Set <Map.Entry<String, ByteStorable>> toRet = new TreeSet <> ();
+    for(Iterator <KeyValue <CBString, PointerClassId>> iter = mIndex.iterator(); iter.hasNext();){
+      KeyValue <CBString, PointerClassId> keyValue = iter.next();
+      toRet.add(new MapEntry <String, ByteStorable>(keyValue.getKey().get(), getObject(keyValue.getValue())));
+    }
+    return toRet;
+  }
+
+
+
+  @Override
+  public void save() throws IOException {
+    this.mIndex.save();
+    try {
+      this.saveClassIds();
+    } catch (Exception e) {
+      throw new IOException(e);
+    }
+    
+  }
+
+
+
+  @Override
+  public void compact() throws IOException, UnsupportedOperationException {
+    throw new UnsupportedOperationException();
+    
+  }
+
+
+
+  @Override
+  public void delete() throws IOException {
+    this.mIndex.delete();
+    File f = new File(mFileName+".classIds");
+    f.delete();
+    this.mClassIds.clear();
+    this.templates.clear();
+  }
+
+
+
+  @Override
+  public Iterator<java.util.Map.Entry<String, ByteStorable>> iterator() {
+    return new ObjectManagerIterator();
+  }
+
+
+
+  @Override
+  public Iterator<java.util.Map.Entry<String, ByteStorable>> iterator(String key)
+      throws UnsupportedOperationException {
+    return new ObjectManagerIterator(key);
+  }
+  
+  class ObjectManagerIterator implements Iterator<Entry<String, ByteStorable>>{
+
+    Iterator <KeyValue<CBString, PointerClassId>> iter;
+
+    public ObjectManagerIterator(){
+      iter = mIndex.iterator();
+    }
+
+    public ObjectManagerIterator(String key){
+      iter = mIndex.iterator(new CBString(key));
+    }
+
+
+    @Override
+    public boolean hasNext() {
+      return iter.hasNext();
+    }
+
+    @Override
+    public Entry<String, ByteStorable> next() {
+      KeyValue <CBString, PointerClassId> next = iter.next();
+      if(next == null) return null;
+      MapEntry <String,ByteStorable> entry = new MapEntry<>();
+      entry.setKey(next.getKey().get());
+      if(next.getValue() != null)
+        entry.setValue(getObject(next.getValue()));
+      return entry;
+    }
+
+    @Override
+    public void remove() {
+      throw new UnsupportedOperationException();
+    }
+  }
+  
+  //open and save:
+  private ByteStorable getObject(PointerClassId id){
+    try{
+      return getTemplate(id.getClassId()).fromBytes(id.get().bytes, 0);
+    }
+    catch(Exception e){
+      throw new ByteStorableException(e);
+    }
+  }
+  
+  private short getTemplateId(ByteStorable obj){
+    String name = obj.getClass().getName();
+    short id = 0;
+    for(String cls : mClassIds){
+      if(cls.equals(name)) return id;
       id++;
     }
-    return -1;
+    //add and save
+    mClassIds.add(name);
+    try {
+      this.saveClassIds();
+    } catch (Exception e) {
+      throw new ByteStorableException(e);
+    }
+    return id;
+  }
+  
+  private ByteStorable getTemplate(short id) throws Exception{
+    ByteStorable toRet = templates.get(id);
+    if(toRet == null){
+      toRet = (ByteStorable) Class.forName(this.mClassIds.get(id)).newInstance();
+      templates.put(id, toRet);
+    }
+    return toRet;
+  }
+  
+  
+  private void open() throws Exception {
+    this.mIndex = BTreeFactory.openMemMappedBlob(mFileName, new CBString(), new PointerClassId(), inMemory);
+    openClassIds();
   }
 
   /**
@@ -195,8 +370,8 @@ public class ObjectManager {
    * @exception Exception
    *              if an error occurs
    */
-  protected void saveObjectClassIdList() throws Exception {
-    writeObject(mClassIdList, 0);
+  private void saveClassIds() throws Exception {
+    StorableFile.writeFileAsByteStorable(mFileName+".classIds", mClassIds);
   }
 
   /**
@@ -205,372 +380,13 @@ public class ObjectManager {
    * @exception Exception
    *              if an error occurs
    */
-  protected void openObjectClassIdList() throws Exception {
-    mClassIdList = new CBArrayList(new CBString());
-    mClassIdList = (CBArrayList) getObject(0, mClassIdListName);
-  }
-
-  /**
-   * Store the class name for an object and return its id.
-   * 
-   * @param object
-   *          the objects class to store
-   * @return the unique identifer
-   * @exception Exception
-   *              if an error occurs
-   */
-  protected int putObjectClass(ByteStorable object) throws Exception {
-    mClassIdList.getArrayList().add(new CBString(object.getClass().getName()));
-    saveObjectClassIdList();
-    return mClassIdList.getArrayList().size() - 1;
-  }
-
-  /**
-   * Get the class name corresponding to a given identifer.
-   * 
-   * @param id
-   *          class identifer
-   * @return class name
-   */
-  protected String getObjectClass(int id) {
-    return ((CBString) mClassIdList.getArrayList().get(id)).toString();
-  }
-
-  /**
-   * Create and store a key/object pair in the index. The object's class name
-   * (if needed) is stored in the list of class names/ids and then the id is
-   * attatched to the object and stored in the tree.
-   * 
-   * @param key
-   *          the key
-   * @param object
-   *          the object to store
-   * @return false if the key was already present, true otherwise.
-   * @exception Exception
-   *              if an error occurs
-   */
-  public boolean create(CBString key, ByteStorable object) throws Exception {
-    if (mIndex.search(key) != null)
-      return false;
-    int pointer = createObject(object);
-    int classId = getObjectClassId(object);
-    if (classId < 0)
-      classId = putObjectClass(object);
-    PointerClassId cp = new PointerClassId(pointer, classId);
-    mIndex.insert(key, cp, false);
-    return true;
-  }
-
-  /**
-   * Delete a key/value from this tree.
-   * 
-   * @param key
-   *          the key to delete.
-   * @return the object.
-   * @exception Exception
-   *              if an error occurs
-   */
-  public ByteStorable delete(CBString key) throws Exception {
-    PointerClassId cp = (PointerClassId) mIndex.delete(key);
-    ByteStorable bs = null;
-    if (cp != null) {
-      bs = getObject(cp.getPointer(), getObjectClass(cp.getClassId()));
-      deleteObject(cp.getPointer());
-    }
-    return bs;
-  }
-
-  /**
-   * Get an object from the tree.
-   * 
-   * @param key
-   *          the key to search for
-   * @return the value
-   * @exception Exception
-   *              if an error occurs
-   */
-  public ByteStorable get(CBString key) throws Exception {
-    PointerClassId cp = (PointerClassId) mIndex.search(key);
-    if (cp != null)
-      return getObject(cp.getPointer(), getObjectClass(cp.getClassId()));
-    return null;
-  }
-
-  /**
-   * (Re)save an object in this tree.
-   * 
-   * @param key
-   *          the key for the object
-   * @param object
-   *          the object to be (re)saved
-   * @return false if the key was not in the tree, true otherwise
-   * @exception Exception
-   *              if an error occurs
-   */
-  public boolean save(CBString key, ByteStorable object) throws Exception {
-    PointerClassId cp = (PointerClassId) mIndex.search(key);
-    if (cp != null) {
-      int classId = getObjectClassId(object);
-      if (classId < 0)
-        classId = putObjectClass(object);
-      cp.setClassId(classId);
-      mIndex.insert(key, cp, true);
-      writeObject(object, cp.getPointer());
-      return true;
-    }
-    return false;
-  }
-
-  /**
-   * Check if this tree contains a given key.
-   * 
-   * @param key
-   *          the key to search for
-   * @return true if the key was found, false otherwise
-   */
-  public boolean contains(CBString key) {
-    try {
-      return mIndex.search(key) != null ? true : false;
-    }
-    catch (Exception e) {
-      return false;
+  private void openClassIds() throws Exception {
+    this.mClassIds = StorableFile.readFileAsByteStorable(mFileName+".classIds", new CBList <String> ());
+    if(this.mClassIds == null){
+      this.mClassIds = new CBList <> ();
     }
   }
 
-  /**
-   * Get an iterator of <code>MapEntry</code> objects, with a
-   * <code>CBString</code>) as key and a <code>PointerClassId</code> object
-   * as value.
-   * <p>
-   * 
-   * @return an <code>Iterator</code> of <code>MapEntry</code> objects.
-   * 
-   * @see com.mellowtech.core.collections.PointerClassId
-   */
-  public Iterator<MapEntry> iterator() {
-    return new ObjectIndexIterator(this);
-  }
 
-  /**
-   * Get an iterator of <code>MapEntry</code> objects, with a
-   * <code>CBString</code> as key and the <code>ByteStorable</code> object
-   * as value.
-   * <p>
-   * 
-   * @return an <code>Iterator</code> of <code>MapEntry</code> objects.
-   */
-  public Iterator<MapEntry> keyValueIterator() {
-    return new ObjectIterator(this);
-  }
-  
-  /**
-   * Get an iterator of <code>MapEntry</code> objects, with a
-   * <code>CBString</code>  as key and the <code>ByteStorable</code> object
-   * as value, starting at 'startingKey"
-   * <p>
-   * 
-   * @param startingKey the starting key
-   * @return an <code>Iterator</code> of <code>MapEntry</code> objects.
-   */
-  public Iterator<MapEntry> keyValueIterator(CBString startingKey) {
-	  return new ObjectIterator(this, startingKey);
-  }
-    
-
-  /**
-   * Print the bplus tree index structure.
-   * 
-   * @return a string representation of the blus tree
-   */
-  public String printTree() {
-    return (mIndex != null) ? mIndex.toString() : "tree is empty";
-  }
-
-  public String toString() {
-    try {
-      StringBuffer sb = new StringBuffer();
-      if (mIndex == null) {
-        sb.append("No index open");
-        return sb.toString();
-      }
-      sb.append("\n******* ObjectManager contents **************\n");
-      KeyValue kv;
-      for (Iterator it = mIndex.iterator(); it.hasNext();) {
-        kv = (KeyValue) it.next();
-        sb.append("key   :" + kv.getKey() + "\n");
-        sb.append("value :" + kv.getValue());
-        sb.append("\n\n");
-      }
-      return sb.toString();
-    }
-    catch (Exception e) {
-      CoreLog.L().log(Level.WARNING, "", e);
-      return null;
-    }
-  }
-
-  /**
-   * Write the index tree's block count information to two text files
-   * (.btree.txt and .count.txt), for debugging and inspection purposes.
-   * 
-   * @param fileNamePrefix
-   *          the file name
-   */
-  public void writeBlockCounts(String fileNamePrefix) {
-    try {
-      PrintWriter pw = new PrintWriter(new BufferedWriter(new FileWriter(
-          fileNamePrefix + ".btree.txt")));
-      mIndex.printValueFileCount(pw);
-      pw.close();
-    }
-    catch (IOException e) {
-      CoreLog.L().log(Level.WARNING, "", e);
-    }
-    try {
-      PrintWriter pw = new PrintWriter(new BufferedWriter(new FileWriter(
-          fileNamePrefix + ".count.txt")));
-      mIndex.printBlockCountFile(pw);
-      pw.close();
-    }
-    catch (IOException e) {
-      CoreLog.L().log(Level.WARNING, "", e);
-    }
-  }
-
-  class ObjectIndexIterator implements Iterator<MapEntry> {
-    Iterator iterator;
-    MapEntry pe;
-
-    public ObjectIndexIterator(ObjectManager manager) {
-      iterator = manager.mIndex.iterator();
-      pe = new MapEntry();
-    }
-
-    public boolean hasNext() {
-      return iterator.hasNext();
-    }
-
-    public MapEntry next() {
-      KeyValue entry = (KeyValue) iterator.next();
-      pe.setKey(entry.getKey());
-      pe.setValue(entry.getValue());
-      return pe;
-    }
-
-    public void remove() throws UnsupportedOperationException {
-      throw new UnsupportedOperationException();
-    }
-  }
-
-  class ObjectIterator implements Iterator<MapEntry> {
-    Iterator iterator;
-    MapEntry pe;
-    ObjectManager manager;
-
-    public ObjectIterator(ObjectManager manager) {
-      this.manager = manager;
-      iterator = manager.mIndex.iterator();
-      pe = new MapEntry();
-    }
-
-    public ObjectIterator(ObjectManager manager, ByteStorable startingKey) {
-        this.manager = manager;
-        iterator = manager.mIndex.iterator(startingKey);
-        pe = new MapEntry();
-      }
-
-    public boolean hasNext() {
-      return iterator.hasNext();
-    }
-
-    public MapEntry next() {
-      KeyValue entry = (KeyValue) iterator.next();
-      pe.setKey(entry.getKey());
-      PointerClassId pi = (PointerClassId) entry.getValue();
-      try {
-        pe.setValue(manager.getObject(pi.getPointer(), manager
-            .getObjectClass(pi.getClassId())));
-      }
-      catch (Exception e) {
-       CoreLog.L().log(Level.WARNING, "", e);
-      }
-      return pe;
-    }
-
-    public void remove() throws UnsupportedOperationException {
-      throw new UnsupportedOperationException();
-    }
-  }
-
-  /**
-   * Stores an object in a SpanningBlockFile and resturns a pointer to its
-   * location.
-   * <p>
-   * This method is used only once for an object to get a new pointer. For
-   * updates of the object use writeObject
-   * 
-   * @param bsObject
-   *          the object to store
-   * @return the location in the file
-   * @exception Exception
-   *              if an error occurs
-   * @see com.mellowtech.core.disc.SpanningBlockFile
-   * @see ObjectManager#writeObject(ByteStorable, int)
-   */
-  public int createObject(ByteStorable bsObject) throws Exception {
-    byte b[] = new byte[bsObject.byteSize()];
-    bsObject.toBytes(b, 0);
-    return mObjectFile.insert(b);
-  }
-
-  /**
-   * Write an object at a specific location in a SpanningBlockFile.
-   * 
-   * @param bsObject
-   *          the object to write
-   * @param pointer
-   *          pointer to locatin in the file
-   * @exception Exception
-   *              if an error occurs
-   */
-  public void writeObject(ByteStorable bsObject, int pointer) throws Exception {
-    if (pointer < 0)
-      throw new Exception("writeObject::Pointer not set");
-    byte b[] = new byte[bsObject.byteSize()];
-    bsObject.toBytes(b, 0);
-    mObjectFile.update(pointer, b, 0);
-  }
-
-  /**
-   * Delete an object from the SpanningBlockFile of objects.
-   * 
-   * @param pointer
-   *          the location of the object
-   * @exception Exception
-   *              if an error occurs
-   */
-  public void deleteObject(int pointer) throws Exception {
-    mObjectFile.delete(pointer);
-  }
-
-  /**
-   * Given a class name and a location in the file of object, read up the bytes
-   * for that object and create an object of the given class.
-   * 
-   * @param pointer
-   *          location in the file
-   * @param className
-   *          the class of the object to create
-   * @return the object
-   * @exception Exception
-   *              if an error occurs
-   */
-  public ByteStorable getObject(int pointer, String className) throws Exception {
-    if (pointer < 0)
-      throw new Exception("getObject::Pointer not set");
-    byte[] b = mObjectFile.get(pointer);
-    ByteStorable bs = (ByteStorable) Class.forName(className).newInstance();
-    bs = bs.fromBytes(b, 0);
-    return bs;
-  }
+ 
 }

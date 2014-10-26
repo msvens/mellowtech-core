@@ -44,18 +44,18 @@ public class DoubleMapping implements BCMapping <Double> {
   }
 
   @Override
-  public Double fromByteComparable(ByteComparable bc) {
-    return ((CBDouble) bc).get();
+  public Double fromByteComparable(ByteComparable <Double> bc) {
+    return bc.get();
   }
 
   @Override
-  public ByteComparable toByteComparable(Double key) {
+  public ByteComparable <Double> toByteComparable(Double key) {
     return new CBDouble(key);
   }
 
   @Override
-  public Double fromByteStorable(ByteStorable bs) {
-    return ((CBDouble) bs).get();
+  public Double fromByteStorable(ByteStorable <Double> bs) {
+    return bs.get();
   }
 
   @Override
@@ -64,13 +64,13 @@ public class DoubleMapping implements BCMapping <Double> {
   }
 
   @Override
-  public ByteStorable toByteStorable(Double value) {
+  public ByteStorable <Double> toByteStorable(Double value) {
     return new CBDouble(value);
   }
 
   @Override
-  public ByteStorable getTemplate() {
-    return new CBInt();
+  public ByteComparable <Double> getTemplate() {
+    return new CBDouble();
   }
 
   @Override

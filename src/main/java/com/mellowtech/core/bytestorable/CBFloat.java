@@ -34,7 +34,7 @@ import java.nio.ByteBuffer;
  * @author Martin Svensson
  * @version 1.0
  */
-public class CBFloat extends ByteComparable {
+public class CBFloat extends ByteComparable <Float> {
 
 
   private float value;
@@ -54,9 +54,8 @@ public class CBFloat extends ByteComparable {
 
   // ***********GET/SET**************
   @Override
-  public void set(Object value){
+  public void set(Float value){
     if(value == null) throw new ByteStorableException("null value not allowed");
-    if(!(value instanceof Float)) throw new ByteStorableException("not a float value");
     this.value = (Float) value;
   }
 
@@ -93,7 +92,7 @@ public class CBFloat extends ByteComparable {
   }
 
   @Override
-  public ByteStorable fromBytes(ByteBuffer bb, boolean doNew) {
+  public ByteStorable <Float> fromBytes(ByteBuffer bb, boolean doNew) {
     if (doNew)
       return new CBFloat(bb.getFloat());
     value = bb.getFloat();
@@ -101,9 +100,8 @@ public class CBFloat extends ByteComparable {
   }
 
   @Override
-  public int compareTo(Object other) {
-    CBFloat o = (CBFloat) other;
-    return Float.compare(this.value, o.value);
+  public int compareTo(ByteStorable <Float> other) {
+    return Float.compare(this.value, other.get());
   }
 
   @Override

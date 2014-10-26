@@ -34,10 +34,10 @@ import com.mellowtech.core.bytestorable.ByteStorable;
  */
 public interface BSMapping <V>{
   
-  public ByteStorable getTemplate();
+  public ByteStorable <V> getTemplate();
   public V getOrigTemplate();
-  public ByteStorable toByteStorable(V value);
-  public V fromByteStorable(ByteStorable bs);
+  public ByteStorable <V> toByteStorable(V o);
+  public V fromByteStorable(ByteStorable <V> bs);
   public int byteSize(V value);
 
   

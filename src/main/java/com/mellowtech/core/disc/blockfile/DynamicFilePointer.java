@@ -32,7 +32,7 @@ import java.nio.ByteBuffer;
 import com.mellowtech.core.bytestorable.ByteStorable;
 import com.mellowtech.core.collections.mappings.BSMapping;
 
-public class DynamicFilePointer extends ByteStorable implements BSMapping<DynamicFilePointer> {
+public class DynamicFilePointer extends ByteStorable <DynamicFilePointer> implements BSMapping<DynamicFilePointer> {
   private int blockno; // for ByteStorableBlockFile
   private int id; // for ByteStorableBlockFile
   private int recno; // for SpanningBlockFile
@@ -99,7 +99,7 @@ public class DynamicFilePointer extends ByteStorable implements BSMapping<Dynami
   }
 
   @Override
-  public ByteStorable fromBytes(ByteBuffer bb, boolean doNew) {
+  public ByteStorable <DynamicFilePointer> fromBytes(ByteBuffer bb, boolean doNew) {
     DynamicFilePointer ref = doNew ? new DynamicFilePointer() : this;
     int firstInt = bb.getInt();
     if (firstInt < 0) {
@@ -126,7 +126,7 @@ public class DynamicFilePointer extends ByteStorable implements BSMapping<Dynami
   }
 
   @Override
-  public ByteStorable getTemplate() {
+  public ByteStorable <DynamicFilePointer> getTemplate() {
     return new DynamicFilePointer();
   }
 
@@ -136,7 +136,7 @@ public class DynamicFilePointer extends ByteStorable implements BSMapping<Dynami
   }
 
   @Override
-  public ByteStorable toByteStorable(DynamicFilePointer value) {
+  public ByteStorable <DynamicFilePointer> toByteStorable(DynamicFilePointer value) {
     return value;
   }
 

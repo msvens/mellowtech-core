@@ -34,7 +34,7 @@ import java.nio.ByteBuffer;
  * @author Martin Svensson
  * @version 1.0
  */
-public class CBLong extends ByteComparable <CBLong>{
+public class CBLong extends ByteComparable <Long>{
 
   private long value;
 
@@ -52,10 +52,9 @@ public class CBLong extends ByteComparable <CBLong>{
   }
 
   @Override
-  public void set(Object value){
+  public void set(Long value){
     if(value == null) throw new ByteStorableException("null not allowed");
-    //if(!(value instanceof Long ||)) throw new ByteStorableException("not a Long");
-    this.value = (Long) value;
+    this.value = value;
   }
 
   @Override
@@ -92,7 +91,7 @@ public class CBLong extends ByteComparable <CBLong>{
   }
 
   @Override
-  public ByteStorable <CBLong> fromBytes(ByteBuffer bb, boolean doNew) {
+  public ByteStorable <Long> fromBytes(ByteBuffer bb, boolean doNew) {
     if (doNew)
       return new CBLong(bb.getLong());
     value = bb.getLong();
@@ -100,11 +99,11 @@ public class CBLong extends ByteComparable <CBLong>{
   }
 
   @Override
-  public int compareTo(CBLong other) {
+  public int compareTo(ByteStorable <Long> other) {
     //CBLong o = (CBLong) other;
-    if (this.value > other.value)
+    if (this.value > other.get())
       return 1;
-    else if (this.value < other.value)
+    else if (this.value < other.get())
       return -1;
     return 0;
 

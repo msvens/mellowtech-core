@@ -198,9 +198,9 @@ public abstract class AbstractCache <K, V>{
    */
   public String toString() {
     StringBuffer sb = new StringBuffer();
-    Map.Entry entry;
-    for (Iterator it = iterator(); it.hasNext();) {
-      entry = (Map.Entry) it.next();
+    Map.Entry<K, CacheValue<V>> entry;
+    for (Iterator <Map.Entry<K, CacheValue<V>>> it = iterator(); it.hasNext();) {
+      entry = it.next();
       sb.append(entry.getKey() + " " + entry.getValue() + "\n");
     }
     return sb.toString();

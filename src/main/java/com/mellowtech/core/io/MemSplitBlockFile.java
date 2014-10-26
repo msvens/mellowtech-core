@@ -37,6 +37,7 @@ import java.nio.ByteBuffer;
 import java.nio.LongBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.channels.FileChannel.MapMode;
 import java.util.*;
 import java.util.logging.Level;
 
@@ -46,19 +47,114 @@ import java.util.logging.Level;
  * The file will increase in regular intervals
  * @author Martin Svensson
  */
-public class MemSplitBlockFile implements RecordFile {
+public class MemSplitBlockFile implements SplitRecordFile {
 
+  class BlockIterator implements Iterator<Record>{
+
+
+    Record next = null;
+    Integer nextRec;
+    int record;
+    boolean stop = false;
+    int currIndex;
+    BitSet bits;
+    int bSize;
+
+    public BlockIterator(Integer from){
+      record = from != null ? from : 0;
+      getNext();
+
+    }
+
+    private void getNext(){
+      if(record < 0) return;
+      record = bitSet.nextSetBit(record);
+      if(record > -1){
+        try{
+          next = new Record(record, get(record));
+          record++;
+          return;
+        }
+        catch(IOException e){record = -1;}
+      }
+    }
+
+
+    @Override
+    public boolean hasNext() {
+      return record > 0;
+    }
+
+    @Override
+    public Record next() {
+      Record toRet = next;
+      getNext();
+      return toRet;
+    }
+
+    @Override
+    public void remove() {
+    }
+  }
+  class MappedBlockIterator implements Iterator<Record>{
+
+
+    Record next = null;
+    Integer nextRec;
+    int record;
+    boolean stop = false;
+    int currIndex;
+    BitSet bits;
+    int bSize;
+
+    public MappedBlockIterator(Integer from){
+      record = from != null ? from : 0;
+      getNext();
+
+    }
+
+    private void getNext(){
+      if(record < 0) return;
+      record = mappedBitSet.nextSetBit(record);
+      if(record > -1){
+        try{
+          next = new Record(record, getRegion(record));
+          record++;
+          return;
+        }
+        catch(IOException e){record = -1;}
+      }
+    }
+
+
+    @Override
+    public boolean hasNext() {
+      return record > 0;
+    }
+
+    @Override
+    public Record next() {
+      Record toRet = next;
+      getNext();
+      return toRet;
+    }
+
+    @Override
+    public void remove() {
+    }
+  }
   public static final String FILE_EXT = ".mlf";
-  public static final int MIN_BLOCK_SIZE = 1024;
-  public static final String MAGIC = "SABF";
 
-  //This will change to not be statuically set
+  public static final int MIN_BLOCK_SIZE = 256;
+
+
+  public static final String MAGIC = "SABF";
+  //This will change to not be statically set
   public static final int BLOCKS_TO_MAP = 1024*2;
 
 
   private String fileName;
   private FileChannel fc;
-
 
   private int blockSize;
   private int mappedBlockSize;
@@ -71,17 +167,346 @@ public class MemSplitBlockFile implements RecordFile {
 
   private BitSet bitSet;
   private BitSet mappedBitSet;
-
   private MappedByteBuffer bitBuffer;
   private MappedByteBuffer mappedBitBuffer;
+
+
   private MappedByteBuffer mappedBlocks;
+
   private List<MappedByteBuffer> blocks;
-
-
   private final int headerSize = 24;
 
+
   private long startMappedBlocks, startBlocks;
+
   private int reserve;
+
+  public MemSplitBlockFile(String fileName) throws IOException{
+    openFile(fileName);
+  }
+
+  public MemSplitBlockFile(String fileName, int blockSize, int maxBlocks,
+                           int reserve, int mappedMaxBlocks, int mappedBlockSize) throws IOException{
+
+    try{
+    if(openFile(fileName)){
+      return;
+      }
+    }
+    catch(IOException e){
+      CoreLog.L().log(Level.FINER, "Could Not Open Old File", e);
+    }
+
+    if(reserve < 0) reserve = 0;
+    this.reserve = reserve;
+    this.maxBlocks = maxBlocks;
+    this.blockSize = blockSize < MIN_BLOCK_SIZE ? MIN_BLOCK_SIZE : blockSize;
+    this.mappedBlockSize = mappedBlockSize;
+    this.mappedMaxBlocks = mappedMaxBlocks;
+    this.fileName = fileName;
+    File f = new File(fileName);
+    RandomAccessFile raf = new RandomAccessFile(f, "rw");
+    fc = raf.getChannel();
+
+    init();
+
+    //long blocksSize = fc.size() - startBlocks;
+    raf.setLength(startBlocks+(BLOCKS_TO_MAP*blockSize));
+    mapBlocks(startBlocks, raf.length());
+    bitSet = new BitSet();
+    mappedBitSet = new BitSet();
+  }
+
+  @Override
+  public void clear() throws IOException {
+    bitSet.clear();
+    mappedBitSet.clear();
+    //shrink:
+    fc.truncate(startBlocks + (blockSize * BLOCKS_TO_MAP));
+
+  }
+
+
+  @Override
+  public void close() throws IOException {
+    save();
+    fc.close();
+  }
+
+
+  @Override
+  public Map<Integer, Integer> compact() throws IOException {
+    return null;
+  }
+
+  @Override
+  public boolean contains(int record) {
+    return bitSet.get(record);
+  }
+
+  @Override
+  public boolean containsRegion(int record){
+    return mappedBitSet.get(record);
+  }
+
+  @Override
+  public boolean delete(int record) throws IOException {
+   if(bitSet.get(record)){
+      bitSet.flip(record);
+      saveBitSet(bitSet, bitBuffer);
+      shrinkBlocks();
+      return true;
+    }
+    return false;
+  }
+
+  @Override
+  public boolean deleteRegion(int record) throws IOException {
+    if(mappedBitSet.get(record)){
+      mappedBitSet.flip(record);
+      saveBitSet(mappedBitSet, mappedBitBuffer);
+      return true;
+    }
+    return false;
+  }
+  
+  private void expandBlocks(int toIndex) throws IOException{
+    int pos = getBufferPos(toIndex);
+    for(int i = blocks.size(); i <= pos; i++){
+      System.out.println("expand: "+i);
+      long filePos = startBlocks + (pos * blockSize * BLOCKS_TO_MAP);
+      blocks.add(fc.map(FileChannel.MapMode.READ_WRITE, filePos, blockSize * BLOCKS_TO_MAP));
+    }
+  }
+
+  private MappedByteBuffer findBuffer(int record){
+    return blocks.get(getBufferPos(record));
+  }
+  
+  @Override
+  public byte[] get(int record) throws IOException{
+    byte[] bytes = new byte[blockSize];
+    return get(record, bytes) == true ? bytes : null;
+  }
+
+  @Override
+  public boolean get(int record, byte[] buffer) throws IOException{
+    if(bitSet.get(record)){
+      ByteBuffer bb = findBuffer(record);
+      record = truncate(record);
+      bb.position(record * blockSize);
+      if(buffer.length > blockSize){
+        bb.get(buffer, 0, blockSize);
+      }
+      else
+        bb.get(buffer);
+      return true;
+    }
+    return false;
+  }
+  
+  private BitSet getBitSet(ByteBuffer bb){
+    int longs = bb.getInt();
+    LongBuffer lb = bb.asLongBuffer();
+    lb.limit(longs);
+    return BitSet.valueOf(lb);
+  }
+
+  @Override
+  public int getBlockSize() {
+    return blockSize;
+  }
+
+  @Override
+  public int getBlockSizeRegion(){
+    return mappedBlockSize;
+  }
+  
+  private int getBufferPos(int record){
+    return record / BLOCKS_TO_MAP;
+  }
+
+  @Override
+  public int getFirstRecord() {
+    return bitSet.nextSetBit(0);
+  }
+
+  @Override
+  public int getFirstRecordRegion(){
+    return mappedBitSet.nextSetBit(0);
+  }
+
+  @Override
+  public int getFreeBlocks() {
+    return maxBlocks - size();
+  }
+
+  @Override
+  public int getFreeBlocksRegion() {
+    return mappedMaxBlocks - sizeRegion();
+  }
+
+  public int getLastMappedRecord(){
+    return mappedBitSet.length() - 1;
+  }
+
+  public int getLastRecord(){
+    return bitSet.length() - 1;
+  }
+
+  @Override
+  public byte[] getRegion(int record) throws IOException{
+    byte[] bytes = new byte[mappedBlockSize];
+    return getRegion(record, bytes) == true ? bytes : null;
+  }
+
+  @Override
+  public boolean getRegion(int record, byte[] buffer) throws IOException{
+    if(mappedBitSet.get(record)){
+      mappedBlocks.position(record * mappedBlockSize);
+      if(buffer.length > mappedBlockSize){
+        mappedBlocks.get(buffer, 0, mappedBlockSize);
+      }
+      else
+        mappedBlocks.get(buffer);
+      return true;
+    }
+    return false;
+  }
+
+  @Override
+  public byte[] getReserve() throws IOException {
+    if(reserve < 1) return null;
+    ByteBuffer bb = ByteBuffer.allocate(reserve);
+    fc.read(bb, 20 + bitSize);
+    return bb.array();
+  }
+
+  private void init() throws IOException{
+    //number of bytes for bitSets
+    bitSize = maxBlocks/8;
+    mappedBitSize = mappedMaxBlocks/8;
+
+    //mapped blocks start just after the reserved space
+    startMappedBlocks = headerSize + bitSize + 4 + mappedBitSize + 4 + reserve;
+
+    //normal blocks start just after mapped blocks
+    startBlocks = startMappedBlocks + (mappedMaxBlocks * mappedBlockSize);
+
+    //buffers for bitsets:
+    mappedBitBuffer = fc.map(FileChannel.MapMode.READ_WRITE, headerSize, mappedBitSize + 4);
+    bitBuffer = fc.map(FileChannel.MapMode.READ_WRITE,
+            headerSize + mappedBitSize + 4,
+            bitSize + 4);
+
+    //map mapped region
+    mappedBlocks = fc.map(FileChannel.MapMode.READ_WRITE, startMappedBlocks,
+            mappedMaxBlocks * mappedBlockSize);
+
+  }
+
+  @Override
+  public int insert(byte[] bytes) throws IOException{
+    return insert(bytes, 0, bytes != null ? bytes.length : -1);
+  }
+
+  @Override
+  public int insert(byte[] bytes, int offset, int length) throws IOException {
+    int index = bitSet.nextClearBit(0);
+    if(index >= maxBlocks)
+      throw new IOException("no blocks left");
+
+    if(getBufferPos(index) >= blocks.size()){
+      expandBlocks(index);
+    }
+
+    if(bytes != null && length > 0){
+      ByteBuffer bb = findBuffer(index);
+      int record = truncate(index);
+      bb.position(record * blockSize);
+      bb.put(bytes, offset, length > blockSize ? blockSize : length);
+    }
+    bitSet.set(index, true);
+    saveBitSet(bitSet, bitBuffer);
+    return index;
+  }
+
+  @Override
+  public void insert(int record, byte[] bytes) throws IOException {
+    if(record >= maxBlocks)
+      throw new IOException("record out of bounce");
+    if(getBufferPos(record) >= blocks.size())
+      expandBlocks(record);
+
+    bitSet.set(record, true);
+    saveBitSet(bitSet, bitBuffer);
+    update(record, bytes);
+  }
+
+  @Override
+  public int insertRegion(byte[] bytes) throws IOException{
+    return insertRegion(bytes, 0, bytes != null ? bytes.length : 0);
+  }
+
+  @Override
+  public int insertRegion(byte[] bytes, int offset, int length) throws IOException {
+    int index = mappedBitSet.nextClearBit(0);
+    if(index >= mappedMaxBlocks)
+      throw new IOException("no blocks left in mapped region");
+    if(bytes != null && length > 0){
+      mappedBlocks.position(index * mappedBlockSize);
+      int l = length > mappedBlockSize ? mappedBlockSize : length;
+      mappedBlocks.put(bytes, offset, l);
+    }
+    mappedBitSet.set(index, true);
+    saveBitSet(mappedBitSet, mappedBitBuffer);
+    return index;
+  }
+
+  @Override
+  public void insertRegion(int record, byte[] bytes) throws IOException {
+    if(record > mappedMaxBlocks)
+      throw new IOException("record out of bounce");
+
+    mappedBitSet.set(record, true);
+    saveBitSet(mappedBitSet, mappedBitBuffer);
+    updateRegion(record, bytes);
+  }
+
+  @Override
+  public Iterator<Record> iterator() {
+    return new BlockIterator(null);
+  }
+
+  @Override
+  public Iterator<Record> iterator(int record) {
+    return new BlockIterator(record > -1 ? record : null);
+  }
+
+  @Override
+  public Iterator<Record> iteratorRegion() {
+    return new MappedBlockIterator(null);
+  }
+
+  @Override
+  public Iterator <Record> iteratorRegion(int record){
+    return new MappedBlockIterator(record > -1 ? record : null);
+  }
+
+  private void mapBlocks(long start, long end) throws IOException{
+    int region = blockSize * BLOCKS_TO_MAP;
+    long current = start;
+    while(current < end){
+      MappedByteBuffer bb = fc.map(FileChannel.MapMode.READ_WRITE, current, region);
+      current += region;
+      blocks.add(bb);
+    }
+  }
+
+  @Override
+  public MappedByteBuffer mapReserve() throws IOException {
+    return fc.map(MapMode.READ_WRITE, 20+bitSize, reserve);
+  }
 
 
   protected boolean openFile(String fileName) throws IOException{
@@ -135,90 +560,6 @@ public class MemSplitBlockFile implements RecordFile {
     return true;
   }
 
-  private void mapBlocks(long start, long end) throws IOException{
-    int region = blockSize * BLOCKS_TO_MAP;
-    long current = start;
-    while(current < end){
-      MappedByteBuffer bb = fc.map(FileChannel.MapMode.READ_WRITE, current, region);
-      //System.out.println("mapping: "+current+" "+region+" "+blockSize+" "+BLOCKS_TO_MAP);
-      current += region;
-      blocks.add(bb);
-    }
-  }
-
-  private void init() throws IOException{
-    //number of bytes for bitSets
-    bitSize = maxBlocks/8;
-    mappedBitSize = mappedMaxBlocks/8;
-
-    //mapped blocks start just after the reserved space
-    startMappedBlocks = headerSize + bitSize + 4 + mappedBitSize + 4 + reserve;
-
-    //normal blocks start just after mapped blocks
-    startBlocks = startMappedBlocks + (mappedMaxBlocks * mappedBlockSize);
-
-    //buffers for bitsets:
-    mappedBitBuffer = fc.map(FileChannel.MapMode.READ_WRITE, headerSize, mappedBitSize + 4);
-    bitBuffer = fc.map(FileChannel.MapMode.READ_WRITE,
-            headerSize + mappedBitSize + 4,
-            bitSize + 4);
-
-    //map mapped region
-    mappedBlocks = fc.map(FileChannel.MapMode.READ_WRITE, startMappedBlocks,
-            mappedMaxBlocks * mappedBlockSize);
-
-  }
-
-  private BitSet getBitSet(ByteBuffer bb){
-    int longs = bb.getInt();
-    LongBuffer lb = bb.asLongBuffer();
-    lb.limit(longs);
-    return BitSet.valueOf(lb);
-  }
-
-  public MemSplitBlockFile(String fileName) throws IOException{
-    openFile(fileName);
-  }
-
-
-  public MemSplitBlockFile(String fileName, int blockSize, int maxBlocks,
-                           int reserve, int mappedMaxBlocks, int mappedBlockSize) throws IOException{
-
-    try{
-    if(openFile(fileName)){
-      return;
-      }
-    }
-    catch(IOException e){
-      CoreLog.L().log(Level.FINER, "Could Not Open Old File", e);
-    }
-
-    if(reserve < 0) reserve = 0;
-    this.reserve = reserve;
-    this.maxBlocks = maxBlocks;
-    this.blockSize = blockSize < MIN_BLOCK_SIZE ? MIN_BLOCK_SIZE : blockSize;
-    this.mappedBlockSize = mappedBlockSize;
-    this.mappedMaxBlocks = mappedMaxBlocks;
-    this.fileName = fileName;
-    File f = new File(fileName);
-    RandomAccessFile raf = new RandomAccessFile(f, "rw");
-    fc = raf.getChannel();
-
-    init();
-
-    //long blocksSize = fc.size() - startBlocks;
-    raf.setLength(startBlocks+(BLOCKS_TO_MAP*blockSize));
-    mapBlocks(startBlocks, raf.length() - startBlocks);
-    bitSet = new BitSet();
-    mappedBitSet = new BitSet();
-  }
-
-
-  @Override
-  public Map<Integer, Integer> compact() throws IOException {
-    return null;
-  }
-
   @Override
   public boolean save() throws IOException{
     ByteBuffer bb = ByteBuffer.allocate(headerSize);
@@ -243,46 +584,11 @@ public class MemSplitBlockFile implements RecordFile {
     return true;
   }
 
-  @Override
-  public void close() throws IOException {
-    save();
-    fc.close();
-  }
-
-  @Override
-  public void clear() throws IOException {
-    bitSet.clear();
-    mappedBitSet.clear();
-    //shrink:
-    fc.truncate(startBlocks + (blockSize * BLOCKS_TO_MAP));
-
-  }
-
-  @Override
-  public int size() {
-    return bitSet.cardinality();
-  }
-  public int sizeMapped() {
-    return mappedBitSet.cardinality();
-  }
-
-  @Override
-  public int getBlockSize() {
-    return blockSize;
-  }
-
-  @Override
-  public int getFreeBlocks() {
-    return maxBlocks - size();
-  }
-
-  public int getMappedBlockSize(){
-    return mappedBlockSize;
-  }
-
-  @Override
-  public void reserve(int bytes) throws IOException {
-    //To change body of implemented methods use File | Settings | File Templates.
+  protected void saveBitSet(BitSet toSave, ByteBuffer bb) throws IOException{
+    bb.clear();
+    long[] bits = toSave.toLongArray();
+    bb.putInt(bits.length);
+    bb.asLongBuffer().put(toSave.toLongArray());
   }
 
   @Override
@@ -290,173 +596,6 @@ public class MemSplitBlockFile implements RecordFile {
     ByteBuffer bb = ByteBuffer.wrap(bytes);
     if(bytes.length > reserve) bb.limit(reserve);
     fc.write(bb, 20 + bitSize);
-  }
-
-  @Override
-  public byte[] getReserve() throws IOException {
-    if(reserve < 1) return null;
-    ByteBuffer bb = ByteBuffer.allocate(reserve);
-    fc.read(bb, 20 + bitSize);
-    return bb.array();
-  }
-
-  @Override
-  public int getFirstRecord() {
-    return bitSet.nextSetBit(0);
-  }
-
-  public int getLastRecord(){
-    return bitSet.length() - 1;
-  }
-
-  public int getLastMappedRecord(){
-    return mappedBitSet.length() - 1;
-  }
-
-  public int getFirstMappedRecord(){
-    return mappedBitSet.nextSetBit(0);
-  }
-
-  @Override
-  public byte[] get(int record) throws IOException{
-    byte[] bytes = new byte[blockSize];
-    return get(record, bytes) == true ? bytes : null;
-  }
-
-  public byte[] getMapped(int record) throws IOException{
-    byte[] bytes = new byte[mappedBlockSize];
-    return getMapped(record, bytes) == true ? bytes : null;
-  }
-
-  private int getBufferPos(int record){
-    return record / BLOCKS_TO_MAP;
-  }
-
-  private MappedByteBuffer findBuffer(int record){
-    return blocks.get(getBufferPos(record));
-  }
-
-  private int truncate(int record){
-    return record - (getBufferPos(record) * BLOCKS_TO_MAP);
-  }
-
-  @Override
-  public boolean get(int record, byte[] buffer) throws IOException{
-    if(bitSet.get(record)){
-      ByteBuffer bb = findBuffer(record);
-      record = truncate(record);
-      bb.position(record * blockSize);
-      if(buffer.length > blockSize){
-        bb.get(buffer, 0, blockSize);
-      }
-      else
-        bb.get(buffer);
-      return true;
-    }
-    return false;
-  }
-
-  public boolean getMapped(int record, byte[] buffer) throws IOException{
-    if(mappedBitSet.get(record)){
-      mappedBlocks.position(record * mappedBlockSize);
-      if(buffer.length > mappedBlockSize){
-        mappedBlocks.get(buffer, 0, mappedBlockSize);
-      }
-      else
-        mappedBlocks.get(buffer);
-      return true;
-    }
-    return false;
-  }
-
-  @Override
-  public boolean update(int record, byte[] bytes) throws IOException {
-    return update(record, bytes, 0, bytes.length);
-    /*if(!bitSet.get(record)) return false;
-    ByteBuffer bb = findBuffer(record);
-    record = truncate(record);
-    bb.position(record * blockSize);
-    if(bytes.length > blockSize)
-      bb.put(bytes, 0, blockSize);
-    else
-      bb.put(bytes);
-    return true;
-    */
-  }
-
-  @Override
-  public boolean update(int record, byte[] bytes, int offset, int length) throws IOException {
-    if(!bitSet.get(record)) return false;
-    ByteBuffer bb = findBuffer(record);
-    record = truncate(record);
-    bb.position(record * blockSize);
-    bb.put(bytes, offset, length > blockSize ? blockSize : length);
-    return true;
-  }
-
-  public boolean updateMapped(int record, byte[] bytes) throws IOException{
-    if(!mappedBitSet.get(record)) return false;
-    mappedBlocks.position(record * mappedBlockSize);
-    if(bytes.length > mappedBlockSize)
-      mappedBlocks.put(bytes, 0, mappedBlockSize);
-    else
-      mappedBlocks.put(bytes);
-    return true;
-  }
-
-  @Override
-  public int insert(byte[] bytes) throws IOException{
-    return insert(bytes, 0, bytes != null ? bytes.length : -1);
-    /*int index = bitSet.nextClearBit(0);
-    if(index >= maxBlocks)
-      throw new IOException("no blocks left");
-
-    if(getBufferPos(index) >= blocks.size()){
-      expandBlocks(index);
-    }
-
-    if(bytes != null && bytes.length > 0){
-      ByteBuffer bb = findBuffer(index);
-      int record = truncate(index);
-      bb.position(record * blockSize);
-      if(bytes.length <= blockSize)
-        bb.put(bytes);
-      else
-        bb.put(bytes, 0, blockSize);
-    }
-    bitSet.set(index, true);
-    saveBitSet(bitSet, bitBuffer);
-    return index;*/
-  }
-
-  @Override
-  public int insert(byte[] bytes, int offset, int length) throws IOException {
-    int index = bitSet.nextClearBit(0);
-    if(index >= maxBlocks)
-      throw new IOException("no blocks left");
-
-    if(getBufferPos(index) >= blocks.size()){
-      expandBlocks(index);
-    }
-
-    if(bytes != null && length > 0){
-      ByteBuffer bb = findBuffer(index);
-      int record = truncate(index);
-      bb.position(record * blockSize);
-      bb.put(bytes, offset, length > blockSize ? blockSize : length);
-    }
-    bitSet.set(index, true);
-    saveBitSet(bitSet, bitBuffer);
-    return index;
-  }
-
-  private void expandBlocks(int toIndex) throws IOException{
-    int pos = getBufferPos(toIndex);
-    for(int i = blocks.size(); i <= pos; i++){
-      System.out.println("expand: "+i);
-      long filePos = startBlocks + (pos * blockSize * BLOCKS_TO_MAP);
-      blocks.add(fc.map(FileChannel.MapMode.READ_WRITE, filePos, blockSize * BLOCKS_TO_MAP));
-    }
   }
 
   private void shrinkBlocks() throws IOException{
@@ -474,91 +613,14 @@ public class MemSplitBlockFile implements RecordFile {
     }
   }
 
-  public int insertMapped(byte[] bytes) throws IOException{
-    int index = mappedBitSet.nextClearBit(0);
-    if(index >= mappedMaxBlocks)
-      throw new IOException("no blocks left in mapped region");
-    if(bytes != null && bytes.length > 0){
-      mappedBlocks.position(index * mappedBlockSize);
-      if(bytes.length <= mappedBlockSize){
-        mappedBlocks.put(bytes);
-      }
-      else
-        mappedBlocks.put(bytes, 0, mappedBlockSize);
-    }
-    mappedBitSet.set(index, true);
-    saveBitSet(mappedBitSet, mappedBitBuffer);
-    return index;
+  @Override
+  public int size() {
+    return bitSet.cardinality();
   }
 
   @Override
-  public void insert(int record, byte[] bytes) throws IOException {
-    if(record >= maxBlocks)
-      throw new IOException("record out of bounce");
-    if(getBufferPos(record) >= blocks.size())
-      expandBlocks(record);
-
-    bitSet.set(record, true);
-    saveBitSet(bitSet, bitBuffer);
-    update(record, bytes);
-  }
-
-  public void insertMapped(int record, byte[] bytes) throws IOException {
-    if(record > mappedMaxBlocks)
-      throw new IOException("record out of bounce");
-
-    mappedBitSet.set(record, true);
-    saveBitSet(mappedBitSet, mappedBitBuffer);
-    updateMapped(record, bytes);
-  }
-
-
-  @Override
-  public boolean delete(int record) throws IOException {
-   if(bitSet.get(record)){
-      bitSet.flip(record);
-      saveBitSet(bitSet, bitBuffer);
-      shrinkBlocks();
-      return true;
-    }
-    return false;
-  }
-
-  public boolean deleteMapped(int record) throws IOException {
-    if(mappedBitSet.get(record)){
-      mappedBitSet.flip(record);
-      saveBitSet(mappedBitSet, mappedBitBuffer);
-      return true;
-    }
-    return false;
-  }
-
-
-  @Override
-  public boolean contains(int record) {
-    return bitSet.get(record);
-  }
-
-  public boolean containsMapped(int record){
-    return mappedBitSet.get(record);
-  }
-
-  @Override
-  public Iterator<Record> iterator() {
-    return new BlockIterator(null);
-  }
-
-  @Override
-  public Iterator<Record> iterator(int record) {
-    return new BlockIterator(record > -1 ? record : null);
-  }
-
-  public Iterator<Record> mappedIterator() {
-    return new MappedBlockIterator(null);
-  }
-
-  public Iterator <Record> mappedIterator(int record){
-    return new MappedBlockIterator(record > -1 ? record : null);
+  public int sizeRegion() {
+    return mappedBitSet.cardinality();
   }
 
   public String toString(){
@@ -577,112 +639,44 @@ public class MemSplitBlockFile implements RecordFile {
             add("bitSet", bitSet.toString()).toString();
   }
 
-  /*protected long getOffset(int record){
-    return this.startBlocks + (record * blockSize);
-  }*/
 
-
-  protected void saveBitSet(BitSet toSave, ByteBuffer bb) throws IOException{
-    bb.clear();
-    long[] bits = toSave.toLongArray();
-    bb.putInt(bits.length);
-    bb.asLongBuffer().put(toSave.toLongArray());
+  private int truncate(int record){
+    return record - (getBufferPos(record) * BLOCKS_TO_MAP);
   }
 
-  class BlockIterator implements Iterator<Record>{
-
-
-    Record next = null;
-    Integer nextRec;
-    int record;
-    boolean stop = false;
-    int currIndex;
-    BitSet bits;
-    int bSize;
-
-    public BlockIterator(Integer from){
-      record = from != null ? from : 0;
-      getNext();
-
-    }
-
-    private void getNext(){
-      if(record < 0) return;
-      record = bitSet.nextSetBit(record);
-      if(record > -1){
-        try{
-          next = new Record(record, get(record));
-          record++;
-          return;
-        }
-        catch(IOException e){record = -1;}
-      }
-    }
-
-
-    @Override
-    public boolean hasNext() {
-      return record > 0;
-    }
-
-    @Override
-    public Record next() {
-      Record toRet = next;
-      getNext();
-      return toRet;
-    }
-
-    @Override
-    public void remove() {
-    }
+  @Override
+  public boolean update(int record, byte[] bytes) throws IOException {
+    return update(record, bytes, 0, bytes.length);
   }
 
-  class MappedBlockIterator implements Iterator<Record>{
+  @Override
+  public boolean update(int record, byte[] bytes, int offset, int length) throws IOException {
+    if(!bitSet.get(record)) return false;
+    ByteBuffer bb = findBuffer(record);
+    record = truncate(record);
+    bb.position(record * blockSize);
+    bb.put(bytes, offset, length > blockSize ? blockSize : length);
+    return true;
+  }
 
+  @Override
+  public boolean updateRegion(int record, byte[] bytes) throws IOException{
+    if(!mappedBitSet.get(record)) return false;
+    mappedBlocks.position(record * mappedBlockSize);
+    if(bytes.length > mappedBlockSize)
+      mappedBlocks.put(bytes, 0, mappedBlockSize);
+    else
+      mappedBlocks.put(bytes);
+    return true;
+  }
 
-    Record next = null;
-    Integer nextRec;
-    int record;
-    boolean stop = false;
-    int currIndex;
-    BitSet bits;
-    int bSize;
-
-    public MappedBlockIterator(Integer from){
-      record = from != null ? from : 0;
-      getNext();
-
-    }
-
-    private void getNext(){
-      if(record < 0) return;
-      record = mappedBitSet.nextSetBit(record);
-      if(record > -1){
-        try{
-          next = new Record(record, getMapped(record));
-          record++;
-          return;
-        }
-        catch(IOException e){record = -1;}
-      }
-    }
-
-
-    @Override
-    public boolean hasNext() {
-      return record > 0;
-    }
-
-    @Override
-    public Record next() {
-      Record toRet = next;
-      getNext();
-      return toRet;
-    }
-
-    @Override
-    public void remove() {
-    }
+  @Override
+  public boolean updateRegion(int record, byte[] bytes, int offset, int length) throws IOException {
+    if(!mappedBitSet.get(record)) return false;
+    mappedBlocks.position(record * mappedBlockSize);
+    int l = length > mappedBlockSize ? mappedBlockSize : length;
+    mappedBlocks.put(bytes, offset, l);
+    return true;
   }
 
 

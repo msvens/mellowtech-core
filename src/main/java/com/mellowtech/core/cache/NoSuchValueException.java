@@ -34,4 +34,9 @@ package com.mellowtech.core.cache;
  * @author Martin Svensson
  */
 public class NoSuchValueException extends Exception {
+
+  /**
+   * 
+   */
+  private static final long serialVersionUID = 771745418162666416L;
 }

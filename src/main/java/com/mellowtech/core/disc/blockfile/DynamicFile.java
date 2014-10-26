@@ -36,7 +36,7 @@ import com.mellowtech.core.bytestorable.ByteStorable;
 import com.mellowtech.core.disc.SpanningBlockFile;
 
 /**
- * A DynamicFile can contain both large and small objects, this is realised
+ * A DynamicFile can contain both large and small objects, this is realized
  * through the use of two files: ByteStorableBlockFile and a SpanningBlockFile.
  * Objects larger than max small bytesize is inserted in the SpanningBlockFile.
  * The record numbers returned from insert() are positive if the object was
@@ -47,7 +47,7 @@ import com.mellowtech.core.disc.SpanningBlockFile;
  * 
  * @author rickard.coster@asimus.se
  */
-public class DynamicFile {
+public class DynamicFile <E> {
 
   static final int DEFAULT_SMALL_OBJECT_MAX_BYTES   = 8192;
   static final int DEFAULT_SMALL_OBJECT_BLOCK_SIZE  = 1024*64;
@@ -70,17 +70,17 @@ public class DynamicFile {
   }
 
   SpanningBlockFile largeObjectFile;
-  ByteStorableBlockFile smallObjectFile;
+  ByteStorableBlockFile <E> smallObjectFile;
   String fileName;
   DynamicFileInfo fileInfo = new DynamicFileInfo();
-  ByteStorable template;
+  ByteStorable <E> template;
 
   static final int CACHE_SIZE_EXISTING_SMALL_FILE = 2; // cache 2 blocks if
                                                         // file already exists
   static final int CACHE_SIZE_NEW_SMALL_FILE = 2; // cache 2 blocks if file is
                                                   // created
 
-  public DynamicFile(String fileName, ByteStorable template) {
+  public DynamicFile(String fileName, ByteStorable <E> template) {
     this(fileName, DEFAULT_SMALL_OBJECT_MAX_BYTES,
         DEFAULT_SMALL_OBJECT_BLOCK_SIZE, DEFAULT_LARGE_OBJECTS_BLOCK_SIZE,
         template);
@@ -88,15 +88,15 @@ public class DynamicFile {
 
   public DynamicFile(String fileName, int SMALL_OBJECT_MAX_BYTES,
       int SMALL_OBJECT_BLOCK_SIZE, int LARGE_OBJECT_BLOCK_SIZE,
-      ByteStorable template) {
+      ByteStorable <E> template) {
 
     this.fileName = fileName;
     this.template = template;
     File f = new File(GET_INFO_FILE_NAME(fileName));
     if (!f.exists()) {
-      fileInfo.smallObjectMaxBytes.set(SMALL_OBJECT_MAX_BYTES);
-      fileInfo.smallObjectBlockSize.set(SMALL_OBJECT_BLOCK_SIZE);
-      fileInfo.largeObjectBlockSize.set(LARGE_OBJECT_BLOCK_SIZE);
+      fileInfo.get().smallObjectMaxBytes = SMALL_OBJECT_MAX_BYTES;
+      fileInfo.get().smallObjectBlockSize = SMALL_OBJECT_BLOCK_SIZE;
+      fileInfo.get().largeObjectBlockSize = LARGE_OBJECT_BLOCK_SIZE;
       try {
         DynamicFileInfo.write(f.getPath(), fileInfo);
       }
@@ -159,10 +159,10 @@ public class DynamicFile {
     }
   }
 
-  public synchronized ByteStorable get(DynamicFilePointer ptr)
+  public synchronized ByteStorable <E> get(DynamicFilePointer ptr)
       throws IOException {
     if (ptr.isSpanningBlockFile()) {
-      byte[] buffer = new byte[fileInfo.largeObjectBlockSize.get()];
+      byte[] buffer = new byte[fileInfo.get().largeObjectBlockSize];
       int recno = ptr.getRecno();
       int length = largeObjectFile.get(recno, buffer);
       if (length < 0) {
@@ -209,7 +209,7 @@ public class DynamicFile {
   public synchronized DynamicFilePointer insert(ByteStorable object)
       throws IOException {
     int byteSize = object.byteSize();
-    if (byteSize > fileInfo.smallObjectMaxBytes.get()) {
+    if (byteSize > fileInfo.get().smallObjectMaxBytes) {
       byte[] buffer = new byte[byteSize];
       object.toBytes(buffer, 0);
       int recno = largeObjectFile.insert(buffer);
@@ -217,10 +217,10 @@ public class DynamicFile {
       return ptr;
     }
     else {
-      int id = fileInfo.freeSmallObjectIds.getNextMember(0);
+      int id = fileInfo.get().freeSmallObjectIds.nextSetBit(0);
       if (id < 0) {
-        id = fileInfo.highestId.get() + 1;
-        fileInfo.highestId.set(id);
+        id = fileInfo.get().highestId + 1;
+        fileInfo.get().highestId = id;
       }
       int blockno = smallObjectFile.write(id, object);
       DynamicFilePointer ptr = new DynamicFilePointer(blockno, id);
@@ -265,7 +265,7 @@ public class DynamicFile {
   public synchronized DynamicFilePointer insert(int id, ByteStorable object)
     throws IOException {
     int byteSize = object.byteSize();
-    if (byteSize > fileInfo.smallObjectMaxBytes.get()) {
+    if (byteSize > fileInfo.get().smallObjectMaxBytes) {
       byte[] buffer = new byte[byteSize];
       object.toBytes(buffer, 0);
       int recno = largeObjectFile.insert(buffer);
@@ -284,7 +284,7 @@ public class DynamicFile {
     int byteSize = object.byteSize();
     if (ptr.isSpanningBlockFile()) {
       // was in large file
-      if (byteSize > fileInfo.smallObjectMaxBytes.get()) {
+      if (byteSize > fileInfo.get().smallObjectMaxBytes) {
         // was in large file and will remain there, simply update
         byte[] buffer = new byte[byteSize];
         object.toBytes(buffer, 0);
@@ -296,10 +296,10 @@ public class DynamicFile {
         // first remove from large file
         largeObjectFile.delete(ptr.getRecno());
         // insert in small file
-        int id = fileInfo.freeSmallObjectIds.getNextMember(0);
+        int id = fileInfo.get().freeSmallObjectIds.nextSetBit(0);
         if (id < 0) {
-          id = fileInfo.highestId.get() + 1;
-          fileInfo.highestId.set(id);
+          id = fileInfo.get().highestId + 1;
+          fileInfo.get().highestId = id;
         }
         int blockno = smallObjectFile.write(id, object);
         return new DynamicFilePointer(blockno, id);
@@ -307,14 +307,14 @@ public class DynamicFile {
     }
     else {
       // was in small file
-      if (byteSize > fileInfo.smallObjectMaxBytes.get()) {
+      if (byteSize > fileInfo.get().smallObjectMaxBytes) {
         // was in small file and will move to large file
 
         // delete from small file
-        ByteStorable deletedObject = smallObjectFile.delete(ptr.getBlockno(),
+        ByteStorable <?> deletedObject = smallObjectFile.delete(ptr.getBlockno(),
             ptr.getId());
         // save id for later user
-        fileInfo.freeSmallObjectIds.add(ptr.getId());
+        fileInfo.get().freeSmallObjectIds.set(ptr.getId());
         // insert in large file
         byte[] buffer = new byte[byteSize];
         object.toBytes(buffer, 0);

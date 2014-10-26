@@ -28,6 +28,7 @@
 package com.mellowtech.core.io;
 
 import java.io.IOException;
+import java.nio.MappedByteBuffer;
 import java.util.Iterator;
 import java.util.Map;
 
@@ -57,10 +58,9 @@ public interface RecordFile {
   public int getBlockSize();
   public int getFreeBlocks();
 
-
-  public void reserve(int bytes) throws IOException;
-  public void setReserve(byte[] bytes) throws IOException;
-  public byte[] getReserve() throws IOException;
+  public void setReserve(byte[] bytes) throws IOException, UnsupportedOperationException;
+  public byte[] getReserve() throws IOException, UnsupportedOperationException;
+  public MappedByteBuffer mapReserve() throws IOException, UnsupportedOperationException;
 
 
   public int getFirstRecord();
@@ -78,8 +78,8 @@ public interface RecordFile {
 
   public boolean contains(int record) throws IOException;
 
-  public Iterator<Record> iterator();
-  public Iterator<Record> iterator(int record);
+  public Iterator<Record> iterator() throws UnsupportedOperationException;
+  public Iterator<Record> iterator(int record) throws UnsupportedOperationException;
 
 
 

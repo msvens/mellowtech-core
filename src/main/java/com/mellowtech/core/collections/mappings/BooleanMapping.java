@@ -44,18 +44,18 @@ public class BooleanMapping implements BCMapping <Boolean> {
   }
 
   @Override
-  public Boolean fromByteComparable(ByteComparable bc) {
-    return ((CBBoolean) bc).get();
+  public Boolean fromByteComparable(ByteComparable <Boolean> bc) {
+    return bc.get();
   }
 
   @Override
-  public ByteComparable toByteComparable(Boolean key) {
+  public ByteComparable <Boolean> toByteComparable(Boolean key) {
     return new CBBoolean(key);
   }
 
   @Override
-  public Boolean fromByteStorable(ByteStorable bs) {
-    return ((CBBoolean) bs).get();
+  public Boolean fromByteStorable(ByteStorable <Boolean> bs) {
+    return bs.get();
   }
 
   @Override
@@ -64,12 +64,12 @@ public class BooleanMapping implements BCMapping <Boolean> {
   }
 
   @Override
-  public ByteStorable toByteStorable(Boolean value) {
+  public ByteStorable <Boolean> toByteStorable(Boolean value) {
     return new CBBoolean(value);
   }
 
   @Override
-  public ByteStorable getTemplate() {
+  public ByteComparable <Boolean> getTemplate() {
     return new CBBoolean();
   }
 

@@ -33,7 +33,6 @@ import com.mellowtech.core.collections.KeyValue;
 
 import java.io.IOException;
 import java.util.Iterator;
-import java.util.Map;
 
 /**
  * Representation of a file based sorted tree
@@ -42,6 +41,7 @@ import java.util.Map;
  *
  * @author Martin Svensson
  */
+@SuppressWarnings("rawtypes")
 public interface BTree <K extends ByteComparable, V extends ByteStorable> {
 
   //IO:

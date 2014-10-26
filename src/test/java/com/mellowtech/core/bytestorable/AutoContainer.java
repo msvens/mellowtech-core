@@ -33,12 +33,12 @@ package com.mellowtech.core.bytestorable;
  *
  * @author Martin Svensson
  */
-public class AutoContainer extends CBAuto{
+public class AutoContainer extends  CBAuto <AutoContainer>{
 
-  @BSField(index = 2)
+  @BSField(2)
   private Integer f1;
 
-  @BSField(index = 1)
+  @BSField(1)
   private String f2;
 
   public AutoContainer(){

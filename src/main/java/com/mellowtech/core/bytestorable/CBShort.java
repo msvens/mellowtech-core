@@ -34,7 +34,7 @@ import java.nio.ByteBuffer;
  * @author Martin Svensson
  * @version 1.0
  */
-public class CBShort extends ByteComparable <CBShort>{
+public class CBShort extends ByteComparable <Short>{
 
 
   private short value;
@@ -54,10 +54,9 @@ public class CBShort extends ByteComparable <CBShort>{
 
   // ***********GET/SET**************
   @Override
-  public void set(Object value){
+  public void set(Short value){
     if(value == null) throw new ByteStorableException("null value not allowed");
-    if(!(value instanceof Short)) throw new ByteStorableException("not a Short");
-    this.value = (Short) value;
+    this.value = value;
   }
 
   @Override
@@ -95,7 +94,7 @@ public class CBShort extends ByteComparable <CBShort>{
   }
 
   @Override
-  public ByteStorable <CBShort> fromBytes(ByteBuffer bb, boolean doNew) {
+  public ByteStorable <Short> fromBytes(ByteBuffer bb, boolean doNew) {
     if (doNew)
       return new CBShort(bb.getShort());
     value = bb.getShort();
@@ -103,8 +102,8 @@ public class CBShort extends ByteComparable <CBShort>{
   }
 
   @Override
-  public int compareTo(CBShort other) {
-    return this.value - other.value;
+  public int compareTo(ByteStorable<Short> other) {
+    return this.value - other.get();
   }
 
   @Override

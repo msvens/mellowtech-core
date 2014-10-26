@@ -39,6 +39,8 @@ import com.mellowtech.core.collections.KeyValue;
  * 
  * @author Martin Svensson
  */
+
+@SuppressWarnings("rawtypes")
 public class BPlusReturn <K extends ByteComparable, V extends ByteStorable> {
   /**
    * Indicates that a block has been split
@@ -68,7 +70,7 @@ public class BPlusReturn <K extends ByteComparable, V extends ByteStorable> {
    * When splitting a block promo holds the Separator that should be promoted
    * (inserted) into the tree.
    */
-  protected BTreeKey promo = null;
+  protected BTreeKey <K> promo = null;
   /**
    * holds a block number. In search it holds a blocknumber for a newly created
    * block (accordirng to splitting) or in deletion which sibling (either

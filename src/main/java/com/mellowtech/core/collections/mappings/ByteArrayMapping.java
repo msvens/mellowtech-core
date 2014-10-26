@@ -42,18 +42,18 @@ public class ByteArrayMapping implements BCMapping<byte[]> {
   }
 
   @Override
-  public byte[] fromByteComparable(ByteComparable bc) {
-    return ((CBByteArray) bc).getArray();
+  public byte[] fromByteComparable(ByteComparable <byte[]> bc) {
+    return bc.get();
   }
 
   @Override
-  public ByteComparable toByteComparable(byte[] byteArray) {
+  public ByteComparable <byte[]> toByteComparable(byte[] byteArray) {
     return new CBByteArray(byteArray);
   }
 
   @Override
-  public byte[] fromByteStorable(ByteStorable bs) {
-    return ((CBByteArray) bs).get();
+  public byte[] fromByteStorable(ByteStorable <byte[]> bs) {
+    return bs.get();
   }
 
   @Override
@@ -62,12 +62,12 @@ public class ByteArrayMapping implements BCMapping<byte[]> {
   }
 
   @Override
-  public ByteStorable toByteStorable(byte[] value) {
+  public ByteStorable <byte[]> toByteStorable(byte[] value) {
     return new CBByteArray(value);
   }
 
   @Override
-  public ByteStorable getTemplate() {
+  public ByteComparable <byte[]> getTemplate() {
     return new CBByteArray();
   }
 

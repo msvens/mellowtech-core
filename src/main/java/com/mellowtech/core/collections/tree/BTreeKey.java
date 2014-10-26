@@ -45,17 +45,22 @@ import com.mellowtech.core.bytestorable.ByteStorable;
  * 
  * @author Martin Svensson
  */
-public class BTreeKey extends ByteStorable {
-  /**
-   * The Key or separator.
-   */
-  public ByteStorable key;
-  /**
-   * A pointer to the block containg the keys that are smaller than this key. At
-   * the lowest level in the index this points to the block number within a
-   * key/value file.
-   */
-  public int leftNode;
+public class BTreeKey <K extends ByteStorable> extends ByteStorable <BTreeKey<K>.Entry> {
+  
+  public class Entry {
+    
+    public Entry(K k, int l){key = k; leftNode = l;} 
+    /**
+     * The Key or separator.
+     */
+    public K key;
+    /**
+     * A pointer to the block containg the keys that are smaller than this key. At
+     * the lowest level in the index this points to the block number within a
+     * key/value file.
+     */
+    public int leftNode;
+  }
 
   /**
    * Creates an empty BTreeKey, needed for the CBytable methods.
@@ -73,41 +78,42 @@ public class BTreeKey extends ByteStorable {
    * @param left
    *          the blocknumber to the left child
    */
-  public BTreeKey(ByteStorable key, int left) {
-    this.key = key;
-    this.leftNode = left;
+  public BTreeKey(K key, int left) {
+    obj = new Entry(key, left);
   }
 
   public int byteSize() {
-    return key.byteSize() + 4;
+    return obj.key.byteSize() + 4;
   }
 
   public int byteSize(ByteBuffer bb) {
-    return key.byteSize(bb) + 4;
+    return obj.key.byteSize(bb) + 4;
   }
 
   public void toBytes(ByteBuffer bb) {
-    key.toBytes(bb);
-    bb.putInt(leftNode);
+    obj.key.toBytes(bb);
+    bb.putInt(obj.leftNode);
   }
 
-  public ByteStorable fromBytes(ByteBuffer bb) {
-    BTreeKey tmp = new BTreeKey();
-    tmp.key = key.fromBytes(bb);
-    tmp.leftNode = bb.getInt();
+  public ByteStorable <Entry> fromBytes(ByteBuffer bb) {
+    BTreeKey <K> tmp = new BTreeKey <>();
+    tmp.obj.key = (K) obj.key.fromBytes(bb);
+    tmp.obj.leftNode = bb.getInt();
     return tmp;
   }
 
-  public ByteStorable fromBytes(ByteBuffer bb, boolean doNew) {
+  public ByteStorable <Entry> fromBytes(ByteBuffer bb, boolean doNew) {
     return fromBytes(bb);
   }
+  
+  
 
-  public int compareTo(Object o) {
-    BTreeKey toCompare = (BTreeKey) o;
-    return key.compareTo(toCompare.key);
+  @Override
+  public int compareTo(ByteStorable<BTreeKey<K>.Entry> t) throws UnsupportedOperationException {
+    return obj.key.compareTo(t.get().key);
   }
 
   public String toString() {
-    return leftNode + ":" + key;
+    return obj.leftNode + ":" + obj.key;
   }
 }
