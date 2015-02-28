@@ -426,6 +426,7 @@ implements BTree <K, V> {
   public String toString() {
     StringBuffer sbuff = new StringBuffer();
     // first print the index:
+    if(isEmpty()) return "empty tree";
     try {
       helper.buildOutputTree(rootPage, sbuff, 0, true);
     } catch (IOException e) {

@@ -40,8 +40,19 @@ public class Record extends  CBRecord <Record.ARecord>{
     @BSField(2) private Integer f1;
     @BSField(1) private String f2;
     
+    private Boolean b;
+    
+    @BSField(3) 
+    private void setF3(Boolean b) {this.b = b;}
+    private Boolean getF3(){ return b;}
+    
+    private Short s;
+    @BSField(4)
+    public void setF4(Short s) {this.s = s; }
+    public Short getF4() {return s;}
+    
     public String toString(){
-      return f1+" "+f2;
+      return f1+" "+f2 + getF3() + " " + getF4();
     }
   
   }
@@ -50,10 +61,12 @@ public class Record extends  CBRecord <Record.ARecord>{
     super();
   }
 
-  public Record(Integer field1, String field2){
+  public Record(Integer field1, String field2, Boolean field3, Short field4){
     this();
     this.record.f1 = field1;
     this.record.f2 = field2;
+    this.record.setF3(field3);
+    this.record.setF4(field4);
   }
 
   public Integer getF1(){
@@ -62,6 +75,14 @@ public class Record extends  CBRecord <Record.ARecord>{
 
   public String getF2(){
     return record.f2;
+  }
+  
+  public Boolean getF3(){
+    return record.getF3();
+  }
+  
+  public Short getF4(){
+    return record.getF4();
   }
 
   public String toString() {

@@ -89,7 +89,7 @@ public class CacheLRUMemoryMapping <K,V> extends CacheLRU <K, V> {
           V value = loader.get(key);
           memoryFootPrint += keyMapping.byteSize(key);
           memoryFootPrint += valueMapping.byteSize(value);
-          return new CacheValue<V>(value);
+          return new CacheValue<>(value);
         }
        };
     }
@@ -98,7 +98,7 @@ public class CacheLRUMemoryMapping <K,V> extends CacheLRU <K, V> {
         @Override
         public CacheValue<V> load(K key) throws Exception {
           V value = loader.get(key);
-          return new CacheValue<V>(value);
+          return new CacheValue<>(value);
         }
       };
     }

@@ -252,6 +252,16 @@ public class ObjectManager implements DiscMap <String, ByteStorable>{
     }
     
   }
+  
+  public void close() throws IOException {
+	    this.mIndex.close();
+	    try {
+	      this.saveClassIds();
+	    } catch (Exception e) {
+	      throw new IOException(e);
+	    }
+	    
+	  }
 
 
 

@@ -97,6 +97,10 @@ public class DiscBasedMap <K, V> implements NavigableMap<K, V>, DiscMap <K,V> {
   public void save() throws IOException{
     this.btree.save();
   }
+  
+  public void close() throws IOException{
+	  this.btree.close();
+  }
 
   @Override
   public void compact() throws IOException, UnsupportedOperationException {

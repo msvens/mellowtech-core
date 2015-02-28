@@ -53,12 +53,12 @@ public class MemMappedBPTreeImpTest {
     String fileName = TestUtils.getAbsolutDir(dir+"/"+name);
     this.dbMap = new MemMappedBPTreeImp <> (fileName,  new CBString(), new CBInt(), 1024, 1024, false, 1024*1024);
     tt = new TestTree(dbMap);
-
   }
 
   @Test
   public void doTest() throws Exception {
     tt.insert();
+	tt.print();
     tt.testContains();
     tt.testValues();
     tt.testDeleteHalf();

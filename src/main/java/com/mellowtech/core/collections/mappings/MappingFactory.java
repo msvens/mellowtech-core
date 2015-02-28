@@ -58,19 +58,19 @@ public class MappingFactory {
     return ourInstance;
   }
 
-  public static BSMapping <?> createMapping(Class <?> c) throws Exception{
+  public static <K> BSMapping <K> createMapping(Class <K> c) throws Exception{
     MappingFactory mf = getInstance();
-    BSMapping <?> mapping = mf.mapping.get(c.getName());
+    BSMapping <K> mapping = mf.mapping.get(c.getName());
     if(mapping != null)
-      return mapping.getClass().newInstance();
+      return (BSMapping <K>) mapping.getClass().newInstance();
     return null;
   }
 
-  public static ByteStorable <?> newTemplate(Class <?> c) throws Exception{
+  public static <K> ByteStorable <?> newTemplate(Class <K> c) throws Exception{
     return getInstance().mapping.get(c.getName()).getTemplate();
   }
 
-  public static Object fromBytes(Class <?> c, ByteStorable <?> bs) throws Exception{
+  public static <K> Object fromBytes(Class <K> c, ByteStorable <?> bs) throws Exception{
     return getInstance().mapping.get(c.getName()).fromByteStorable(bs);
   }
 

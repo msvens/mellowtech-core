@@ -37,64 +37,52 @@ import java.nio.ByteBuffer;
  *
  * @author Martin Svensson
  */
-public class PrimitiveObject extends ByteStorable {
+public class PrimitiveObject <T> extends ByteStorable <T> {
 
-
-  private ByteStorable primObject;
-  private PrimitiveType objectType;
-
+  private PrimitiveType pt;
+  
   public PrimitiveObject(){
-    primObject = null;
+    //this(null);
   }
 
-  public PrimitiveObject(Object obj) throws ByteStorableException{
+  public PrimitiveObject(T obj) throws ByteStorableException{
     set(obj);
   }
-
-  public Object get(){
-    return primObject != null ? primObject.get() : null;
+  
+  @Override
+  public void set(T obj) {
+    super.set(obj);
+    if(obj != null)
+      pt = PrimitiveType.type(obj);
   }
-
-  public void setNull(){
-    this.primObject = null;
-  }
-
-  public void set(Object obj){
-    this.objectType = PrimitiveType.type(obj);
-    if(objectType == null) throw new ByteStorableException("Unknown Object Type");
-    if(obj != null && !(obj instanceof Class)){
-      primObject = PrimitiveType.fromType(objectType);
-      primObject.set(obj);
-    }
-    else
-      primObject = null;
-  }
-
 
   @Override
-  public ByteStorable fromBytes(ByteBuffer bb, boolean doNew) {
-    PrimitiveObject toRet = doNew ? new PrimitiveObject() : this;
+  public ByteStorable <T> fromBytes(ByteBuffer bb, boolean doNew) {
+    PrimitiveObject <T> toRet = (doNew ? new PrimitiveObject <T> () : this);
+    //toRet.pt = this.pt;
     getSize(bb);
-    toRet.objectType = PrimitiveType.fromOrdinal(bb.get());
+    PrimitiveType prim = PrimitiveType.fromOrdinal(bb.get());
+    toRet.pt = prim;
     if(bb.get() != 1){
-      toRet.primObject = null;
+      toRet.set(null);
       return toRet;
     }
-    toRet.primObject = PrimitiveType.fromType(toRet.objectType);
-    toRet.primObject.fromBytes(bb, false);
+    ByteStorable <T> obj = PrimitiveType.fromType(toRet.pt);
+    obj.fromBytes(bb, false);
+    toRet.set(obj.get());
     return toRet;
   }
 
   @Override
   public void toBytes(ByteBuffer bb) {
     putSize(internalSize(), bb);
-    bb.put(objectType.getByte());
-    if(primObject == null){
+    bb.put(pt.getByte());
+    if(get() == null){
       bb.put((byte)0);
     }
     else{
       bb.put((byte)1);
-      primObject.toBytes(bb);
+      asStorable().toBytes(bb);
     }
   }
 
@@ -109,7 +97,13 @@ public class PrimitiveObject extends ByteStorable {
   }
 
   public int internalSize(){
-    if(primObject == null) return 2;
-    return 2 + primObject.byteSize();
+    if(get() == null) return 2;
+    return 2 + asStorable().byteSize();
+  }
+  
+  private ByteStorable <T> asStorable(){
+    ByteStorable <T> bs = PrimitiveType.fromType(pt);
+    bs.set(get());
+    return bs;
   }
 }

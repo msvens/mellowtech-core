@@ -79,6 +79,12 @@ public enum PrimitiveType {
     }
     return null;
   }
+  
+  public static final ByteStorable get(Object obj) {
+    PrimitiveType t = type(obj);
+    return fromType(t);
+    
+  }
 
   public static final PrimitiveType type(Object obj){
     if(obj instanceof Class)

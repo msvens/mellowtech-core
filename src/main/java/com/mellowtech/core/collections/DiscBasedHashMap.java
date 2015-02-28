@@ -91,6 +91,10 @@ public class DiscBasedHashMap <K, V> implements DiscMap<K,V>{
   public void save() throws IOException{
     this.eht.saveHashTable();
   }
+  
+  public void close() throws IOException{
+	  this.eht.saveHashTable();
+  }
 
   @Override
   public void compact() throws IOException {

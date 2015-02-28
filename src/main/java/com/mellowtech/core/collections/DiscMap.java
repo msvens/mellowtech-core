@@ -46,6 +46,12 @@ public interface DiscMap <K,V> extends Map<K,V> {
    * @throws IOException
    */
   public void save() throws IOException;
+  
+  /**
+   * close this disc map. After close has to reopen it again
+   * @throws IOException
+   */
+  public void close() throws IOException;
 
 
   /**

@@ -69,6 +69,10 @@ public class TestTree {
   public void setDbMap(BTree <CBString, CBInt> dbMap){
     this.dbMap = dbMap;
   }
+  
+  protected void print() throws Exception {
+	  this.dbMap.toString();
+  }
 
   protected void insert() throws IOException {
     StringTokenizer st = new StringTokenizer(this.text);

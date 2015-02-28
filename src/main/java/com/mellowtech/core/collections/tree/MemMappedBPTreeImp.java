@@ -400,6 +400,9 @@ public class MemMappedBPTreeImp<K extends ByteComparable, V extends ByteStorable
 
   public String toString() {
     StringBuffer sbuff = new StringBuffer();
+    if(this.isEmpty()) {
+    	return "empty tree";
+    }
     // first print the index:
     try {
       helper.buildOutputTree(rootPage, sbuff, 0, true);

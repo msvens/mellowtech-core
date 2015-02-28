@@ -28,6 +28,7 @@
 package com.mellowtech.core.bytestorable;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.*;
 
 /**
@@ -37,12 +38,31 @@ import java.util.*;
  * @author Martin Svensson
  */
 class AutoBytes {
+  
+  private class MultiField {
+    Method get;
+    Method set;
+    Field field;
+    boolean isMethod;
+    
+    public MultiField(Method get, Method set){
+      this.get = get;
+      this.set = set;
+      isMethod = true;
+    }
+    
+    public MultiField(Field f){
+      this.field = f;
+      isMethod = false;
+    }
+  }
 
   private static class SingletonHolder {
     private final static AutoBytes autoBytes = new AutoBytes();
   }
 
-  private Map<String, TreeMap<Integer, Field>> fields;
+  private Map<String, TreeMap<Integer, MultiField>> fields;
+  //private Map<String, TreeMap<Integer, MethodPair>> methods;
 
   private AutoBytes(){
     this.fields = new HashMap<>();
@@ -56,15 +76,29 @@ class AutoBytes {
     if(fields.containsKey(clazz.getName()))
       return;
     Field[] fs = clazz.getDeclaredFields();
-    TreeMap <Integer, Field> map = new TreeMap<>();
+    TreeMap <Integer, MultiField> map = new TreeMap<>();
 
     for(Field f : fs){
       if(f.isAnnotationPresent(BSField.class))
         parseField(f, map);
     }
+    
+    //methods
+    Method[] ms = clazz.getDeclaredMethods();
+    for(Method m : ms) {
+      if(m.isAnnotationPresent(BSField.class)){
+        try{
+          parseMethod(clazz, m, ms, map);
+        }
+        catch(Exception e){
+          System.out.println(e);
+        }
+      }
+    }
     fields.put(clazz.getName(), map);
   }
 
+  /*
   public Set<Map.Entry<Integer, Field>> getFieldEntries(Class clazz){
     return this.fields.get(clazz.getName()).entrySet();
   }
@@ -72,32 +106,69 @@ class AutoBytes {
   public SortedMap<Integer, Field> getFields(Class clazz){
     return this.fields.get(clazz.getName());
   }
+  */
 
   public Set<Integer> getFieldIndexes(Class clazz){
     return this.fields.get(clazz.getName()).keySet();
   }
 
   public void setField(Class clazz, int index, PrimitiveObject po, Object toSet){
-    Field f = fields.get(clazz.getName()).get(index);
-    try{
-      f.set(toSet, po.get());
+    MultiField mf = fields.get(clazz.getName()).get(index);
+    if(mf == null) return;
+    try {
+      if(mf.isMethod){
+        mf.set.invoke(toSet, po.get());
+      }
+      else {
+        mf.field.set(toSet, po.get());
+      }
     }
     catch(Exception e){
       throw new ByteStorableException(e);
     }
+    
   }
 
   public Object getField(Class clazz, int index, Object obj){
-    Field f = fields.get(clazz.getName()).get(index);
+    MultiField mf = fields.get(clazz.getName()).get(index);
     try{
-      return f.get(obj);
+      return mf.isMethod ? mf.get.invoke(obj) : mf.field.get(obj);
     }
     catch(Exception e){
       throw new ByteStorableException(e);
     }
   }
+  
+  private void parseMethod(Class clazz, Method m, Method[] ms, TreeMap <Integer, MultiField> map) throws Exception{
+    String sib;
+    Method set, get;
+    if(m.getName().startsWith("get")){
+      sib = "set" + m.getName().substring(3);
+      get = m;
+      set = clazz.getDeclaredMethod(sib, get.getReturnType());
+    }
+    else if(m.getName().startsWith("set")){
+      sib = "get" + m.getName().substring(3);
+      set = m;
+      get = clazz.getDeclaredMethod(sib);
+    }
+    else
+      return;
+    int index = m.getAnnotation(BSField.class).value();
+    if(index < 0)
+      throw new ByteStorableException("no index of field specified");
+    Object fType = get.getReturnType();
+    PrimitiveType pt = PrimitiveType.type(fType);
+    if(pt == null)
+      throw new ByteStorableException("could not instansiate BSAuto");
+    get.setAccessible(true);
+    set.setAccessible(true);
+    map.put(index, new MultiField(get, set));
+    
+  }
+  
 
-  private void parseField(Field f, TreeMap <Integer, Field> map){
+  private void parseField(Field f, TreeMap <Integer, MultiField> map){
     f.setAccessible(true);
     int index = f.getAnnotation(BSField.class).value();
     PrimitiveObject po = null;
@@ -110,6 +181,6 @@ class AutoBytes {
     if(pt == null)
       throw new ByteStorableException("could not instansiate BSAuto");
 
-    map.put(index, f);
+    map.put(index, new MultiField(f));
   }
 }

@@ -72,6 +72,14 @@ public class BlobHashMap <K,V> implements DiscMap <K,V> {
       ((DiscMap <K, DynamicFilePointer>) pointerMap).save();
     }
   }
+  
+  @Override
+  public void close() throws IOException {
+	  this.valueFile.close();
+	  if(pointerMap instanceof DiscMap){
+	      ((DiscMap <K, DynamicFilePointer>) pointerMap).close();
+	    }
+  }
 
   @Override
   public void compact() throws IOException, UnsupportedOperationException {

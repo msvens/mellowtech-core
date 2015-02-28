@@ -41,16 +41,20 @@ public class CBRecordTest {
   @Test
   public void testNull(){
     
-    Record i1 = new Record(1, "one");
+    Record i1 = new Record(1, "one", true, (short) 1024);
     Record i2 = (Record) i1.deepCopy();
     Assert.assertTrue(i1.getF1().equals(i2.getF1()));
-    Assert.assertTrue(i2.getF2().equals(i2.getF2()));
+    Assert.assertTrue(i1.getF2().equals(i2.getF2()));
+    Assert.assertTrue(i1.getF3().equals(i2.getF3()));
+    Assert.assertTrue(i1.getF4().equals(i2.getF4()));
 
     //check null
     i1 = new Record();
     i2 = (Record) i1.deepCopy();
     Assert.assertNull(i2.getF1());
     Assert.assertNull(i2.getF2());
+    Assert.assertNull(i2.getF3());
+    Assert.assertNull(i2.getF4());
   }
 
   @Test

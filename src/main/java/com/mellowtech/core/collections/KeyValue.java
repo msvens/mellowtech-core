@@ -148,7 +148,7 @@ extends ByteStorable <KeyValue<K,V>.KV> implements Entry<K,V>{
   }
 
   @Override
-  public int compareTo(ByteStorable<KeyValue<K, V>.KV> t) throws UnsupportedOperationException {
+  public int compareTo(ByteStorable<KeyValue<K,V>.KV> t) throws UnsupportedOperationException {
     return obj.key.compareTo(t.get().key);
   }
   
