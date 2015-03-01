@@ -22,7 +22,7 @@ Check out the [examples](docs/examples.md) for usage instructions
 
 ##Download
 
-All mellowtech.org APIs can be downloaded from our maven repository http://www.mellowtech.org/nexus/content/repositories/snapshots
+All mellowtech.org APIs can be downloaded from our [maven repository](http://www.mellowtech.org/nexus)
 
 ```
 <repository>
@@ -32,7 +32,9 @@ All mellowtech.org APIs can be downloaded from our maven repository http://www.m
 </repository>
 ```
 
+
 In your <pom.xml> include the following dependency
+
 
 ```
 <dependency>
