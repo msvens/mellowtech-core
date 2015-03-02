@@ -68,8 +68,8 @@ public class PrimitiveIndexedObject extends ByteStorable <PrimitiveIndexedObject
   public void set(Object o, int index){
     obj.objectType = PrimitiveType.type(o);
     obj.index = index;
-    if(obj.primObject == null) 
-      throw new ByteStorableException("Unknown Object Type "+obj.getClass().getName());
+    if(obj.objectType == null) 
+      throw new ByteStorableException("Unknown Type "+o.getClass().getName());
     if(o != null){
       obj.primObject = PrimitiveType.fromType(obj.objectType);
       obj.primObject.set(o);
