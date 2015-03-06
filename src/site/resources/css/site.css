@@ -31,16 +31,28 @@ body{
     #font-family: "Lucida Grande", Verdana, Sans-Serif;
     font-family: helvetica, sans-serif;
     line-height: 1.5em;
-    font-size: 12px;
+    font-size: 0.9em;
     #background-color:#F2F2F2;
     font-weight: 400;
 }
 
+h1{
+    font-family: Helvetica, sans-serif;
+    font-size: 1.4em;
+    font-weight: 400;
+    line-height: 1.4em;
+    text-transform: uppercase;
+    color: green;
+    margin-top: 20px;
+    margin-bottom: 5px;
+
+}
+
 h2{
     font-family: Helvetica, sans-serif;
-    font-size: 1.1em;
+    font-size: 1.2em;
     font-weight: 400;
-    line-height: 1.1em;
+    line-height: 1.2em;
     text-transform: uppercase;
     color: green;
     margin-top: 20px;
