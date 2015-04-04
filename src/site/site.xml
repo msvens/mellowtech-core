@@ -42,7 +42,10 @@ http://maven.apache.org/DECORATION/1.3.0 " name="Mellowtech Core">
     <body>
         <menu name="Overview">
             <item name="introduction" href="index.html"></item>
-            <item name="examples" href="examples.html"></item>
+            <item name="byte storables" href="byteStorables.html"></item>
+            <item name="IO" href="IO.html"></item>
+            <item name="sorting" href="sorting.html"></item>
+            <item name="collections" href="collections.html"></item>
         </menu>
         <menu ref="reports"/>
     </body>
