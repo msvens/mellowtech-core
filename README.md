@@ -20,10 +20,10 @@ a lot of changes and enhancements and is now maintained and developed by mellowt
 
 Go to the detailed descriptions for usage instructions
 
-* [ByteStorables](site/markdown/byteStorables.md)
-* [IO](site/markdown/IO.md)
-* [Sorting](site/markdown/Sorting.md)
-* [Collections](site/markdown/Collections.md)
+* [ByteStorables](/site/markdown/byteStorables.md)
+* [IO](/site/markdown/IO.md)
+* [Sorting](/site/markdown/Sorting.md)
+* [Collections](/site/markdown/Collections.md)
 
 ##Download
 
