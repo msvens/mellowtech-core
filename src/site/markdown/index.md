@@ -17,8 +17,6 @@ The library itself was initially created by Martin Svensson and Rickard Cöster 
 working at the Swedish Institue of Computer Science in 2002. Since then it has undergone
 a lot of changes and enhancements and is now maintained and developed by mellowtech.org.
 
-Check out the [examples](examples.html) for usage instructions
-
 ##Download
 
 All mellowtech.org APIs can be downloaded from our maven repository

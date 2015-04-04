@@ -18,7 +18,12 @@ The library itself was initially created by <Martin Svensson> and <Rickard Cöst
 working at the Swedish Institue of Computer Science in 2002. Since then it has undergone
 a lot of changes and enhancements and is now maintained and developed by mellowtech.org.
 
-Check out the [examples](docs/examples.md) for usage instructions
+Go to the detailed descriptions for usage instructions
+
+* [ByteStorables](site/markdown/byteStorables.md)
+* [IO](site/markdown/IO.md)
+* [Sorting](site/markdown/Sorting.md)
+* [Collections](site/markdown/Collections.md)
 
 ##Download
 

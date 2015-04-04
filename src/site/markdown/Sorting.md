@@ -19,7 +19,7 @@ In the following example we will use the *ByteComparable* version (org.mellowtec
 (org.mellowtech.core.sort.DiscBasedSort) the pattern is exactly the same
 
 ###1 Get some Data to Sort
-A nicely prepared download can be found at http://pizzachili.dcc.uchile.cl/texts/nlang/
+A nicely prepared download can be found at [pizzachili](http://pizzachili.dcc.uchile.cl/texts/nlang)
 
 ###2 Parse your Data
 The next step is to transform the downloaded text file to a file of ByteStorables (CBStrings in this case).
