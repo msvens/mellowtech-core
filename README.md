@@ -22,8 +22,8 @@ Go to the detailed descriptions for usage instructions
 
 * [ByteStorables](src/site/markdown/byteStorables.md)
 * [IO](src/site/markdown/IO.md)
-* [Sorting](src/site/markdown/Sorting.md)
-* [Collections](src/site/markdown/Collections.md)
+* [Sorting](src/site/markdown/sorting.md)
+* [Collections](src/site/markdown/collections.md)
 
 ##Download
 
