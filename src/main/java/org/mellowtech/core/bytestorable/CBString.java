@@ -30,7 +30,7 @@ import java.nio.ByteBuffer;
 import java.util.Locale;
 
 import org.mellowtech.core.CoreLog;
-import org.mellowtech.core.bytestorable.ext.CompiledLocale;
+import org.mellowtech.core.util.CompiledLocale;
 
 /**
  * String that can be represented as bytes in conformance with the ByteStorable
@@ -42,10 +42,10 @@ import org.mellowtech.core.bytestorable.ext.CompiledLocale;
  * Strings at a language specific level.
  * </p>
  * 
- * @author Martin Svensson <msvens@gmail.com>
+ * @author Martin Svensson, msvens@gmail.com
  * @version 2.0 (total rewrite)
  */
-public class CBString extends ByteComparable <String> {
+public class CBString extends BComparableImp<String, CBString>{
 
   private static char[] charMap = null;
   private static Locale locale = null;
@@ -76,6 +76,8 @@ public class CBString extends ByteComparable <String> {
    * 
    * @param locale
    *          a <code>Locale</code> value
+   * @param charmap
+   *          a charmap to set
    */
   public static void setLocale(Locale locale, char[] charmap) {
     CoreLog.L().info("Setting locale to " + locale + ", using supplied charmap");
@@ -107,31 +109,29 @@ public class CBString extends ByteComparable <String> {
     return CBString.locale;
   }
   
-  public CBString(String str){
-    set(str);
-  }
+  public CBString(String str){super(str);}
   
-  public CBString(){
-    set("");
-  }
+  public CBString(){super("");}
 
+  @Override
+  public CBString create(String str) {return new CBString(str);}
   
   @Override
-  public int compareTo(ByteStorable <String> o) {
+  public int compareTo(CBString other) {
     if (charMap == null)
-      return obj.compareTo(o.obj);
+      return value.compareTo(other.value);
 
-    String str1 = o.obj;
-    int n = Math.min(obj.length(), str1.length());
+    String str1 = other.value;
+    int n = Math.min(value.length(), str1.length());
     int i = 0;
     while (n-- != 0) {
-      char c1 = charMap[(int) obj.charAt(i)];
+      char c1 = charMap[(int) value.charAt(i)];
       char c2 = charMap[(int) str1.charAt(i)];
       if (c1 != c2)
         return c1 - c2;
       i++;
     }
-    return obj.length() - str1.length();
+    return value.length() - str1.length();
   }
   
   
@@ -159,97 +159,28 @@ public class CBString extends ByteComparable <String> {
 
 
   @Override
-  public ByteStorable<String> fromBytes(ByteBuffer bb, boolean doNew) {
-    CBString ret = doNew ? new CBString() : this;
-    //System.out.println("decoding: "+bb.position());
+  public CBString from(ByteBuffer bb) {
     int length = CBUtil.decodeInt(bb);
-    ret.set(UtfUtil.decode(bb, length));
-    return ret;
+    return new CBString((UtfUtil.decode(bb, length)));
   }
 
 
   @Override
-  public void toBytes(ByteBuffer bb) {
-    CBUtil.putSizeInt(UtfUtil.utfLength(obj), bb, true);
-    UtfUtil.encode(obj, bb);
+  public void to(ByteBuffer bb) {
+    CBUtil.putSize(UtfUtil.utfLength(value), bb, true);
+    UtfUtil.encode(value, bb);
   }
 
 
   @Override
   public int byteSize() {
-    int utfLength = UtfUtil.utfLength(obj);
-    return CBUtil.encodeLength(utfLength) + utfLength;
+    return CBUtil.byteSize(UtfUtil.utfLength(value), true);
   }
 
 
   @Override
   public int byteSize(ByteBuffer bb) {
-    return CBUtil.peekSizeInt(bb, true);
-  }
-
-
-
-  /**
-   * Finds the shortest string that separates two strings:<br>
-   * example 1: martin and rickard would be "r"<br>
-   * example 2: martin and mary would be "mary"
-   * 
-   * @param str1
-   *          a <code>ByteStorable</code> value
-   * @param str2
-   *          a <code>ByteStorable</code> value
-   * @return the smallest separator
-   */
-  public ByteStorable <String> separate(ByteStorable <String> str1, 
-      ByteStorable <String> str2) {
-    String small, large;
-
-    if (str1.compareTo(str2) < 0) {
-      small = ((CBString) str1).get();
-      large = ((CBString) str2).get();
-    }
-    else {
-      small = ((CBString) str2).get();
-      large = ((CBString) str1).get();
-    }
-    int i;
-    for(i = 0; i < small.length(); i++){
-      if(small.charAt(i) != large.charAt(i))
-        break;
-    }
-    /*if (charMap == null) {
-      for (i = 0; i < small.length(); i++) {
-        if (small.charAt(i) != large.charAt(i))
-          break;
-      }
-    }
-    else {
-      for (i = 0; i < small.length(); i++) {
-        char c1 = charMap[(int) small.charAt(i)];
-        char c2 = charMap[(int) large.charAt(i)];
-        if (c1 != c2)
-          break;
-      }
-    }*/
-
-    CBString newStr = new CBString();
-    if (small.length() == large.length() && i == large.length()) {
-      newStr.set(large);
-      return newStr;
-    }
-    newStr.set(new String(large.substring(0, i + 1)));
-
-    return newStr;
-  }
-
-  /**
-   * Uses the hashcode of the current string.
-   * 
-   * @return hashcode
-   * @see String#hashCode()
-   */
-  public int hashCode() {
-    return obj.hashCode();
+    return CBUtil.peekSize(bb, true);
   }
 
   /**

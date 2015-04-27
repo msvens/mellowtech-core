@@ -30,7 +30,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.channels.Channels;
 
-import org.mellowtech.core.bytestorable.ByteStorable;
+import org.mellowtech.core.bytestorable.BStorable;
 
 /**
  * Writes ByteStorables to a given output stream. Internally it uses a
@@ -64,7 +64,7 @@ public class StorableOutputStream {
    * @exception IOException
    *              if an error occurs
    */
-  public void write(ByteStorable <?> bs) throws IOException {
+  public void write(BStorable <?,?> bs) throws IOException {
     mChannel.write(bs);
   }
 

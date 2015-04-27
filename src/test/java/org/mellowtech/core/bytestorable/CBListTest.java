@@ -27,14 +27,13 @@
 
 package org.mellowtech.core.bytestorable;
 
-import junit.framework.Assert;
-
+import org.junit.Before;
 import org.junit.Test;
-import org.mellowtech.core.bytestorable.ByteStorableException;
-import org.mellowtech.core.bytestorable.CBInt;
 import org.mellowtech.core.bytestorable.CBList;
 
-import java.nio.ByteBuffer;
+import java.lang.reflect.Constructor;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Date: 2013-04-17
@@ -42,27 +41,23 @@ import java.nio.ByteBuffer;
  *
  * @author Martin Svensson
  */
-public class CBListTest {
-
-  @Test
-  public void test(){
-    CBList <String> i1 = new CBList();
-    i1.add("one string");
-    i1.add("another string");
-    CBList i2 = (CBList) i1.deepCopy();
-    Assert.assertTrue(i1.get(0).equals(i2.get(0)));
-    Assert.assertTrue(i2.get(1).equals(i2.get(1)));
-
-    i1.clear();
-    Assert.assertTrue(i1.size() == 0);
-    i2 = (CBList <String>) i1.deepCopy();
-    Assert.assertTrue(i2.size() == 0);
+public class CBListTest extends BStorableTemplate <List<Integer>, CBList <Integer>>{
+  
+  @Before public void init(){
+    CBList <Integer> l1 = new CBList <> ();
+    l1.add(1);
+    CBList <Integer> l2 = new CBList <> ();
+    l2.add(1);
+    
+    type = (Class<CBList<Integer>>) l1.getClass();
+    values = (List<Integer>[]) new List[]{l1.get(),l2.get()};
+    sizes = new int[]{13,13};
   }
-
-  @Test(expected = ByteStorableException.class)
-  public void insertUnsupportedType(){
-    CBList <CBInt> i1 = new CBList<>();
-    i1.add(new CBInt(1));
-    i1.toBytes();
+  
+  @Test
+  @Override
+  public void testAConstructor() throws Exception{
+    Constructor <CBList<Integer>> c = type.getConstructor(List.class);
+    c.newInstance(values[0]);
   }
 }

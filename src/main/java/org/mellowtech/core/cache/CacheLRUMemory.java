@@ -27,8 +27,8 @@
 
 package org.mellowtech.core.cache;
 
-import org.mellowtech.core.bytestorable.ByteStorable;
-import org.mellowtech.core.collections.mappings.BSMapping;
+
+import org.mellowtech.core.bytestorable.BStorable;
 
 import com.google.common.cache.*;
 
@@ -38,14 +38,14 @@ import com.google.common.cache.*;
  *
  * @author Martin Svensson
  */
-public class CacheLRUMemory <K extends ByteStorable <?>, V extends ByteStorable <?>> extends CacheLRU <K, V> {
+public class CacheLRUMemory <A,B extends BStorable <A,B>,C,D extends BStorable <C,D>> extends CacheLRU <B,D> {
 
    private long memoryFootPrint;
    //private BSMapping <?> keyMapping = null;
    //private BSMapping <?> valueMapping = null;
 
 
-  public CacheLRUMemory(Remover<K, V> remover, Loader<K, V> loader, long size,
+  public CacheLRUMemory(Remover<B, D> remover, Loader<B, D> loader, long size,
                         boolean countMemoryFootPrint) {
     setRemover(remover);
     setSize(size);
@@ -59,17 +59,17 @@ public class CacheLRUMemory <K extends ByteStorable <?>, V extends ByteStorable 
   }
 
   @Override
-  protected LoadingCache<K, CacheValue<V>> buildCache() {
+  protected LoadingCache<B, CacheValue<D>> buildCache() {
 
-    Weigher<K, CacheValue <V>> weighter = new Weigher<K, CacheValue<V>> () {
+    Weigher<B, CacheValue <D>> weighter = new Weigher<B, CacheValue<D>> () {
       @Override
-      public int weigh(K key, CacheValue <V> value) {
+      public int weigh(B key, CacheValue <D> value) {
         return key.byteSize() + value.getValue().byteSize();
       }
     };
 
-    RemovalListener<K, CacheValue <V>> removalListener = this.getRemoveListener();
-    CacheLoader<K, CacheValue<V>> cacheLoader = this.getCacheLoader();
+    RemovalListener<B, CacheValue <D>> removalListener = this.getRemoveListener();
+    CacheLoader<B, CacheValue<D>> cacheLoader = this.getCacheLoader();
 
     if(removalListener != null){
       return CacheBuilder.newBuilder().maximumWeight(maxSize()).
@@ -79,36 +79,36 @@ public class CacheLRUMemory <K extends ByteStorable <?>, V extends ByteStorable 
       return CacheBuilder.newBuilder().maximumWeight(maxSize()).weigher(weighter).build(cacheLoader);
   }
 
-  private CacheLoader <K, CacheValue<V>> getCacheLoader(){
+  private CacheLoader <B, CacheValue<D>> getCacheLoader(){
 
     if(this.memory){
-       return new CacheLoader<K, CacheValue<V>>() {
+       return new CacheLoader<B, CacheValue<D>>() {
         @Override
-        public CacheValue<V> load(K key) throws Exception {
-          V value = loader.get(key);
+        public CacheValue<D> load(B key) throws Exception {
+          D value = loader.get(key);
           memoryFootPrint += key.byteSize();
           memoryFootPrint += value.byteSize();
-          return new CacheValue<V>(value);
+          return new CacheValue<D>(value);
         }
        };
     }
     else{
-      return new CacheLoader<K, CacheValue<V>>() {
+      return new CacheLoader<B, CacheValue<D>>() {
         @Override
-        public CacheValue<V> load(K key) throws Exception {
-          V value = loader.get(key);
-          return new CacheValue<V>(value);
+        public CacheValue<D> load(B key) throws Exception {
+          D value = loader.get(key);
+          return new CacheValue<D>(value);
         }
       };
     }
 
   }
 
-  private RemovalListener <K, CacheValue<V>> getRemoveListener(){
+  private RemovalListener <B, CacheValue<D>> getRemoveListener(){
     if(this.memory && remover != null){
-        return new RemovalListener<K, CacheValue<V>>() {
+        return new RemovalListener<B, CacheValue<D>>() {
           @Override
-          public void onRemoval(RemovalNotification<K, CacheValue<V>> notification) {
+          public void onRemoval(RemovalNotification<B, CacheValue<D>> notification) {
             memoryFootPrint -= notification.getKey().byteSize();
             memoryFootPrint -= notification.getValue().getValue().byteSize();
             remover.remove(notification.getKey(), notification.getValue());
@@ -116,18 +116,18 @@ public class CacheLRUMemory <K extends ByteStorable <?>, V extends ByteStorable 
         };
       }
     else if(this.memory){
-      return new RemovalListener<K, CacheValue<V>>() {
+      return new RemovalListener<B, CacheValue<D>>() {
         @Override
-        public void onRemoval(RemovalNotification<K, CacheValue<V>> notification) {
+        public void onRemoval(RemovalNotification<B, CacheValue<D>> notification) {
           memoryFootPrint -= notification.getKey().byteSize();
           memoryFootPrint -= notification.getValue().getValue().byteSize();
         }
       };
     }
     else if(this.remover != null){
-      return new RemovalListener<K, CacheValue<V>>() {
+      return new RemovalListener<B, CacheValue<D>>() {
         @Override
-        public void onRemoval(RemovalNotification<K, CacheValue<V>> notification) {
+        public void onRemoval(RemovalNotification<B, CacheValue<D>> notification) {
           remover.remove(notification.getKey(), notification.getValue());
         }
       };

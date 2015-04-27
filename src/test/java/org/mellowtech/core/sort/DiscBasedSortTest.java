@@ -73,20 +73,20 @@ public class DiscBasedSortTest {
     Scanner s = new Scanner(f);
     s.useDelimiter(p);
     String line;
-    stringList = new ArrayList();
+    stringList = new ArrayList <>();
     int charlen = 0;
-    CBString tmpStr = new CBString();
+    CBString tmpStr;
     int i = 0;
     while(s.hasNext() && i++ < 10000){
       String str = s.next();
-      tmpStr.set(str);
+      tmpStr = new CBString(str);
       charlen += tmpStr.byteSize();
       stringList.add(str);
     }
     stringBuffer = ByteBuffer.allocate(charlen);
     for(String str : stringList){
-      tmpStr.set(str);
-      tmpStr.toBytes(stringBuffer);
+      tmpStr = new CBString(str);
+      tmpStr.to(stringBuffer);
     }
     System.out.println(Platform.getTempDir()+"sort");
     File sortDir = new File(Platform.getTempDir()+"sort");
@@ -99,13 +99,13 @@ public class DiscBasedSortTest {
   }
 
   @Test public void testQuickSort() throws Exception{
-    DiscBasedSort edb = new DiscBasedSort(new CBString(), 0, Platform.getTempDir()+"sort");
+    DiscBasedSort <String, CBString> edb = new DiscBasedSort <> (new CBString(), 0, Platform.getTempDir()+"sort");
     //stringBuffer.flip();
     ByteArrayOutputStream bos = new ByteArrayOutputStream();
     ByteArrayInputStream bis = new ByteArrayInputStream(stringBuffer.array());
     Channel c = Channels.newChannel(bis);
     Channel co = Channels.newChannel(bos);
-    edb.sort((ReadableByteChannel)c, (WritableByteChannel) co, DiscBasedSort.getBlockSize()*4);
+    int num = edb.sort((ReadableByteChannel)c, (WritableByteChannel) co, DiscBasedSort.getBlockSize()*4);
     //edb.sort(Channels.newChannel(c, bos, edb.getBlockSize()*1);
 
     //verify that things are the same
@@ -114,9 +114,10 @@ public class DiscBasedSortTest {
     CBString tStr = new CBString();
     bos.flush();
     ByteBuffer sorted =  ByteBuffer.wrap(bos.toByteArray());
+    System.out.println(num+" "+stringList.size());
     for(String str : stringList){
-
-      tStr.fromBytes(sorted, false);
+      tStr = tStr.from(sorted);
+      //System.out.println(str+" "+tStr);
       Assert.assertEquals(str, tStr.get());
     }
   }

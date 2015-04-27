@@ -36,12 +36,13 @@ import java.util.Map;
 import java.util.logging.Level;
 
 import org.mellowtech.core.CoreLog;
-import org.mellowtech.core.bytestorable.ByteComparable;
-import org.mellowtech.core.bytestorable.ByteStorable;
+import org.mellowtech.core.bytestorable.BComparable;
+import org.mellowtech.core.bytestorable.BStorable;
+import org.mellowtech.core.bytestorable.CBUtil;
 import org.mellowtech.core.bytestorable.io.SortedBlock;
 import org.mellowtech.core.collections.KeyValue;
-import org.mellowtech.core.disc.MapEntry;
 import org.mellowtech.core.io.Record;
+import org.mellowtech.core.util.MapEntry;
 
 /**
  * Date: 2013-03-16
@@ -49,10 +50,10 @@ import org.mellowtech.core.io.Record;
  *
  * @author Martin Svensson
  */
-public class MemMappedBPlusHelper<K extends ByteComparable,V extends ByteStorable> {
-  private final MemMappedBPTreeImp<K,V> tree;
+public class MemMappedBPlusHelper<A,K extends BComparable<A,K>,B,V extends BStorable<B,V>> {
+  private final MemMappedBPTreeImp<A,K,B,V> tree;
 
-  public MemMappedBPlusHelper(MemMappedBPTreeImp<K, V> tree){
+  public MemMappedBPlusHelper(MemMappedBPTreeImp<A,K,B,V> tree){
     this.tree = tree;
   }
 
@@ -111,7 +112,7 @@ public class MemMappedBPlusHelper<K extends ByteComparable,V extends ByteStorabl
    * (starting with moving the parent into the left block, moving the smallest
    * key in the right block to the parent and so on. The method only shifts if
    * it gains anything from it, i.e continously check the current shift.
-   * <code>if(parent.byteSize()+left.getDataBytes() >=
+   * <code>if(parent.byteSize()+left.getDataBytes() &gt;=
    *    right.getDataBytes() - right.getFirstKey().byteSize()){
    *   break;
    *  }
@@ -285,9 +286,11 @@ public class MemMappedBPlusHelper<K extends ByteComparable,V extends ByteStorabl
   public BTreeKey <K> generateSeparator(SortedBlock <KeyValue <K,V>> small, 
       SortedBlock <KeyValue <K,V>> large) {
     BTreeKey <K> nKey = new BTreeKey <> ();
-    nKey.get().key = (K) tree.keyValues.getKey().separate(
+    /*nKey.get().key = (K) tree.keyValues.getKey().separate(
             small.getLastKey().get().key,
-            large.getFirstKey().get().key);
+            large.getFirstKey().get().key);*/
+    nKey.get().key = (K) CBUtil.separate((K)small.getLastKey().getKey(), 
+        (K)large.getFirstKey().getKey());
     return nKey;
   }
 
@@ -304,8 +307,10 @@ public class MemMappedBPlusHelper<K extends ByteComparable,V extends ByteStorabl
     // this should change to use the provided separator function.
     // for now take the small one:
     BTreeKey <K> nKey = new BTreeKey <> ();
-    nKey.get().key = (K) tree.keyValues.getKey().separate(
-            small.getLastKey().getKey(), large.getKey());
+    /*nKey.get().key = (K) tree.keyValues.getKey().separate(
+            small.getLastKey().getKey(), large.getKey());*/
+    nKey.get().key = (K) CBUtil.separate((K)small.getLastKey().getKey(), 
+        (K) large.getKey());
     return nKey;
   }
 
@@ -429,7 +434,7 @@ public class MemMappedBPlusHelper<K extends ByteComparable,V extends ByteStorabl
   /**
    * Prints this index without the leaf level, i.e it will not print the
    * contents of the key file.
-   *
+   * @param leafLevel true if level is leaf
    * @return a <code>String</code> value
    */
   public String printIndex(boolean leafLevel) {

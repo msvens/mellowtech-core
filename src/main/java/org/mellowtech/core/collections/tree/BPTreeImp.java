@@ -28,7 +28,6 @@ package org.mellowtech.core.collections.tree;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -37,8 +36,8 @@ import java.util.Map;
 import java.util.logging.Level;
 
 import org.mellowtech.core.CoreLog;
-import org.mellowtech.core.bytestorable.ByteComparable;
-import org.mellowtech.core.bytestorable.ByteStorable;
+import org.mellowtech.core.bytestorable.BComparable;
+import org.mellowtech.core.bytestorable.BStorable;
 import org.mellowtech.core.bytestorable.CBBoolean;
 import org.mellowtech.core.bytestorable.io.SortedBlock;
 import org.mellowtech.core.collections.KeyValue;
@@ -59,7 +58,6 @@ import org.mellowtech.core.io.RecordFile;
  * a much more compact index. Depending on the block size the index is more or
  * less deep, however a typical BPlusTree should not reach a depth greater than
  * 3. A resonable blocksize is somewhere between 512-2048 bytes.
- * </p>
  * <p>
  * An BPlusTree that can store 512 separators in each block will at worst (i.e
  * maximum height and minimal breath) have 3 levels for an index with 1000000
@@ -68,20 +66,17 @@ import org.mellowtech.core.io.RecordFile;
  * retrieving the key. With use of buffers it is often possible to keep portions
  * of the index in memory, yielding much better performance. An LRU cache of
  * size 20 allows for on average less than 1 disc access per search.
- * </p>
  * <p>
  * In general, the maximum depth of a BPlusTree is
- * </p>
  * <p>
- * d <= 1 + log[m/2]((N + 1)/2)
- * </p>
+ * <code>
+ * d &lt;= 1 + log[m/2]((N + 1)/2)
+ * </code>
  * <p>
  * where m is the order of the tree and N is the number of keys in the three.
  * Blocks in this BPlusTree is searched binary so that will take:
- * </p>
  * <p>
  * log[2](m/2)
- * </p>
  * <p>
  * Implementing classes only has to implement three functions searchBlock,
  * insert, and delete (see below). Implementing classes should use the provided
@@ -92,17 +87,19 @@ import org.mellowtech.core.io.RecordFile;
  * elaborated with. For a general discussion on BTrees the interested reader
  * should turn to <i>File Structures</i> by Michael J. Folk and Bill Zoellick.
  * Most implementation ideas were taken from that book
- * </p>
  * <p>
  * This BPlusTree uses the scheme in com.mellowtech.Disc for disc access.
  * Notably it implements the ByteStorable interface.
- * </p>
  *
+ * @param <A> Wrapped BComparable key class
+ * @param <B> BComparable key class
+ * @param <C> Wrapped BStorable value class
+ * @param <D> BStorable value class
  * @author Martin Svensson
  * @version 1.0
  */
-public class BPTreeImp<K extends ByteComparable, V extends ByteStorable>
-implements BTree <K, V> {
+public class BPTreeImp<A, B extends BComparable <A,B>, C, D extends BStorable <C,D>>
+implements BTree <A, B, C, D> {
   private static final boolean FORCE_INTEGRITY = false;
   /**
    * File to store key/values.
@@ -123,11 +120,11 @@ implements BTree <K, V> {
   /**
    * Used for reading and writing key/value pairs to the key file.
    */
-  protected KeyValue<K, V> keyValues;
+  protected KeyValue<B,D> keyValues;
   /**
    * Used for reading and writing keys to the index.
    */
-  protected BTreeKey <K> indexKeys;
+  protected BTreeKey <B> indexKeys;
   /**
    * Filename for the IndexFile.
    */
@@ -140,9 +137,9 @@ implements BTree <K, V> {
    * The name of this BPlusTree.
    */
   protected String fName;
-  protected BPlusHelper <K,V> helper;
-  protected K keyType;
-  protected V valueType;
+  protected BPlusHelper <A,B,C,D> helper;
+  protected B keyType;
+  protected D valueType;
   protected int size = 0;
   //For Caching
   boolean useCache = false;
@@ -155,15 +152,19 @@ implements BTree <K, V> {
    * Opens an existing <code>BPTreeImp</code>.
    *
    * @param fName Name of the BPlusTree to open.
+   * @param keyType the BComparable key class
+   * @param valueType the BStorable value class
    * @throws Exception if an error occurs
    */
-  public BPTreeImp(String fName, K keyType, V valueType) throws Exception {
+  public BPTreeImp(String fName, Class <B> keyType, Class <D> valueType) throws Exception {
     // open the file:
     this.fName = fName;
     indexName = fName + ".idx";
     valueName = fName + ".val";
-    keyValues = new KeyValue <> (keyType, valueType);
-    indexKeys = new BTreeKey <> (keyType, 0);
+    this.keyType = keyType.newInstance();
+    this.valueType = valueType.newInstance();
+    keyValues = new KeyValue <> (this.keyType, this.valueType);
+    indexKeys = new BTreeKey <> (this.keyType, 0);
 
     openIndex(false, -1, -1);
     openValues(false, -1, -1);
@@ -187,17 +188,17 @@ implements BTree <K, V> {
    * @param maxIndexBlocks Maximum number of index blocks
    * @throws java.io.IOException if an error occurs
    */
-  public BPTreeImp(String fName, K keyType,
-                   V valueType, int valueBlockSize, int indexBlockSize, int maxBlocks, int maxIndexBlocks)
-          throws IOException {
+  public BPTreeImp(String fName, Class<B> keyType,
+                   Class<D> valueType, int valueBlockSize, int indexBlockSize, int maxBlocks, int maxIndexBlocks)
+          throws Exception {
 
     indexName = fName + ".idx";
     valueName = fName + ".val";
-    this.keyType = keyType;
-    this.valueType = valueType;
+    this.keyType = keyType.newInstance();
+    this.valueType = valueType.newInstance();
 
-    keyValues = new KeyValue <> (keyType, valueType);
-    indexKeys = new BTreeKey <> (keyType, 0);
+    keyValues = new KeyValue <> (this.keyType, this.valueType);
+    indexKeys = new BTreeKey <> (this.keyType, 0);
     leafLevel = -1;
 
     openIndex(true, indexBlockSize, maxIndexBlocks);
@@ -206,7 +207,7 @@ implements BTree <K, V> {
     this.helper = new BPlusHelper <> (this);
 
 
-    SortedBlock <KeyValue <K,V>>sb = new SortedBlock <> ();
+    SortedBlock <KeyValue <B,D>>sb = new SortedBlock <> ();
     sb.setBlock(new byte[valueFile.getBlockSize()], keyValues, true,
             SortedBlock.PTR_NORMAL);
 
@@ -219,9 +220,9 @@ implements BTree <K, V> {
   }
 
   /**
-   * Delete this btree on disc
+   * Delete this tree on disc
    *
-   * @throws java.io.IOException
+   * @throws IOException if an error occurs
    */
   public void delete() throws IOException {
     valueFile.close();
@@ -250,12 +251,9 @@ implements BTree <K, V> {
     bb.putInt(size);
 
     //Cache Info:
-    CBBoolean tmp = new CBBoolean(useCache);
-    tmp.toBytes(bb);
-    tmp.set(fullIndex);
-    tmp.toBytes(bb);
-    tmp.set(readOnly);
-    tmp.toBytes(bb);
+    new CBBoolean(useCache).to(bb);
+    new CBBoolean(fullIndex).to(bb);
+    new CBBoolean(readOnly).to(bb);
     indexFile.setReserve(bb.array());
     valueFile.save();
     indexFile.save();
@@ -299,17 +297,17 @@ implements BTree <K, V> {
    * @throws java.io.IOException if an error occurs
    */
   @Override
-  public boolean containsKey(K key) throws IOException {
+  public boolean containsKey(B key) throws IOException {
     return getKeyValue(key) != null;
   }
 
   @Override
-  public void put(K key, V value) throws IOException {
+  public void put(B key, D value) throws IOException {
     insertUpdate(key, value, true);
   }
 
   @Override
-  public void putIfNotExists(K key, V value) throws IOException {
+  public void putIfNotExists(B key, D value) throws IOException {
     insertUpdate(key, value, false);
   }
 
@@ -317,10 +315,10 @@ implements BTree <K, V> {
   // ABSTRACT METHODS:
 
   @Override
-  public V remove(K key) {
+  public D remove(B key) {
     try {
-      KeyValue<K, V> kv = new KeyValue <> (key, null);
-      BPlusReturn<K, V> ret;
+      KeyValue<B,D> kv = new KeyValue <> (key, null);
+      BPlusReturn<B,D> ret;
       if (leafLevel == -1) { // no index...delete directly to value file:
         ret = deleteKeyValue(kv, rootPage, -1, -1);
         if (ret.returnKey != null) {
@@ -329,7 +327,7 @@ implements BTree <K, V> {
         } else
           return null;
       }
-      BTreeKey <K> searchKey = new BTreeKey <> (key, -1);
+      BTreeKey <B> searchKey = new BTreeKey <> (key, -1);
       ret = delete(rootPage, -1, -1, searchKey, kv, 0);
 
       if (ret != null && ret.action == BPlusReturn.SPLIT) { // the underlying
@@ -348,13 +346,13 @@ implements BTree <K, V> {
   }
 
   @Override
-  public V get(K key) throws IOException {
-    KeyValue <K,V> kv = getKeyValue(key);
-    return (kv == null) ? null : (V) kv.getValue();
+  public D get(B key) throws IOException {
+    KeyValue <B,D> kv = getKeyValue(key);
+    return (kv == null) ? null : (D) kv.getValue();
   }
 
   @Override
-  public K getKey(int pos) throws IOException {
+  public B getKey(int pos) throws IOException {
     if (pos < 0 || pos >= size)
       throw new IOException("position out of bounds");
 
@@ -362,9 +360,9 @@ implements BTree <K, V> {
     int curr = 0;
     for (; curr < blocks.size(); curr++) {
       int bNo = blocks.get(curr);
-      SortedBlock <KeyValue <K,V>> sb = helper.getValueBlock(bNo);
+      SortedBlock <KeyValue <B,D>> sb = helper.getValueBlock(bNo);
       if (pos < sb.getNumberOfElements()) {
-        return ((KeyValue<K, V>) sb.getKey(pos)).getKey();
+        return ((KeyValue<B,D>) sb.getKey(pos)).getKey();
       }
       pos -= sb.getNumberOfElements();
     }
@@ -373,7 +371,7 @@ implements BTree <K, V> {
 
   // SEARCHING:
   @Override
-  public KeyValue<K, V> getKeyValue(K key) throws IOException {
+  public KeyValue<B,D> getKeyValue(B key) throws IOException {
     int block = searchBlock(key);
     if (block == -1)
       return null;
@@ -381,7 +379,7 @@ implements BTree <K, V> {
   }
 
   @Override
-  public TreePosition getPosition(K key) throws IOException {
+  public TreePosition getPosition(B key) throws IOException {
     int block = searchBlock(key);
     if (block == -1)
       return null;
@@ -389,7 +387,7 @@ implements BTree <K, V> {
   }
 
   @Override
-  public TreePosition getPositionWithMissing(K key) throws IOException {
+  public TreePosition getPositionWithMissing(B key) throws IOException {
     int block = searchBlock(key);
     if (block == -1)
       return null;
@@ -398,12 +396,12 @@ implements BTree <K, V> {
 
   // ITERATORS:
   @Override
-  public Iterator<KeyValue<K, V>> iterator() {
+  public Iterator<KeyValue<B,D>> iterator() {
     return new BPIterator();
   }
 
   @Override
-  public Iterator<KeyValue<K, V>> iterator(K from) {
+  public Iterator<KeyValue<B,D>> iterator(B from) {
     return new BPIterator(from);
   }
 
@@ -454,11 +452,11 @@ implements BTree <K, V> {
    * @param key the key to search.
    * @return a blocknumber
    */
-  protected int searchBlock(K key) {
+  protected int searchBlock(B key) {
     try {
       if (leafLevel == -1)
         return rootPage;
-      BTreeKey <K> bTreeKey = new BTreeKey <> (key, 0);
+      BTreeKey <B> bTreeKey = new BTreeKey <> (key, 0);
       return searchBlock(rootPage, bTreeKey, 0);
     } catch (IOException e) {
       CoreLog.L().log(Level.WARNING, "could not find block", e);
@@ -466,20 +464,20 @@ implements BTree <K, V> {
     }
   }
 
-  private int searchBlock(int pNo, BTreeKey <K> key, int level) throws IOException {
-    SortedBlock <BTreeKey <K>> sb = helper.getIndexBlock(pNo);
+  private int searchBlock(int pNo, BTreeKey <B> key, int level) throws IOException {
+    SortedBlock <BTreeKey <B>> sb = helper.getIndexBlock(pNo);
     if (level == leafLevel) {
       return helper.getNode(sb.binarySearch(key), sb);
     }
     return searchBlock(helper.getNode(sb.binarySearch(key), sb), key, level + 1);
   }
 
-  private void insertUpdate(K key, V value, boolean update)
+  private void insertUpdate(B key, D value, boolean update)
           throws IOException {
-    KeyValue<K, V> kv = new KeyValue <> (key, value);
+    KeyValue<B,D> kv = new KeyValue <> (key, value);
     if (leafLevel == -1) {
       // no index...to insert directly to value file...in first logical block:
-      BPlusReturn <K,V> ret = insertKeyValue(kv, rootPage, update);
+      BPlusReturn <B,D> ret = insertKeyValue(kv, rootPage, update);
       if (ret != null && ret.action == BPlusReturn.SPLIT) {
         // we now have to value blocks time for index
         ret.promo.get().leftNode = ret.newBlockNo;
@@ -487,20 +485,20 @@ implements BTree <K, V> {
       }
       return;
     }
-    BTreeKey <K> searchKey = new BTreeKey <> (key, -1);
-    BTreeKey <K> rootKey = insert(rootPage, searchKey, kv, 0, update);
+    BTreeKey <B> searchKey = new BTreeKey <> (key, -1);
+    BTreeKey <B> rootKey = insert(rootPage, searchKey, kv, 0, update);
     if (rootKey != null)
       createRoot(rootKey);
 
   }
 
-  private BTreeKey <K> insert(int pNo, BTreeKey <K> key, KeyValue <K,V> kv, int level,
+  private BTreeKey <B> insert(int pNo, BTreeKey <B> key, KeyValue <B,D> kv, int level,
                           boolean update) throws IOException {
-    SortedBlock <BTreeKey <K>> sb = helper.getIndexBlock(pNo);
-    BTreeKey <K> keyIndex = null;
+    SortedBlock <BTreeKey <B>> sb = helper.getIndexBlock(pNo);
+    BTreeKey <B> keyIndex = null;
     if (level == leafLevel) {
       try {
-        BPlusReturn <K,V> ret = insertKeyValue(kv, helper.getNode(sb.binarySearch(key), sb),
+        BPlusReturn <B,D> ret = insertKeyValue(kv, helper.getNode(sb.binarySearch(key), sb),
                 update);
         if (ret != null) { // this forced a split...
           keyIndex = ret.promo;
@@ -520,32 +518,32 @@ implements BTree <K, V> {
       return insertKey(sb, pNo, keyIndex);
   }
 
-  private BTreeKey <K> insertKey(SortedBlock <BTreeKey <K>> sb, int pNo, BTreeKey <K> keyIndex)
+  private BTreeKey <B> insertKey(SortedBlock <BTreeKey <B>> sb, int pNo, BTreeKey <B> keyIndex)
           throws IOException {
     if (sb.fitsKey(keyIndex)) {
       helper.insertAndReplace(keyIndex, sb);
       helper.putIndexBlock(pNo, sb);
       return null;
     }
-    SortedBlock <BTreeKey <K>> sb1 = sb.splitBlock();
-    BTreeKey <K> first = sb1.getFirstKey();
+    SortedBlock <BTreeKey <B>> sb1 = sb.splitBlock();
+    BTreeKey <B> first = sb1.getFirstKey();
     helper.setLastPointer(sb, first.get().leftNode);
     if (keyIndex.compareTo(sb.getLastKey()) < 0) {
       helper.insertAndReplace(keyIndex, sb);
     } else
       helper.insertAndReplace(keyIndex, sb1);
     // find the shortest separator:
-    BTreeKey <K> promo = sb1.getFirstKey();
+    BTreeKey <B> promo = sb1.getFirstKey();
     helper.deleteAndReplace(promo, sb1);
     helper.putIndexBlock(pNo, sb);
     promo.get().leftNode = indexFile.insert(sb1.getBlock());
     return promo;
   }
 
-  private BPlusReturn <K,V> delete(int pNo, int pBlock, int pSearch, BTreeKey <K> key,
-                             KeyValue<K, V> kv, int level) throws IOException {
-    SortedBlock <BTreeKey <K>> sb = helper.getIndexBlock(pNo);
-    BPlusReturn <K,V> ret;
+  private BPlusReturn <B,D> delete(int pNo, int pBlock, int pSearch, BTreeKey <B> key,
+                             KeyValue<B,D> kv, int level) throws IOException {
+    SortedBlock <BTreeKey <B>> sb = helper.getIndexBlock(pNo);
+    BPlusReturn <B,D> ret;
     int search = sb.binarySearch(key);
     int node = helper.getNode(search, sb);
     if (level == leafLevel) {
@@ -579,7 +577,7 @@ implements BTree <K, V> {
     }
     // the child caused a split...add new key...continue as insert...
     if (ret.action == BPlusReturn.SPLIT) { // since keys are variable length
-      BTreeKey <K> promo = insertKey(sb, pNo, ret.promo);
+      BTreeKey <B> promo = insertKey(sb, pNo, ret.promo);
       if (promo != null) {
         ret.action = BPlusReturn.SPLIT;
         ret.promo = promo;
@@ -606,10 +604,10 @@ implements BTree <K, V> {
    *               deleted.
    * @throws IOException if an error occurs
    */
-  protected void handleRedistribute(SortedBlock <BTreeKey <K>> sb, int cBlock, BPlusReturn <K,V> ret)
+  protected void handleRedistribute(SortedBlock <BTreeKey <B>> sb, int cBlock, BPlusReturn <B,D> ret)
           throws IOException {
     int pos = ret.keyPos;
-    BTreeKey <K> changed, next;
+    BTreeKey <B> changed, next;
     int tmp;
     changed = sb.deleteKey(pos);
     // no need to do some more work?
@@ -631,7 +629,7 @@ implements BTree <K, V> {
         helper.setLastPointer(sb, tmp);
       }
 
-      BTreeKey <K> promo = insertKey(sb, cBlock, changed);
+      BTreeKey <B> promo = insertKey(sb, cBlock, changed);
       if (promo != null) {
         ret.promo = promo;
         ret.action = BPlusReturn.SPLIT;
@@ -653,7 +651,7 @@ implements BTree <K, V> {
    * @param pBlock  the block number for the parent block.
    * @throws IOException if an error occurs
    */
-  protected void handleMerge(SortedBlock <BTreeKey <K>> sb, BPlusReturn <K,V> ret, int cBlock,
+  protected void handleMerge(SortedBlock <BTreeKey <B>> sb, BPlusReturn <B,D> ret, int cBlock,
                              int pSearch, int pBlock) throws IOException {
     // get position to remove:
     int pos = ret.keyPos;
@@ -670,15 +668,15 @@ implements BTree <K, V> {
       return;
     }
     // reblance blocks...start with redistribute:
-    SortedBlock <BTreeKey<K>> parent = helper.getIndexBlock(pBlock);
+    SortedBlock <BTreeKey<B>> parent = helper.getIndexBlock(pBlock);
     int leftSib, rightSib;
-    SortedBlock <BTreeKey<K>> sib = null;
+    SortedBlock <BTreeKey<B>> sib = null;
     // redistribute:
     leftSib = helper.getPreviousNeighbor(pSearch, parent);
     if (leftSib != -1) {
       sib = helper.getIndexBlock(leftSib);
       if (helper.checkUnderflow(sib)) {
-        BTreeKey <K> pKey = parent.getKey(helper.getPreviousPos(pSearch));
+        BTreeKey <B> pKey = parent.getKey(helper.getPreviousPos(pSearch));
         //BTreeKey pKey = (BTreeKey) parent.getKey(helper.getPos(pSearch));
         if (helper.shiftRight(sib, sb, pKey)) {
           helper.putIndexBlock(leftSib, sib);
@@ -697,7 +695,7 @@ implements BTree <K, V> {
       sib = helper.getIndexBlock(rightSib);
       if (helper.checkUnderflow(sib)) {
 
-        BTreeKey <K> pKey = parent.getKey(helper.getPos(pSearch));
+        BTreeKey <B> pKey = parent.getKey(helper.getPos(pSearch));
 
 
         if (helper.shiftLeft(sb, sib, pKey)) {
@@ -712,7 +710,7 @@ implements BTree <K, V> {
       }
     }
     // worst case scenario...merge:
-    BTreeKey <K> pKey;
+    BTreeKey <B> pKey;
     if (leftSib != -1) {
       sib = helper.getIndexBlock(leftSib);
       pKey = parent.getKey(helper.getPreviousPos(pSearch));
@@ -757,13 +755,14 @@ implements BTree <K, V> {
    * @param keysAndValues a sorted array of key/value pairs.
    * @throws java.io.IOException if an error occurs
    */
-  public void createIndex(KeyValue <K,V>[] keysAndValues) throws IOException {
+  public void createIndex(KeyValue <B,D>[] keysAndValues) throws IOException {
     valueFile.clear();
-    SortedBlock <KeyValue <K,V>> sb = new SortedBlock <>();
+    SortedBlock <KeyValue <B,D>> sb = new SortedBlock <>();
     byte b[] = new byte[valueFile.getBlockSize()];
     sb.setBlock(b, keyValues, true, SortedBlock.PTR_NORMAL);
-    KeyValue <K,V> tmpKV = new KeyValue <> ();
-    SBBNo <K> [] levels = (SBBNo <K> []) new SBBNo[20];
+    KeyValue <B,D> tmpKV = new KeyValue <> ();
+    @SuppressWarnings("unchecked")
+    SBBNo <B> [] levels = (SBBNo <B> []) new SBBNo[20];
     // valueFile.insertBlock(-1);
     int bNo = 0;
     for (int i = 0; i < keysAndValues.length; i++) {
@@ -771,7 +770,7 @@ implements BTree <K, V> {
       if (!sb.fitsKey(tmpKV)) {
         valueFile.insert(bNo, sb.getBlock());
         bNo++;
-        BTreeKey <K> sep = helper.generateSeparator(sb, tmpKV);
+        BTreeKey <B> sep = helper.generateSeparator(sb, tmpKV);
         sep.get().leftNode = bNo - 1;
         insertSeparator(sep, levels, 0, bNo);
         sb.setBlock(b, keyValues, true, SortedBlock.PTR_NORMAL);
@@ -793,19 +792,20 @@ implements BTree <K, V> {
    * @param iterator a sorted stream of key/value pairs.
    * @throws java.io.IOException if an error occurs
    */
-  public void createIndex(Iterator<KeyValue <K,V>> iterator) throws IOException {
-    SortedBlock <KeyValue <K,V>> sb = new SortedBlock <> ();
+  public void createIndex(Iterator<KeyValue <B,D>> iterator) throws IOException {
+    SortedBlock <KeyValue <B,D>> sb = new SortedBlock <> ();
     byte b[] = new byte[valueFile.getBlockSize()];
     sb.setBlock(b, keyValues, true, SortedBlock.PTR_NORMAL);
-    KeyValue <K,V> tmpKV = null;
-    SBBNo <K> [] levels = (SBBNo <K> []) new SBBNo[20];
+    KeyValue <B,D> tmpKV = null;
+    @SuppressWarnings("unchecked")
+    SBBNo <B> [] levels = (SBBNo <B> []) new SBBNo[20];
     int bNo = 0;
     while (iterator.hasNext()) {
       tmpKV = iterator.next();
       if (!sb.fitsKey(tmpKV)) {
         valueFile.insert(bNo, sb.getBlock());
         bNo++;
-        BTreeKey <K> sep = helper.generateSeparator(sb, tmpKV);
+        BTreeKey <B> sep = helper.generateSeparator(sb, tmpKV);
         sep.get().leftNode = bNo - 1;
         insertSeparator(sep, levels, 0, bNo);
         sb.setBlock(b, keyValues, true, SortedBlock.PTR_NORMAL);
@@ -820,7 +820,7 @@ implements BTree <K, V> {
   /**
    * CreateIndex calls this method to write all created index blocks to file.
    */
-  private void writeIndexBlocks(SBBNo <K> [] levels) throws IOException {
+  private void writeIndexBlocks(SBBNo <B> [] levels) throws IOException {
     //boolean removeLast = false;
     int rPage = 0;
     int i = 0;
@@ -840,9 +840,9 @@ implements BTree <K, V> {
    * the current block can not hold the data the block will be split into two
    * and the levels possibly increased.
    */
-  private void insertSeparator(BTreeKey <K> sep, SBBNo <K>[] levels, int current,
+  private void insertSeparator(BTreeKey <B> sep, SBBNo <B>[] levels, int current,
                                int rightNode) throws IOException {
-    SortedBlock <BTreeKey <K>> sb = null;
+    SortedBlock <BTreeKey <B>> sb = null;
     if (levels[current] == null) { // we have to create a new level
       levels[current] = new SBBNo <> ();
       levels[current].sb = new SortedBlock <> ();
@@ -852,7 +852,7 @@ implements BTree <K, V> {
     }
     sb = levels[current].sb;
     if (!sb.fitsKey(sep)) { // save and promote the last key up...
-      BTreeKey <K> promo = sb.deleteKey(sb.getNumberOfElements() - 1);
+      BTreeKey <B> promo = sb.deleteKey(sb.getNumberOfElements() - 1);
       helper.setLastPointer(sb, promo.get().leftNode);
       promo.get().leftNode = levels[current].bNo;
       helper.putIndexBlock(levels[current].bNo, sb);
@@ -881,12 +881,12 @@ implements BTree <K, V> {
    * @return the Key/value pair or null if the key did not exist
    * @throws java.io.IOException if an error occurs
    */
-  protected KeyValue <K,V> searchValueFile(K key, int bNo)
+  protected KeyValue <B,D> searchValueFile(B key, int bNo)
           throws IOException {
     if (valueFile.size() == 0)
       return null;
-    SortedBlock <KeyValue <K,V>> sb = helper.getValueBlock(bNo);
-    return sb.getKey(new KeyValue <K,V> (key, null));
+    SortedBlock <KeyValue <B,D>> sb = helper.getValueBlock(bNo);
+    return sb.getKey(new KeyValue <B,D> (key, null));
   }
 
   /**
@@ -900,12 +900,12 @@ implements BTree <K, V> {
    * @return the Key/value pair or null if the key did not exist
    * @throws java.io.IOException if an error occurs
    */
-  protected TreePosition searchValueFilePosition(K key, int bNo)
+  protected TreePosition searchValueFilePosition(B key, int bNo)
           throws IOException {
     if (valueFile.size() == 0)
       return null;
-    SortedBlock <KeyValue <K,V>> sb = helper.getValueBlock(bNo);
-    int smallerInBlock = sb.binarySearch(new KeyValue <K,V> (key, null));
+    SortedBlock <KeyValue <B,D>> sb = helper.getValueBlock(bNo);
+    int smallerInBlock = sb.binarySearch(new KeyValue <B,D> (key, null));
     if (smallerInBlock < 0) return null;
     int elements = size;
     int elementsInBlock = sb.getNumberOfElements();
@@ -925,12 +925,12 @@ implements BTree <K, V> {
    * @return the Key/value pair or null if the key did not exist
    * @throws java.io.IOException if an error occurs
    */
-  protected TreePosition searchValueFilePositionNoStrict(K key, int bNo)
+  protected TreePosition searchValueFilePositionNoStrict(B key, int bNo)
           throws IOException {
     if (valueFile.size() == 0)
       return null;
-    SortedBlock <KeyValue <K,V>> sb = helper.getValueBlock(bNo);
-    int smallerInBlock = sb.binarySearch(new KeyValue <K,V> (key, null));
+    SortedBlock <KeyValue <B,D>> sb = helper.getValueBlock(bNo);
+    int smallerInBlock = sb.binarySearch(new KeyValue <B,D> (key, null));
     boolean exists = true;
     if (smallerInBlock < 0) { //not found
       exists = false;
@@ -958,10 +958,10 @@ implements BTree <K, V> {
    *         returned.
    * @throws java.io.IOException if an error occurs
    */
-  protected BPlusReturn <K,V> insertKeyValue(KeyValue<K, V> keyValue, int bNo,
+  protected BPlusReturn <B,D> insertKeyValue(KeyValue<B, D> keyValue, int bNo,
                                        boolean update) throws IOException {
-    SortedBlock <KeyValue <K,V>> sb = null;
-    SortedBlock <KeyValue <K,V>> sb1 = null;
+    SortedBlock <KeyValue <B,D>> sb = null;
+    SortedBlock <KeyValue <B,D>> sb1 = null;
     try {
       sb = helper.getValueBlock(bNo);
       if (sb.containsKey(keyValue)) {
@@ -1018,10 +1018,10 @@ implements BTree <K, V> {
    *         three things (see above).
    * @throws java.io.IOException if an error occurs
    */
-  protected BPlusReturn <K,V> deleteKeyValue(KeyValue<K, V> key, int bNo, int leftNo,
+  protected BPlusReturn <B,D> deleteKeyValue(KeyValue<B,D> key, int bNo, int leftNo,
                                        int rightNo) throws IOException {
-    SortedBlock <KeyValue <K,V>> sb = helper.getValueBlock(bNo);
-    KeyValue <K,V> deletedKey = sb.deleteKey(key);
+    SortedBlock <KeyValue <B,D>> sb = helper.getValueBlock(bNo);
+    KeyValue <B,D> deletedKey = sb.deleteKey(key);
     if (deletedKey == null) {
       return null;
     }
@@ -1030,7 +1030,7 @@ implements BTree <K, V> {
       return new BPlusReturn <> (BPlusReturn.NONE, deletedKey, null, -1);
     }
     // reblance...first redistribute:
-    SortedBlock <KeyValue <K,V>> sib;
+    SortedBlock <KeyValue <B,D>> sib;
     if (leftNo != -1) {
       sib = helper.getValueBlock(leftNo);
       if (helper.checkUnderflow(sib)) {
@@ -1082,12 +1082,12 @@ implements BTree <K, V> {
    * @return ret where actions is set to BPlusReturn.NONE
    * @throws java.io.IOException if an error occurs
    */
-  protected BPlusReturn <K,V> collapseRoot(BPlusReturn <K,V> ret) throws IOException {
+  protected BPlusReturn <B,D> collapseRoot(BPlusReturn <B,D> ret) throws IOException {
 
     if (leafLevel == -1) {
       return null;
     }
-    SortedBlock <BTreeKey <K>> sb = helper.getIndexBlock(rootPage);
+    SortedBlock <BTreeKey <B>> sb = helper.getIndexBlock(rootPage);
     if (sb.getNumberOfElements() > 1) {
       int pos = ret.keyPos;
       // this case should not happen...but keep it just in case:
@@ -1121,9 +1121,9 @@ implements BTree <K, V> {
    * @param rootKey key in the new root.
    * @throws java.io.IOException if an error occurs
    */
-  protected void createRoot(BTreeKey <K> rootKey) throws IOException {
+  protected void createRoot(BTreeKey <B> rootKey) throws IOException {
     int blockNo = indexFile.insert(null);
-    SortedBlock <BTreeKey <K>> sb = new SortedBlock <> ();
+    SortedBlock <BTreeKey <B>> sb = new SortedBlock <> ();
     sb.setBlock(new byte[indexFile.getBlockSize()], indexKeys, true,
             SortedBlock.PTR_NORMAL, (short) 4);
     helper.setLastPointer(sb, rootKey.get().leftNode);
@@ -1145,13 +1145,9 @@ implements BTree <K, V> {
 
     //Cache Info:
     CBBoolean tmp = new CBBoolean();
-    tmp.fromBytes(bb, false);
-    useCache = tmp.get();
-    tmp.fromBytes(bb, false);
-    fullIndex = tmp.get();
-    tmp.fromBytes(bb, false);
-    readOnly = tmp.get();
-
+    useCache = tmp.from(bb).value();
+    fullIndex = tmp.from(bb).value();
+    readOnly = tmp.from(bb).value();
   }
 
   private void openIndex(boolean newIndex, int blockSize, int maxBlocks) throws IOException {
@@ -1175,15 +1171,15 @@ implements BTree <K, V> {
   /**
    * *****************INNER CLASSES****************************************
    */
-  static class SBBNo <K extends ByteComparable>{
-    SortedBlock <BTreeKey <K>> sb;
+  static class SBBNo <B extends BComparable <?,B>>{
+    SortedBlock <BTreeKey <B>> sb;
     int bNo;
   }
 
-  class BPIterator implements Iterator<KeyValue<K, V>> {
+  class BPIterator implements Iterator<KeyValue<B, D>> {
 
     ArrayList<Integer> blocks = new ArrayList<>();
-    Iterator <KeyValue <K,V>> sbIterator;
+    Iterator <KeyValue <B,D>> sbIterator;
     int currblock = 0;
 
     public BPIterator() {
@@ -1195,7 +1191,7 @@ implements BTree <K, V> {
       nextIter();
     }
 
-    public BPIterator(K from) {
+    public BPIterator(B from) {
       this();
       int bNo = searchBlock(from);
       for (; currblock < blocks.size(); currblock++) {
@@ -1212,8 +1208,8 @@ implements BTree <K, V> {
     }
 
     @Override
-    public KeyValue<K, V> next() {
-      KeyValue<K, V> toRet = null;
+    public KeyValue<B,D> next() {
+      KeyValue<B,D> toRet = null;
       if (sbIterator == null) return null;
 
       toRet = sbIterator.next();
@@ -1231,9 +1227,9 @@ implements BTree <K, V> {
 
     }
 
-    private void nextIter(K from) {
-      KeyValue <K,V> search = new KeyValue <> (from, null);
-      SortedBlock <KeyValue <K,V>> sb;
+    private void nextIter(B from) {
+      KeyValue <B,D> search = new KeyValue <> (from, null);
+      SortedBlock <KeyValue <B,D>> sb;
       if (currblock >= blocks.size()) {
         sbIterator = null;
         return;

@@ -42,45 +42,83 @@ public enum PrimitiveType {
   CharObject, BooleanObject, ByteArrayObject, DateObject,
   ListObject, MapObject, SortedMapObject, BitSetObject, SetObject;
 
-  public static final ByteStorable fromType(PrimitiveType pt){
+  public static final <A,B extends BStorable<A,B>> BStorable <A,B> fromType(PrimitiveType pt){
     switch(pt){
       case StringObject:
-        return new CBString();
+        return (BStorable <A,B>) new CBString();
       case ByteObject:
-        return new CBByte();
+        return (BStorable <A,B>) new CBByte();
       case ShortObject:
-        return new CBShort();
+        return (BStorable <A,B>) new CBShort();
       case IntObject:
-        return new CBInt();
+        return (BStorable <A,B>) new CBInt();
       case LongObject:
-        return new CBLong();
+        return (BStorable <A,B>) new CBLong();
       case FloatObject:
-        return new CBFloat();
+        return (BStorable <A,B>) new CBFloat();
       case DoubleObject:
-        return new CBDouble();
+        return (BStorable <A,B>) new CBDouble();
       case CharObject:
-        return new CBChar();
+        return (BStorable <A,B>) new CBChar();
       case BooleanObject:
-        return new CBBoolean();
+        return (BStorable <A,B>) new CBBoolean();
       case DateObject:
-        return new CBDate();
+        return (BStorable <A,B>) new CBDate();
       case ByteArrayObject:
-        return new CBByteArray();
+        return (BStorable <A,B>) new CBByteArray();
       case ListObject:
-        return new CBList <> ();
+        return (BStorable <A,B>) new CBList <> ();
       case MapObject:
-        return new CBMap<>();
+        return (BStorable <A,B>) new CBMap<>();
       case SortedMapObject:
-        return new CBSortedMap<>();
+        return (BStorable <A,B>) new CBSortedMap<>();
       case BitSetObject:
-        return new CBBitSet();
+        return (BStorable <A,B>) new CBBitSet();
       case SetObject:
-        return new CBSet <>();
+        return (BStorable <A,B>) new CBSet <>();
     }
     return null;
   }
   
-  public static final ByteStorable get(Object obj) {
+  public static final <A,B extends BStorable<A,B>> BStorable <A,B> fromType(PrimitiveType pt, Object o){
+    switch(pt){
+      case StringObject:
+        return (BStorable <A,B>) new CBString((String)o);
+      case ByteObject:
+        return (BStorable <A,B>) new CBByte((Byte)o);
+      case ShortObject:
+        return (BStorable <A,B>) new CBShort((Short)o);
+      case IntObject:
+        return (BStorable <A,B>) new CBInt((Integer)o);
+      case LongObject:
+        return (BStorable <A,B>) new CBLong((Long)o);
+      case FloatObject:
+        return (BStorable <A,B>) new CBFloat((Float)o);
+      case DoubleObject:
+        return (BStorable <A,B>) new CBDouble((Double)o);
+      case CharObject:
+        return (BStorable <A,B>) new CBChar((char)o);
+      case BooleanObject:
+        return (BStorable <A,B>) new CBBoolean((Boolean)o);
+      case DateObject:
+        return (BStorable <A,B>) new CBDate((Date)o);
+      case ByteArrayObject:
+        return (BStorable <A,B>) new CBByteArray((byte[])o);
+      case ListObject:
+        return (BStorable <A,B>) new CBList <> ((List)o);
+      case MapObject:
+        return (BStorable <A,B>) new CBMap<>();
+      case SortedMapObject:
+        return (BStorable <A,B>) new CBSortedMap<>();
+      case BitSetObject:
+        return (BStorable <A,B>) new CBBitSet((BitSet)o);
+      case SetObject:
+        return (BStorable <A,B>) new CBSet <>();
+    }
+    return null;
+  }
+  
+  public static final <A,B extends BStorable<A,B>> BStorable <A,B> get(Object obj) {
     PrimitiveType t = type(obj);
     return fromType(t);
     
@@ -123,40 +161,76 @@ public enum PrimitiveType {
       return PrimitiveType.SetObject;
     return null;
   }
+  
+  public static final PrimitiveType typeStorable(BStorable<?,?> obj){
+    if(obj instanceof CBString)
+      return PrimitiveType.StringObject;
+    else if(obj instanceof CBByte)
+      return PrimitiveType.ByteObject;
+    else if(obj instanceof CBShort)
+      return PrimitiveType.ShortObject;
+    else if(obj instanceof CBInt)
+      return PrimitiveType.IntObject;
+    else if(obj instanceof CBLong)
+      return PrimitiveType.LongObject;
+    else if(obj instanceof CBFloat)
+      return PrimitiveType.FloatObject;
+    else if(obj instanceof CBDouble)
+      return PrimitiveType.DoubleObject;
+    else if(obj instanceof CBByteArray)
+      return PrimitiveType.ByteArrayObject;
+    else if(obj instanceof CBDate)
+      return PrimitiveType.DateObject;
+    else if(obj instanceof CBChar)
+      return PrimitiveType.CharObject;
+    else if(obj instanceof CBBoolean)
+      return PrimitiveType.BooleanObject;
+    else if(obj instanceof CBList)
+      return PrimitiveType.ListObject;
+    else if(obj instanceof CBSortedMap)
+      return PrimitiveType.SortedMapObject;
+    else if(obj instanceof CBMap)
+      return PrimitiveType.MapObject;
+    else if(obj instanceof CBBitSet)
+      return PrimitiveType.BitSetObject;
+    else if(obj instanceof CBSet)
+      return PrimitiveType.SetObject;
+    return null;
+  }
 
   public static final PrimitiveType typeClass(Class clazz){
     if(clazz == String.class)
-      return PrimitiveType.StringObject;
+      return StringObject;
     else if(clazz == Byte.class || clazz == byte.class)
-      return PrimitiveType.ByteObject;
+      return ByteObject;
     else if(clazz == Short.class || clazz == short.class)
-      return PrimitiveType.ShortObject;
+      return ShortObject;
     else if(clazz == Integer.class || clazz == int.class)
-      return PrimitiveType.IntObject;
+      return IntObject;
     else if(clazz == Long.class || clazz == long.class)
-      return PrimitiveType.LongObject;
+      return LongObject;
     else if(clazz == Float.class || clazz == float.class)
-      return PrimitiveType.FloatObject;
+      return FloatObject;
     else if(clazz == Double.class || clazz == double.class)
-      return PrimitiveType.DoubleObject;
+      return DoubleObject;
     else if(clazz == byte[].class)
-      return PrimitiveType.ByteArrayObject;
+      return ByteArrayObject;
     else if(clazz == Date.class)
-      return PrimitiveType.DateObject;
+      return DateObject;
     else if(clazz == Character.class || clazz == char.class)
-      return PrimitiveType.CharObject;
+      return CharObject;
     else if(clazz == Boolean.class || clazz == boolean.class)
-      return PrimitiveType.BooleanObject;
+      return BooleanObject;
     else if(clazz == ArrayList.class)
-      return PrimitiveType.ListObject;
+      return ListObject;
     else if(clazz == TreeMap.class)
-      return PrimitiveType.SortedMapObject;
+      return SortedMapObject;
     else if(clazz == HashMap.class)
-      return PrimitiveType.MapObject;
+      return MapObject;
     else if(clazz == BitSet.class)
-      return PrimitiveType.BitSetObject;
+      return BitSetObject;
     else if(clazz == Set.class)
-      return PrimitiveType.SetObject;
+      return SetObject;
     return null;
   }
 

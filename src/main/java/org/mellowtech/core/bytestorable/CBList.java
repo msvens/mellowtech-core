@@ -37,128 +37,119 @@ import java.util.*;
  *
  * @author Martin Svensson
  */
-public class CBList <E> extends ByteStorable <List<E>> implements List<E> {
+public class CBList <E> extends BStorableImp <List<E>, CBList<E>> implements List<E> {
 
-  private List <E> list;
+  //private List <E> list;
 
-  public CBList(){
-    this.list = new ArrayList <E> ();
-  }
+  public CBList(){super(new ArrayList <E> ());}
+  public CBList(List <E> elems){super(elems);}
 
   @Override
-  public ByteStorable <List<E>> fromBytes(ByteBuffer bb, boolean doNew) {
-    CBList <E> toRet = doNew ? new CBList <E> () : this;
-    toRet.list.clear();
+  public CBList <E> from(ByteBuffer bb) {
 
-
-    bb.getInt(); //read past size
-    int elems = bb.getInt();
-    if(elems < 1) return toRet;
+    CBUtil.getSize(bb, false);
+    int numElems = bb.getInt();
+    if(numElems < 1) return new CBList <E> ();
+    
     //unpack elements:
+    ArrayList <E> elems = new ArrayList <> (numElems);
     PrimitiveType pt = PrimitiveType.fromOrdinal(bb.get());
-    ByteStorable <E> template = (ByteStorable <E>) PrimitiveType.fromType(pt);
-    for(int i = 0; i < elems; i++){
-      toRet.list.add((E) template.fromBytes(bb, false).get());
+    BStorable <E,?> template = PrimitiveType.fromType(pt);
+    for(int i = 0; i < numElems; i++){
+      elems.add(template.from(bb).get());
     }
-    return toRet;
-
+    
+    return new CBList <E> (elems);
   }
+  
+  @Override
+  public CBList <E> create(List <E> elems) {return new CBList <E> (elems);}
 
   @Override
-  public void toBytes(ByteBuffer bb) {
-    bb.putInt(byteSize());
-    bb.putInt(list.size());
-    if(list.size() < 1)
+  public void to(ByteBuffer bb) {
+    CBUtil.putSize(internalSize(), bb, false);
+    bb.putInt(value.size());
+    if(value.size() < 1)
       return;
-    PrimitiveType pt = PrimitiveType.type(list.get(0));
-    if(pt == null) throw new ByteStorableException("Unrecognized type");
+    PrimitiveType pt = PrimitiveType.type(value.get(0));
+    if(pt == null) throw new ByteStorableException("Unrecognized type "+value.get(0).getClass().getName());
     bb.put(pt.getByte());
-    ByteStorable <E> template = (ByteStorable <E>) PrimitiveType.fromType(pt);
-    for(E o : list){
-      template.set(o);
-      template.toBytes(bb);
+    for(E o : value){
+      PrimitiveType.fromType(pt,o).to(bb);
     }
   }
 
   @Override
   public int byteSize() {
-    int byteSize = 8; //byteSize indicator + num elements;
-    if(list.size() > 0){
-      PrimitiveType pt = PrimitiveType.type(list.get(0));
+    return CBUtil.byteSize(internalSize(), false);
+  }
+  
+  private int internalSize() {
+    int size = 4; //num elements;
+    if(value.size() > 0){
+      PrimitiveType pt = PrimitiveType.type(value.get(0));
       if(pt == null) throw new ByteStorableException("Unrecognized type");
-      byteSize += 1;
-      ByteStorable <E> temp = (ByteStorable <E>) PrimitiveType.fromType(pt);
-      for(E o : list){
-        temp.set(o);
-        byteSize += temp.byteSize();
+      size += 1;
+      for(E o : value){
+        size += PrimitiveType.fromType(pt, o).byteSize();
       }
     }
-    return byteSize;
+    return size;
   }
 
   @Override
   public int byteSize(ByteBuffer bb) {
-    return getSizeFour(bb);
-  }
-
-  @Override
-  public List <E> get(){
-    return this.list;
-  }
-
-  @Override
-  public void set(List <E> l){
-    this.list = l;
+    return CBUtil.peekSize(bb, false);
   }
 
   @Override
   public int size() {
-    return list.size();
+    return value.size();
   }
 
   @Override
   public boolean isEmpty() {
-    return list.isEmpty();
+    return value.isEmpty();
   }
 
   @Override
   public boolean contains(Object o) {
-    return list.contains(o);
+    return value.contains(o);
   }
 
   @Override
   public Iterator<E> iterator() {
-    return list.iterator();
+    return value.iterator();
   }
 
   @Override
   public Object[] toArray() {
-    return list.toArray();
+    return value.toArray();
   }
 
   @Override
   public <T> T[] toArray(T[] a) {
-    return list.toArray(a);
+    return value.toArray(a);
   }
 
   @Override
   public boolean add(E o) {
-    return list.add(o);
+    return value.add(o);
   }
 
   @Override
   public boolean remove(Object o) {
-    return list.remove(o);
+    return value.remove(o);
   }
 
   @Override
   public boolean containsAll(Collection<?> c) {
-    return list.containsAll(c);
+    return value.containsAll(c);
   }
 
   @Override
   public boolean addAll(Collection<? extends E> c) {
-    return list.addAll(c);
+    return value.addAll(c);
   }
 
   @Override
@@ -168,64 +159,62 @@ public class CBList <E> extends ByteStorable <List<E>> implements List<E> {
 
   @Override
   public boolean removeAll(Collection<?> c) {
-    return list.removeAll(c);
+    return value.removeAll(c);
   }
 
   @Override
   public boolean retainAll(Collection<?> c) {
-    return list.retainAll(c);
+    return value.retainAll(c);
   }
 
   @Override
   public void clear() {
-    list.clear();
+    value.clear();
   }
 
   @Override
   public E get(int index) {
-    return list.get(index);
+    return value.get(index);
   }
 
   @Override
   public E set(int index, E element) {
-    return list.set(index, element);
+    return value.set(index, element);
   }
 
   @Override
   public void add(int index, E element) {
-    list.add(index, element);
+    value.add(index, element);
   }
 
   @Override
   public E remove(int index) {
-    return list.remove(index);
+    return value.remove(index);
   }
 
   @Override
   public int indexOf(Object o) {
-    return list.indexOf(o);
+    return value.indexOf(o);
   }
 
   @Override
   public int lastIndexOf(Object o) {
-    return list.lastIndexOf(o);
+    return value.lastIndexOf(o);
   }
 
   @Override
   public ListIterator<E> listIterator() {
-    return list.listIterator();
+    return value.listIterator();
   }
 
   @Override
   public ListIterator<E> listIterator(int index) {
-    return list.listIterator(index);
+    return value.listIterator(index);
   }
 
   @Override
   public List<E> subList(int fromIndex, int toIndex) {
-    ArrayList <E> sub = (ArrayList <E>) list.subList(fromIndex, toIndex);
-    CBList <E> toRet = new CBList <E> ();
-    toRet.list = sub;
-    return toRet;
+    ArrayList <E> sub = (ArrayList <E>) value.subList(fromIndex, toIndex);
+    return new CBList <E> (sub);
   }
 }

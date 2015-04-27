@@ -210,7 +210,7 @@ public class FileInfo {
   /**
    * Returns an icon representing the specified file.
    * 
-   * @param file
+   * @param file file
    * @return the icon
    */
   public Icon getIcon(File file) {
@@ -254,8 +254,9 @@ public class FileInfo {
   /**
    * Get the system display name [0] and type [1] for the file
    * 
-   * @param file
+   * @param file file
    * @return the icon
+   * @throws Exception if error
    */
   public String[] getSystemDisplayNameAndType(File file) throws Exception {
     String ext = getExtension(file);

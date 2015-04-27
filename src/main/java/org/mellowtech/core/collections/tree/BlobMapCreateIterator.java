@@ -8,15 +8,16 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.Iterator;
 
-import org.mellowtech.core.bytestorable.ByteComparable;
-import org.mellowtech.core.bytestorable.ByteStorable;
+import org.mellowtech.core.bytestorable.BComparable;
+import org.mellowtech.core.bytestorable.BStorable;
 import org.mellowtech.core.collections.KeyValue;
 
 /**
  * @author msvens
  *
  */
-public class BlobMapCreateIterator <K extends ByteComparable,V extends ByteStorable> implements Iterator<KeyValue <K, BlobPointer>> {
+public class BlobMapCreateIterator <K extends BComparable <?,K>,
+  V extends BStorable<?,V>> implements Iterator<KeyValue <K, BlobPointer>> {
 
   private final Iterator <KeyValue<K,V>> iter;
   private final FileChannel fc;
@@ -39,7 +40,7 @@ public class BlobMapCreateIterator <K extends ByteComparable,V extends ByteStora
     try{
       long fpos = fc.size();
       BlobPointer bp = new BlobPointer(fpos, size);
-      ByteBuffer bb = n.getValue().toBytes(); bb.flip();
+      ByteBuffer bb = n.getValue().to(); bb.flip();
       fc.write(bb, fpos);
       return new KeyValue <>(n.getKey(),bp);
     } catch(IOException e){

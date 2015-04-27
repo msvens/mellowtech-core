@@ -291,6 +291,7 @@ public class IntArrayFile {
    * @param record
    *          the number of records to count
    * @return the value for the records
+   * @throws IOException if file is corrupt
    */
   public int count(int record) throws IOException{
       int count = 0;
@@ -301,8 +302,8 @@ public class IntArrayFile {
 
   /**
    * Count the values of all record in this array
-   * 
    * @return the added values
+   * @throws IOException if file is corrupt
    */
   public int count() throws IOException{
     return count(highRecord);

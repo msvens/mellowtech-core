@@ -34,46 +34,27 @@ import java.nio.ByteBuffer;
  * @author Martin Svensson
  * @version 1.0
  */
-public class CBFloat extends ByteComparable <Float> {
+public class CBFloat implements BComparable<Float,CBFloat> {
 
+  private final float value;
+  
+  public CBFloat() {value = 0.0f;}
 
-  private float value;
-
-
-  public CBFloat() {}
-
-  /**
-   * Initalize with a value
-   * 
-   * @param value
-   *          the value
-   */
-  public CBFloat(float value) {
-    this.value = value;
-  }
-
-  // ***********GET/SET**************
+  public CBFloat(float value) {this.value = value;}
+  
+  public CBFloat(Float value) {this.value = value;}
+  
   @Override
-  public void set(Float value){
-    if(value == null) throw new ByteStorableException("null value not allowed");
-    this.value = (Float) value;
-  }
-
+  public CBFloat create(Float value) {return new CBFloat(value);}
+  
   @Override
-  public Float get() {
-    return value;
-  }
+  public Float get(){return Float.valueOf(value);}
+  
+  public Float value(){return value;}
 
   @Override
   public boolean isFixed(){
     return true;
-  }
-
-  /**
-   * @see Float#floatToIntBits(float)
-   */
-  public int hashCode() {
-    return Float.floatToIntBits(value);
   }
 
   @Override
@@ -87,33 +68,34 @@ public class CBFloat extends ByteComparable <Float> {
   }
 
   @Override
-  public void toBytes(ByteBuffer bb) {
+  public void to(ByteBuffer bb) {
     bb.putFloat(value);
   }
 
   @Override
-  public ByteStorable <Float> fromBytes(ByteBuffer bb, boolean doNew) {
-    if (doNew)
-      return new CBFloat(bb.getFloat());
-    value = bb.getFloat();
-    return this;
+  public CBFloat from(ByteBuffer bb) {
+    return new CBFloat(bb.getFloat());
   }
 
   @Override
-  public int compareTo(ByteStorable <Float> other) {
-    return Float.compare(this.value, other.get());
+  public int compareTo(CBFloat other) {
+    return Float.compare(value, other.value);
   }
 
   @Override
-  public boolean equals(Object obj) {
-    if(obj instanceof CBFloat)
-      return compareTo((CBFloat) obj) == 0;
+  public boolean equals(Object other) {
+    if(other instanceof CBFloat)
+      return compareTo((CBFloat) other) == 0;
     return false;
   }
-
-  public String toString() {
-    return "" + value;
+  
+  @Override
+  public int hashCode(){
+    return Float.floatToIntBits(value);
   }
+  
+  @Override
+  public String toString(){return ""+value;}
 
   @Override
   public int byteCompare(int offset1, ByteBuffer bb1, int offset2,

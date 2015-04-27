@@ -49,13 +49,13 @@ import org.mellowtech.core.collections.tree.BTree;
  */
 public class TestTree {
 
-  public BTree<CBString, CBInt> dbMap;
+  public BTree<String, CBString, Integer, CBInt> dbMap;
   public TreeMap<String, Integer> inMemoryMap;
   public int numDifferentWords = 10000;
   public int numWords = numDifferentWords * 1;
   String text;
 
-  public TestTree(BTree <CBString, CBInt> dbMap){
+  public TestTree(BTree <String, CBString, Integer, CBInt> dbMap){
 
     this.dbMap = dbMap;
     this.inMemoryMap = new TreeMap<>();
@@ -68,7 +68,7 @@ public class TestTree {
     }
   }
 
-  public void setDbMap(BTree <CBString, CBInt> dbMap){
+  public void setDbMap(BTree <String, CBString, Integer, CBInt> dbMap){
     this.dbMap = dbMap;
   }
   

@@ -35,50 +35,19 @@ import java.util.Date;
  * @author Martin Svensson
  * @version 1.0
  */
-public class CBDate extends ByteComparable <Date>{
-
-  private Date value;
+public class CBDate extends BStorableImp <Date, CBDate> implements BComparable<Date, CBDate>{
 
 
-  public CBDate() {value = new Date(System.currentTimeMillis());}
 
-  /**
-   * Initialize with a value
-   *
-   * @param value
-   *          the value
-   */
-  public CBDate(Date value) {
-    this.value = value;
-  }
+  public CBDate() {super(new Date(System.currentTimeMillis()));}
 
-  public CBDate(long time){
-    this.value = new Date(time);
-  }
+  public CBDate(Date value) {super(value);}
 
-  @Override
-  public void set(Date value){
-    if(value == null) throw new ByteStorableException("null not allowed");
-    this.value = (Date) value;
-  }
-
-  @Override
-  public Date get() {
-    return value;
-  }
+  public CBDate(long time){super(new Date(time));}
 
   @Override
   public boolean isFixed(){
     return true;
-  }
-
-  /**
-   * @see Long#hashCode()
-   */
-  @Override
-  public int hashCode() {
-    return value.hashCode();
-    //return (int) (value ^ (value >>> 32));
   }
 
   @Override
@@ -92,22 +61,18 @@ public class CBDate extends ByteComparable <Date>{
   }
 
   @Override
-  public void toBytes(ByteBuffer bb) {
+  public void to(ByteBuffer bb) {
     bb.putLong(value.getTime());
   }
 
   @Override
-  public ByteStorable <Date> fromBytes(ByteBuffer bb, boolean doNew) {
-    if (doNew)
-      return new CBDate(bb.getLong());
-    value.setTime(bb.getLong());
-    return this;
+  public CBDate from(ByteBuffer bb) {
+    return new CBDate(bb.getLong());
   }
 
   @Override
-  public int compareTo(ByteStorable <Date> other) {
-    //CBLong o = (CBLong) other;
-    return value.compareTo(other.get());
+  public int compareTo(CBDate other) {
+    return value.compareTo(other.value);
   }
 
   @Override
@@ -115,11 +80,6 @@ public class CBDate extends ByteComparable <Date>{
     if(obj instanceof CBDate)
       return compareTo((CBDate) obj) == 0;
     return false;
-  }
-
-  @Override
-  public String toString() {
-    return "" + value;
   }
 
   @Override

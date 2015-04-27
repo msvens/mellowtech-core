@@ -30,7 +30,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.WritableByteChannel;
 
-import org.mellowtech.core.bytestorable.ByteStorable;
+import org.mellowtech.core.bytestorable.BStorable;
 
 /**
  * Writes ByteStorables to a given output channel.
@@ -76,7 +76,7 @@ public class StorableWriteChannel {
    * @exception IOException
    *              if an error occurs
    */
-  public void write(ByteStorable <?> tmp) throws IOException {
+  public void write(BStorable <?,?> tmp) throws IOException {
     int bsz = tmp.byteSize();
 
     if (mBuffer.remaining() < bsz) {
@@ -87,7 +87,7 @@ public class StorableWriteChannel {
         mBuffer = ByteBuffer.allocate(bsz + 64);
       mBuffer.clear();
     }
-    tmp.toBytes(mBuffer);
+    tmp.to(mBuffer);
   }
 
   /**

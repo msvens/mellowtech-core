@@ -15,32 +15,15 @@ import java.util.Set;
  * @author msvens
  *
  */
-public class CBSet<E> extends ByteStorable<Set<E>> implements Set <E>{
-  
-  private Set<E> set;
+public class CBSet<E> extends BStorableImp <Set<E>, CBSet<E>> implements Set <E>{
 
 
-  public CBSet (){
-    this.set = new HashSet<E>();
-  }
-  
-  
+  public CBSet (){ super(new HashSet <E> ());}
+  public CBSet (Set <E> set) {super(set);}
 
   @Override
-  public Set<E> get() {
-    return set;
-  }
-
-  @Override
-  public void set(Set<E> obj) {
-    this.set = obj;
-  }
-
-
-
-  @Override
-  public ByteStorable<Set<E>> fromBytes(ByteBuffer bb, boolean doNew) {
-    CBSet <E> toRet = doNew ? new CBSet <E> () : this;
+  public CBSet<E> from(ByteBuffer bb) {
+    CBSet <E> toRet = new CBSet <E> ();
     toRet.clear();
     bb.getInt(); //past size;
     int elems = bb.getInt();
@@ -50,134 +33,121 @@ public class CBSet<E> extends ByteStorable<Set<E>> implements Set <E>{
     if(elemType == null)
       throw new ByteStorableException("Unrecognized type");
 
-    ByteStorable <E> elemTemp = PrimitiveType.fromType(elemType);
+    BStorable <E,?> elemTemp = PrimitiveType.fromType(elemType);
 
     for(int i = 0; i < elems; i++){
-      E e = elemTemp.fromBytes(bb).get();
+      E e = elemTemp.from(bb).get();
       toRet.add(e);
     }
     return toRet;
   }
 
   @Override
-  public void toBytes(ByteBuffer bb) {
-    bb.putInt(byteSize()); //this could be done more efficiently
-    bb.putInt(set.size());
+  public void to(ByteBuffer bb) {
+    CBUtil.putSize(internalSize(), bb, false);
+    bb.putInt(value.size());
 
-    if(set.size() < 1)
+    if(value.size() < 1)
       return;
 
-    ByteStorable <E> elemTemp = null;
-    byte elemType = 0;
-
-    int pos = bb.position(); //we will later write in here:
-    bb.put(elemType); //just write dummy values;
-    
-    for(E entry : set){
-      if(elemTemp == null){
-        PrimitiveType pt = PrimitiveType.type(entry);
-        if(pt == null) throw new ByteStorableException("Unrecognized key type");
-        elemType = pt.getByte();
-        elemTemp = PrimitiveType.fromType(pt);
+    PrimitiveType pt = null;
+    for(E entry : value){
+      if(pt == null){
+        pt = PrimitiveType.type(entry);
+        bb.put(pt.getByte());
       }
-      elemTemp.set(entry);
-      elemTemp.toBytes(bb);
+      PrimitiveType.fromType(pt, entry).to(bb);
     }
-    bb.put(pos, elemType);
   }
 
   @Override
   public int byteSize() {
-    int size = 8 + 1; //size + elems + type
+    return CBUtil.byteSize(internalSize(), false);
+  }
+  
+  public int internalSize() {
+    int size = 4; //elems
     if(size() < 1)
       return size;
-    ByteStorable <E> elemTemp = null;
-    byte elemType;
-    
-    for(E entry : set){
-      if(elemTemp == null){
-        PrimitiveType pt = PrimitiveType.type(entry);
-        if(pt == null) throw new ByteStorableException("Unrecognized key type");
-        elemType = pt.getByte();
-        elemTemp = PrimitiveType.fromType(pt);
+    size++; //type indicator
+    PrimitiveType pt = null;
+    for(E entry : value){
+      if(pt == null){
+        pt = PrimitiveType.type(entry);
       }
-      elemTemp.set(entry);
-      size += elemTemp.byteSize();
-      size++;
+      size += PrimitiveType.fromType(pt, entry).byteSize();
     }
     return size;
   }
 
   @Override
   public int byteSize(ByteBuffer bb) {
-    // TODO Auto-generated method stub
-    return 0;
+    return CBUtil.peekSize(bb, false);
   }
 
   @Override
   public int size() {
-    return set.size();
+    return value.size();
   }
 
   @Override
   public boolean isEmpty() {
-    return set.isEmpty();
+    return value.isEmpty();
   }
 
   @Override
   public boolean contains(Object o) {
-    return set.contains(o);
+    return value.contains(o);
   }
 
   @Override
   public Iterator<E> iterator() {
-    return set.iterator();
+    return value.iterator();
   }
 
   @Override
   public Object[] toArray() {
-    return set.toArray();
+    return value.toArray();
   }
 
   @Override
   public <T> T[] toArray(T[] a) {
-    return set.toArray(a);
+    return value.toArray(a);
   }
 
   @Override
   public boolean add(E e) {
-    return set.add(e);
+    return value.add(e);
   }
 
   @Override
   public boolean remove(Object o) {
-    return set.remove(o);
+    return value.remove(o);
   }
 
   @Override
   public boolean containsAll(Collection<?> c) {
-    return set.containsAll(c);
+    return value.containsAll(c);
   }
 
   @Override
   public boolean addAll(Collection<? extends E> c) {
-    return set.addAll(c);
+    return value.addAll(c);
   }
 
   @Override
   public boolean retainAll(Collection<?> c) {
-    return set.retainAll(c);
+    return value.retainAll(c);
   }
 
   @Override
   public boolean removeAll(Collection<?> c) {
-    return set.remove(c);
+    return value.remove(c);
   }
 
   @Override
   public void clear() {
-    set.clear();
-    
+    value.clear();
   }
 
 }

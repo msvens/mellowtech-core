@@ -27,12 +27,9 @@
 
 package org.mellowtech.core.bytestorable;
 
-import junit.framework.Assert;
-
-import org.junit.Test;
+import org.junit.Before;
 import org.mellowtech.core.bytestorable.CBDouble;
 
-import java.nio.ByteBuffer;
 
 /**
  * Date: 2013-04-17
@@ -40,19 +37,12 @@ import java.nio.ByteBuffer;
  *
  * @author Martin Svensson
  */
-public class CBDoubleTest {
+public class CBDoubleTest extends BComparableTemplate <Double, CBDouble> {
 
-  @Test
-  public void test(){
-    CBDouble i1 = new CBDouble((double)1.1);
-    CBDouble i2 = (CBDouble) i1.deepCopy();
-    Assert.assertTrue(i1.equals(i2));
-    Assert.assertTrue(i1.compareTo(i2) == 0);
-    ByteBuffer bb = ByteBuffer.allocate(i1.byteSize()+i2.byteSize());
-    i1.toBytes(bb);
-    i2.toBytes(bb);
-    Assert.assertTrue(i1.byteCompare(0, bb, i1.byteSize(), bb) == 0);
-    CBDouble i3 = new CBDouble((double)2);
-    Assert.assertFalse(i1.compareTo(i3) == 0);
+  @Before public void init(){
+    type = CBDouble.class;
+    values = new Double[]{0.5,1.0};
+    sizes = new int[]{8,8};
   }
+  
 }

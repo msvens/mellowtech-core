@@ -56,7 +56,7 @@ public class BlockFileTest {
     RecordFile rf = new BlockFile(tmpFile, 1024, 1024, 40);
     byte[] test = "This is My Test Record".getBytes();
     CBString reserved = new CBString("this is my reserved");
-    rf.setReserve(reserved.toBytes().array());
+    rf.setReserve(reserved.to().array());
     rf.insert(test);
     rf.insert(test);
     rf.insert(test);
@@ -76,8 +76,7 @@ public class BlockFileTest {
       String str = new String(next.data, 0, test.length);
       Assert.assertEquals("This is My Test Record", str);
     }
-    reserved.set("");
-    reserved.fromBytes(rf.getReserve(), 0, false);
+    reserved = reserved.from(rf.getReserve(), 0);
     Assert.assertEquals("this is my reserved", reserved.get());
     Assert.assertEquals(2, rf.size());
     Assert.assertTrue(rf.contains(0));

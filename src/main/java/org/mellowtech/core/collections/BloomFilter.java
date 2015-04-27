@@ -39,86 +39,86 @@ import java.net.URL;
 
 /**
  * Implementation of a Bloom Filter data structure, an elegant alternative to the lookup
- * hash table.</p> <p>
- * 
+ * hash table.
+ * <p>
  * Bloom filters allow you to perform membership tests in just a fraction of the memory 
  * you'd need to store a full list of keys. As you might suspect, the savings in space 
  * comes at a price: you run an adjustable risk of false positives, and you can't remove a
  * key from a filter once you've added it in. But in the many cases where those constraints
- * are acceptable, a Bloom filter can make a useful tool.</p> <p>
- * 
+ * are acceptable, a Bloom filter can make a useful tool.
+ * <p>
  * Bloom filters are named after Burton Bloom, who first described them in a 1970 paper entitled
  * <a href="http://portal.acm.org/citation.cfm?id=362692&dl=ACM&coll=portal">Space/time
  * trade-offs in hash coding with allowable errors</a>. In those days of limited memory, Bloom
  * filters were prized primarily for their compactness; in fact, one of their earliest applications
- *  was in spell checkers.</p> <p>
- * 
+ *  was in spell checkers.
+ *  <p>
  * A Bloom filter consists of two components: a set of <code>k</code> hash functions and a bit vector of
  * a given length. We choose the length of the bit vector and the number of hash functions
  * depending on how many keys we want to add to the set and how high an error rate we are
- * willing to put up with. </p> <p>
- * 
+ * willing to put up with.
+ * <p>
  * All of the hash functions in a Bloom filter are configured so that their range matches the
  * length of the bit vector. For example, if a vector is 200 bits long, the hash functions return
  * a value between 1 and 200. It's important to use high-quality hash functions in the filter to
  * guarantee that output is equally distributed over all possible values -- "hot spots" in a hash
- * function would increase our false-positive rate.</p> <p>
- * 
+ * function would increase our false-positive rate.
+ * <p>
  * To enter a key into a Bloom filter, we run it through each one of the k hash functions
  * and treat the result as an offset into the bit vector, turning on whatever bit we find at that
  * position. If the bit is already set, we leave it on. There's no mechanism for turning bits off
- * in a Bloom filter.</p> <p>
- * 
+ * in a Bloom filter.
+ * <p>
  * Checking to see whether a key already exists in a filter is exactly analogous to adding a
  * new key. We run the key through our set of hash functions, and then check to see whether
  * the bits at those offsets are all turned on. If any of the bits is off, we know for certain the
- * key is not in the filter. If all of the bits are on, we know the key is probably there.</p> <p>
- * 
+ * key is not in the filter. If all of the bits are on, we know the key is probably there.
+ * <p>
  * As you might expect, the false-positive rate depends on the bit vector length and the number
  * of keys stored in the filter. The roomier the bit vector, the smaller the probability that all k bits
  * we check will be on, unless the key actually exists in the filter. The relationship between the
  * number of hash functions and the false-positive rate is more subtle. If you use too few hash
  * functions, there won't be enough discrimination between keys; but if you use too many, the
  * filter will be very dense, increasing the probability of collisions. You can calculate the
- * false-positive rate for any filter using the formula:</p> <p>
- * 
- * <code>c = ( 1 - e(-kn/m) )k</code></p> <p>
- *
+ * false-positive rate for any filter using the formula:
+ * <p>
+ * <code>c = ( 1 - e(-kn/m) )k</code>
+ * <p>
  * Where c is the false positive rate, k is the number of hash functions, n is the number of
- * keys in the filter, and m is the length of the filter in bits.</p> <p>
- *
+ * keys in the filter, and m is the length of the filter in bits.
+ * <p>
  * When using Bloom filters, we very frequently have a desired false-positive rate in mind and
  * we are also likely to have a rough idea of how many keys we want to add to the filter. We
  * need some way of finding out how large a bit vector is to make sure the false-positive rate
  * never exceeds our limit. The following equation will give us vector length from the error rate
- * and number of keys:</p> <p>
- * 
- *<code>m = -kn / ( ln( 1 - c ^ 1/k ) )</code></p> <p>
- *
+ * and number of keys:
+ * <p>
+ *<code>m = -kn / ( ln( 1 - c ^ 1/k ) )</code>
+ *<p>
  * You'll notice another free variable here: k, the number of hash functions. However, it's
  * possible to use calculus to find a minimum for k. You can also find lookup tables for 
  * various combinations of error rate, filter size, and number of hash functions at 
- * <a href="http://www.cs.wisc.edu/~cao/papers/summary-cache/node8.html#tab:bf-config-1">Bloom Filters -- the math</a>.</p> <p>
- *  
+ * <a href="http://www.cs.wisc.edu/~cao/papers/summary-cache/node8.html#tab:bf-config-1">Bloom Filters -- the math</a>.
+ * <p> 
  * This implementation uses the <code>hashCode()</code> method supplied for all Java objects, which
  * produces a 32-bit signed int number. For example, in <code>String</code> Objects, the hashcode is usually
- * computed by adding up the character values with an prime multiplier (31, in the case of JDK 1.4).</p> <p> 
- *
+ * computed by adding up the character values with an prime multiplier (31, in the case of JDK 1.4).
+ * <p> 
  * Alternatively, this class can also use an implementation of a hash function based on Rabin
  * fingerprints, which can efficiently produce a 32-bit hash value for a sequence of bytes.
  * It does so by considering strings of bytes as large polynomials with coefficients of 0 and 1
  * and then reducing them modulo some irreducible polynomial of degree 32. The result is a hash
  * function with very satisfactory properties. In addition the polynomial operations are fast in
- * hardware, and even in this Java implementation the speed is reasonable.</p> <p>
- *
+ * hardware, and even in this Java implementation the speed is reasonable.
+ * <p>
  * The implementation is derived from the paper "Some applications of Rabin's fingerprinting
  * method" by Andrei Broder. See <a href="http://server3.pa-x.dec.com/SRC/publications/src-papers.html">
  * http://server3.pa-x.dec.com/SRC/publications/src-papers.html</a> for a full citation and the
- * paper in PDF format.</p> <p>
- *
+ * paper in PDF format.
+ * <p>
  * Included in this class are additional methods that can compute the Rabin hash value
- * for any serializable <code>Object</code>, <code>String</code>, <code>File</code>, or resource denoted by <code>URL</code>.</p> <p>
- *
+ * for any serializable <code>Object</code>, <code>String</code>, <code>File</code>, or resource denoted by <code>URL</code>.
+ * <p>
  * As for the multiple hash functions for the Bloom Filter, these are based on the module of the
  * initial value multiplied by a list of distinct values.
  * 
@@ -219,7 +219,7 @@ public class BloomFilter implements Cloneable {
 
 	/**
 	 * Constructs a Bloom Filter from a string representation.
-	 *
+	 * @param filter the filter
 	 * @see #toString()
 	 */
 	public BloomFilter(String filter) {
@@ -242,7 +242,8 @@ public class BloomFilter implements Cloneable {
 	 * Constructs an empty BloomFilter with a given length for the bit vector,
 	 * guarenteeing a maximum error rate.  
 	 *
-	 *@param  errorRate           The maximum error rate (false positives) for the Bloom Filter.
+	 *@param numKeys number of keys
+	 *@param errorRate The maximum error rate (false positives) for the Bloom Filter.
 	 */
 	public BloomFilter(int numKeys, double errorRate) {
 		this();

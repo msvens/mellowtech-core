@@ -26,7 +26,7 @@
  */
 package org.mellowtech.core.sort;
 
-import org.mellowtech.core.bytestorable.ByteComparable;
+import org.mellowtech.core.bytestorable.BComparable;
 
 /**
  * A Heap that is backed up by a byte[].
@@ -34,12 +34,12 @@ import org.mellowtech.core.bytestorable.ByteComparable;
  * @author Martin Svensson
  * @version 1.0
  */
-public class ByteHeap <E> implements BufferHeap {
+public class ByteHeap <A, B extends BComparable<A,B>> implements BufferHeap {
   private int heap[];
   private float inc;
   private int size;
   private byte[] bb;
-  private ByteComparable <E> bc;
+  private B bc;
 
   /**
    * Create a new heap that uses a specified byte[] for comparing objects and a
@@ -52,7 +52,7 @@ public class ByteHeap <E> implements BufferHeap {
    * @exception Exception
    *              if an error occurs
    */
-  public ByteHeap(byte[] bb, ByteComparable <E> bc) throws Exception {
+  public ByteHeap(byte[] bb, B bc) throws Exception {
     this(100, 2.0f, bb, bc);
   }
 
@@ -69,7 +69,7 @@ public class ByteHeap <E> implements BufferHeap {
    * @exception Exception
    *              if an error occurs
    */
-  public ByteHeap(int initSize, byte[] bb, ByteComparable <E> bc) throws Exception {
+  public ByteHeap(int initSize, byte[] bb, B bc) throws Exception {
     this(initSize, 2.0f, bb, bc);
   }
 
@@ -90,7 +90,7 @@ public class ByteHeap <E> implements BufferHeap {
    *              if an error occurs
    */
   public ByteHeap(int initSize, float incrementFactor, byte[] bb,
-      ByteComparable <E> bc) throws Exception {
+      B bc) throws Exception {
 
     if (bb == null || bc == null)
       throw new Exception("The ByteBuffer and ByteComparable can not be null");
@@ -172,14 +172,16 @@ public class ByteHeap <E> implements BufferHeap {
    *          a buffer that stores the objects
    * @param bc
    *          a byte comparator
+   * @param <A> Wrapped BComparable class
+   * @param <B> BComparable class
    * @return a new ByteBufferHeap
    * @exception Exception
    *              if an error occurs
    */
-  public static final ByteHeap <?> heapify(int[] objs, byte[] bb, ByteComparable <?> bc)
+  public static final <A, B extends BComparable<A,B>> ByteHeap <A,B> heapify(int[] objs, byte[] bb, B bc)
       throws Exception {
 
-    ByteHeap <?> h = new ByteHeap <> (bb, bc);
+    ByteHeap <A,B> h = new ByteHeap <> (bb, bc);
     int N = objs.length;
     for (int k = N / 2; k > 0; k--) {
       bubbleDown(objs, k, N, bb, bc);
@@ -199,7 +201,7 @@ public class ByteHeap <E> implements BufferHeap {
    * @param bc
    *          a byte comparator
    */
-  public static final void heapSort(int[] objs, byte[] bb, ByteComparable <?> bc) {
+  public static final void heapSort(int[] objs, byte[] bb, BComparable<?,?> bc) {
     int N = objs.length;
     for (int k = N / 2; k > 0; k--) {
       bubbleDownReverse(objs, k, N, bb, bc);
@@ -228,7 +230,7 @@ public class ByteHeap <E> implements BufferHeap {
   }
 
   private static final void bubbleDown(int[] objs, int node, int max,
-      byte[] bb, ByteComparable <?> bc) {
+      byte[] bb, BComparable <?,?> bc) {
 
     int T = objs[node - 1];
     int half = max / 2;
@@ -250,7 +252,7 @@ public class ByteHeap <E> implements BufferHeap {
   }
 
   private static final void bubbleDownReverse(int[] objs, int k, int N,
-      byte[] bb, ByteComparable <?> bc) {
+      byte[] bb, BComparable <?,?> bc) {
     // int T = a[k - 1];
     int T = objs[k - 1];
     while (k <= N / 2) {

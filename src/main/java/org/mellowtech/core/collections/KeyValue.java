@@ -29,7 +29,11 @@ package org.mellowtech.core.collections;
 import java.nio.ByteBuffer;
 import java.util.Map.Entry;
 
-import org.mellowtech.core.bytestorable.ByteStorable;
+import org.mellowtech.core.bytestorable.BComparable;
+import org.mellowtech.core.bytestorable.BComparableImp;
+import org.mellowtech.core.bytestorable.BStorable;
+import org.mellowtech.core.bytestorable.CBUtil;
+
 
 /**
  * Container for a key and value pair. The AbstractBPlusTree returns these when
@@ -38,17 +42,18 @@ import org.mellowtech.core.bytestorable.ByteStorable;
  * @author Martin Svensson
  * @version 1.0
  */
-public class KeyValue<K extends ByteStorable, V extends ByteStorable>  
-extends ByteStorable <KeyValue<K,V>.KV> implements Entry<K,V>{
-  
-  public class KV {
+
+
+public class KeyValue<K extends BComparable<?,K>, V extends BStorable<?,V>>  
+  extends BComparableImp <KeyValue.KV <K,V>, KeyValue<K,V>> implements Entry<K,V>{
+
+  public static class KV< K extends BStorable<?,K>, V extends BStorable<?,V>> {
+    public KV(){}
+    public KV(K k, V v){key = k; value = v;}
     public K key;
     public V value;
     public String toString() {return "key: " + key + " value: " + value;}
   }
-  
-  
-
   /**
    * Creates a new <code>KeyValue</code> instance.
    * 
@@ -58,13 +63,11 @@ extends ByteStorable <KeyValue<K,V>.KV> implements Entry<K,V>{
    *          the pairs value
    */
   public KeyValue(K key, V value) {
-    obj = new KV();
-    obj.key = key;
-    obj.value = value;
+    super(new KV <K,V> (key,value));
   }
 
   /**
-   * Does nothing. Used when reading and writing KeyValues using the implmented
+   * Does nothing. Used when reading and writing KeyValues using the implemented
    * ByteStorable methods.
    * 
    */
@@ -78,7 +81,7 @@ extends ByteStorable <KeyValue<K,V>.KV> implements Entry<K,V>{
    * @return the key
    */
   public K getKey() {
-    return obj.key;
+    return get().key;
   }
 
   /**
@@ -88,7 +91,7 @@ extends ByteStorable <KeyValue<K,V>.KV> implements Entry<K,V>{
    *          the new key
    */
   public void setKey(K key) {
-    obj.key = key;
+    get().key = key;
   }
 
   /**
@@ -97,7 +100,7 @@ extends ByteStorable <KeyValue<K,V>.KV> implements Entry<K,V>{
    * @return the value
    */
   public V getValue() {
-    return obj.value;
+    return get().value;
   }
 
   /**
@@ -107,50 +110,51 @@ extends ByteStorable <KeyValue<K,V>.KV> implements Entry<K,V>{
    *          the value
    */
   public V setValue(V value) {
-    V oldvalue = obj.value;
-    obj.value = value;
+    V oldvalue = get().value;
+    get().value = value;
     return oldvalue;
   }
 
   // *******************STORABLE METHODS:
   public int byteSize() {
-    return obj.key.byteSize() + obj.value.byteSize() + 4;
+    return CBUtil.byteSize(get().key.byteSize() + get().value.byteSize(), true);
   }
 
   public int byteSize(ByteBuffer bb) {
-    int bSize = bb.getInt();
-    bb.position(bb.position() - 4);
-    return bSize;
+    return CBUtil.peekSize(bb, true);
   }
 
-  public void toBytes(ByteBuffer bb) {
-    bb.putInt(byteSize());
-    obj.key.toBytes(bb);
-    obj.value.toBytes(bb);
+  public void to(ByteBuffer bb) {
+    BComparable <?,K> k = get().key;
+    BStorable <?,V> v = get().value;
+    CBUtil.putSize(k.byteSize()+v.byteSize(), bb, true);
+    k.to(bb);
+    v.to(bb);
   }
 
-  public ByteStorable <KV> fromBytes(ByteBuffer bb, boolean doNew) {
-    KeyValue <K,V> keyValue = doNew ? new KeyValue <K,V> () : this;
-    bb.position(bb.position() + 4); // read past byteSize;
-    keyValue.obj.key = (K) obj.key.fromBytes(bb, true);
-    keyValue.obj.value = (V) obj.value.fromBytes(bb, true);
-    return keyValue;
+  public KeyValue <K,V> from(ByteBuffer bb) {
+    CBUtil.getSize(bb, true);
+    K k = get().key.from(bb);
+    V v = get().value.from(bb);
+    return new KeyValue <K,V> (k,v);
   }
 
-  public String toString() {
-    return obj.toString();
+  @Override
+  public int compareTo(KeyValue <K,V> t) throws UnsupportedOperationException {
+    return value.key.compareTo(t.value.key);
   }
 
   @Override
   public int hashCode() {
-    // TODO Auto-generated method stub
-    return obj.key.hashCode();
+    return value.key.hashCode();
   }
 
   @Override
-  public int compareTo(ByteStorable<KeyValue<K,V>.KV> t) throws UnsupportedOperationException {
-    return obj.key.compareTo(t.get().key);
+  public boolean equals(Object obj) {
+    return value.key.equals(obj);
   }
+  
+  
   
   
 }

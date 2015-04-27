@@ -38,14 +38,14 @@ import java.util.TreeSet;
 import java.util.logging.Level;
 
 import org.mellowtech.core.CoreLog;
-import org.mellowtech.core.bytestorable.ByteStorable;
 import org.mellowtech.core.bytestorable.ByteStorableException;
 import org.mellowtech.core.bytestorable.CBList;
+import org.mellowtech.core.bytestorable.BStorable;
 import org.mellowtech.core.bytestorable.CBString;
 import org.mellowtech.core.bytestorable.io.StorableFile;
 import org.mellowtech.core.collections.tree.BTree;
 import org.mellowtech.core.collections.tree.BTreeBuilder;
-import org.mellowtech.core.disc.MapEntry;
+import org.mellowtech.core.util.MapEntry;
 
 
 
@@ -63,13 +63,14 @@ import org.mellowtech.core.disc.MapEntry;
  * @author rickard.coster@asimus.se
  * @author msvens@gmail.com
  */
-public class ObjectManager implements DiscMap <String, ByteStorable <?>>{
+@SuppressWarnings("rawtypes")
+public class ObjectManager implements DiscMap <String, BStorable>{
   
  
   
 
   
-  private BTree <CBString, PointerClassId> mIndex;
+  private BTree <String, CBString, ?, PointerClassId> mIndex;
   
   private CBList <String> mClassIds;
   
@@ -79,14 +80,15 @@ public class ObjectManager implements DiscMap <String, ByteStorable <?>>{
   
   //private final boolean mBlobs;
   
-  private final HashMap <Short, ByteStorable <?>> templates;
+  private final HashMap <Short, BStorable> templates;
 
 
   /**
    * Creates a new <code>ObjectManager</code> instance.
    * 
-   * @param fileName
-   *          name of the physical file
+   * @param fileName name of the physical file
+   * @param inMemory try to memory map the objects
+   * @param blobs storing large objects
    * @exception Exception
    *              if an error occurs
    */
@@ -140,7 +142,7 @@ public class ObjectManager implements DiscMap <String, ByteStorable <?>>{
 
 
   @Override
-  public ByteStorable <?> get(Object key) {
+  public BStorable get(Object key) {
     PointerClassId id;
     try {
       id = mIndex.get(new CBString((String)key));
@@ -154,11 +156,11 @@ public class ObjectManager implements DiscMap <String, ByteStorable <?>>{
 
 
   @Override
-  public ByteStorable <?> put(String key, ByteStorable <?> value) {
-    ByteStorable <?> prev = get(key);
+  public BStorable put(String key, BStorable value) {
+    BStorable prev = get(key);
     try{
       short id = this.getTemplateId(value);
-      byte[] b = value.toBytes().array();
+      byte[] b = value.to().array();
       PointerClassId pci = new PointerClassId(id, b);
       mIndex.put(new CBString(key), pci);
     }
@@ -172,7 +174,7 @@ public class ObjectManager implements DiscMap <String, ByteStorable <?>>{
 
 
   @Override
-  public ByteStorable <?> remove(Object key) {
+  public BStorable remove(Object key) {
     try{
       PointerClassId pci = mIndex.remove((CBString) key);
       if(pci == null)
@@ -188,8 +190,8 @@ public class ObjectManager implements DiscMap <String, ByteStorable <?>>{
 
 
   @Override
-  public void putAll(Map<? extends String, ? extends ByteStorable <?>> m) {
-    for(Map.Entry<? extends String, ? extends ByteStorable <?>> entry : m.entrySet()){
+  public void putAll(Map<? extends String, ? extends BStorable> m) {
+    for(Map.Entry<? extends String, ? extends BStorable> entry : m.entrySet()){
       put(entry.getKey(), entry.getValue());
     }
     
@@ -216,8 +218,8 @@ public class ObjectManager implements DiscMap <String, ByteStorable <?>>{
 
 
   @Override
-  public Collection<ByteStorable <?>> values() {
-    ArrayList <ByteStorable <?>> al = new ArrayList <> ();
+  public Collection<BStorable> values() {
+    ArrayList <BStorable> al = new ArrayList <> ();
     KeyValue <CBString, PointerClassId> kv;
     for(Iterator <KeyValue <CBString, PointerClassId>>iter = mIndex.iterator(); iter.hasNext();){
       kv = iter.next();
@@ -229,11 +231,11 @@ public class ObjectManager implements DiscMap <String, ByteStorable <?>>{
 
 
   @Override
-  public Set<java.util.Map.Entry<String, ByteStorable <?>>> entrySet() {
-    Set <Map.Entry<String, ByteStorable <?>>> toRet = new TreeSet <> ();
+  public Set<java.util.Map.Entry<String, BStorable>> entrySet() {
+    Set <Map.Entry<String, BStorable>> toRet = new TreeSet <> ();
     for(Iterator <KeyValue <CBString, PointerClassId>> iter = mIndex.iterator(); iter.hasNext();){
       KeyValue <CBString, PointerClassId> keyValue = iter.next();
-      toRet.add(new MapEntry <String, ByteStorable <?>>(keyValue.getKey().get(), getObject(keyValue.getValue())));
+      toRet.add(new MapEntry <String, BStorable>(keyValue.getKey().get(), getObject(keyValue.getValue())));
     }
     return toRet;
   }
@@ -283,19 +285,19 @@ public class ObjectManager implements DiscMap <String, ByteStorable <?>>{
 
 
   @Override
-  public Iterator<java.util.Map.Entry<String, ByteStorable <?>>> iterator() {
+  public Iterator<java.util.Map.Entry<String, BStorable>> iterator() {
     return new ObjectManagerIterator();
   }
 
 
 
   @Override
-  public Iterator<java.util.Map.Entry<String, ByteStorable <?>>> iterator(String key)
+  public Iterator<java.util.Map.Entry<String, BStorable>> iterator(String key)
       throws UnsupportedOperationException {
     return new ObjectManagerIterator(key);
   }
   
-  class ObjectManagerIterator implements Iterator<Entry<String, ByteStorable <?>>>{
+  class ObjectManagerIterator implements Iterator<Entry<String, BStorable>>{
 
     Iterator <KeyValue<CBString, PointerClassId>> iter;
 
@@ -314,10 +316,10 @@ public class ObjectManager implements DiscMap <String, ByteStorable <?>>{
     }
 
     @Override
-    public Entry<String, ByteStorable <?>> next() {
+    public Entry<String, BStorable> next() {
       KeyValue <CBString, PointerClassId> next = iter.next();
       if(next == null) return null;
-      MapEntry <String,ByteStorable <?>> entry = new MapEntry<>();
+      MapEntry <String,BStorable> entry = new MapEntry<>();
       entry.setKey(next.getKey().get());
       if(next.getValue() != null)
         entry.setValue(getObject(next.getValue()));
@@ -331,16 +333,16 @@ public class ObjectManager implements DiscMap <String, ByteStorable <?>>{
   }
   
   //open and save:
-  private ByteStorable <?> getObject(PointerClassId id){
+  private BStorable getObject(PointerClassId id){
     try{
-      return getTemplate(id.getClassId()).fromBytes(id.get().bytes, 0);
+      return getTemplate(id.getClassId()).from(id.get().bytes, 0);
     }
     catch(Exception e){
       throw new ByteStorableException(e);
     }
   }
   
-  private short getTemplateId(ByteStorable <?> obj){
+  private short getTemplateId(BStorable obj){
     String name = obj.getClass().getName();
     short id = 0;
     for(String cls : mClassIds){
@@ -357,10 +359,10 @@ public class ObjectManager implements DiscMap <String, ByteStorable <?>>{
     return id;
   }
   
-  private ByteStorable <?> getTemplate(short id) throws Exception{
-    ByteStorable <?> toRet = templates.get(id);
+  private BStorable getTemplate(short id) throws Exception{
+    BStorable toRet = templates.get(id);
     if(toRet == null){
-      toRet = (ByteStorable <?>) Class.forName(this.mClassIds.get(id)).newInstance();
+      toRet = (BStorable) Class.forName(this.mClassIds.get(id)).newInstance();
       templates.put(id, toRet);
     }
     return toRet;
@@ -370,7 +372,7 @@ public class ObjectManager implements DiscMap <String, ByteStorable <?>>{
   private void open() throws Exception {
     //this.mIndex = BTreeFactory.openMemMappedBlob(mFileName, new CBString(), new PointerClassId(), inMemory);
     BTreeBuilder b = new BTreeBuilder().blobValues(true).valuesInMemory(inMemory);
-    mIndex = b.build(new CBString(), new PointerClassId(), mFileName);
+    mIndex = b.build(CBString.class, PointerClassId.class, mFileName);
     openClassIds();
   }
 
@@ -396,7 +398,6 @@ public class ObjectManager implements DiscMap <String, ByteStorable <?>>{
       this.mClassIds = new CBList <> ();
     }
   }
-
 
  
 }

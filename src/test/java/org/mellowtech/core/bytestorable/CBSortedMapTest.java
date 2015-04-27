@@ -27,8 +27,13 @@
 
 package org.mellowtech.core.bytestorable;
 
+import java.lang.reflect.Constructor;
+import java.util.Map;
+import java.util.SortedMap;
+
 import junit.framework.Assert;
 
+import org.junit.Before;
 import org.junit.Test;
 import org.mellowtech.core.bytestorable.ByteStorableException;
 import org.mellowtech.core.bytestorable.CBInt;
@@ -40,27 +45,28 @@ import org.mellowtech.core.bytestorable.CBSortedMap;
  *
  * @author Martin Svensson
  */
-public class CBSortedMapTest {
+public class CBSortedMapTest extends BStorableTemplate<SortedMap<String,String>, CBSortedMap <String,String>>{
 
-  @Test
-  public void test(){
-    CBSortedMap <String, Integer> i1 = new CBSortedMap();
-    i1.put("one", 1);
-    i1.put("two", 2);
-    CBSortedMap i2 = (CBSortedMap) i1.deepCopy();
-    Assert.assertTrue(i1.get("one").equals(i2.get("one")));
-    Assert.assertTrue(i2.get("two").equals(i2.get("two")));
-
-    i1.clear();
-    Assert.assertTrue(i1.size() == 0);
-    i2 = (CBSortedMap <String, Integer>) i1.deepCopy();
-    Assert.assertTrue(i2.size() == 0);
+  @Before public void init(){
+    CBSortedMap <String,String> m1 = new CBSortedMap <> ();
+    m1.put("one", "one");
+    CBSortedMap <String,String> m2 = new CBSortedMap <> ();
+    m2.put("two", "two");
+    
+    type = (Class<CBSortedMap<String, String>>) m1.getClass();
+    values = (SortedMap<String, String>[]) new SortedMap[]{m1.get(),m2.get()};
+    
+    //Size is 4 (byte size) + 4 (num elems) + 2 (types) + size of key + 1 (value exist) + size of value
+    //size of key = 4
+    //size of value = 4
+    
+    sizes = new int[]{19,19};
   }
-
-  @Test(expected = ByteStorableException.class)
-  public void insertUnsupportedType(){
-    CBSortedMap <CBInt, String> i1 = new CBSortedMap<>();
-    i1.put(new CBInt(1), "hej");
-    i1.toBytes();
+  
+  @Test
+  @Override
+  public void testAConstructor() throws Exception{
+    Constructor <CBSortedMap<String,String>> c = type.getConstructor(SortedMap.class);
+    c.newInstance(values[0]);
   }
 }

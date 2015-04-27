@@ -34,54 +34,27 @@ import java.nio.ByteBuffer;
  * @author Martin Svensson
  * @version 1.0
  */
-public class CBInt extends ByteComparable <Integer> {
+public class CBInt implements BComparable<Integer,CBInt> {
+  
+  private final int value;
 
-  /**
-   * Value of this CBInt
-   * 
-   */
-  protected int value;
+  public CBInt() {value = 0;}
 
-  /**
-   * Default constructor is needed to create a new inte from a byte buffer.
-   * 
-   */
-  public CBInt() {}
-
-  /**
-   * Initialize with an int value
-   * 
-   * @param value
-   *          the value
-   */
-  public CBInt(int value) {
-    this.value = value;
-  }
-
-  // ***********GET/SET**************
+  public CBInt(int value) {this.value = value;}
+  
+  public CBInt(Integer value) {this.value = value;}
+  
   @Override
-  public void set(Integer value){
-    if(value == null) throw new ByteStorableException("null value not allowed");
-    this.value = value;
-  }
-
+  public CBInt create(Integer value) {return new CBInt(value);}
+  
   @Override
-  public Integer get() {
-    return value;
-  }
+  public Integer get() {return Integer.valueOf(value);}
+  
+  public int value(){return value;}
 
   @Override
   public boolean isFixed(){
     return true;
-  }
-
-  /**
-   * @return hashcode
-   * @see Integer#hashCode()
-   */
-  @Override
-  public int hashCode() {
-    return value;
   }
 
   @Override
@@ -95,51 +68,32 @@ public class CBInt extends ByteComparable <Integer> {
   }
 
   @Override
-  public void toBytes(ByteBuffer bb) {
+  public void to(ByteBuffer bb) {
     bb.putInt(value);
   }
 
   @Override
-  public ByteStorable <Integer> fromBytes(ByteBuffer bb, boolean doNew) {
-    if (doNew)
-      return new CBInt(bb.getInt());
-    value = bb.getInt();
-    return this;
+  public CBInt from(ByteBuffer bb) {
+    return new CBInt(bb.getInt());
   }
 
   @Override
-  public int compareTo(ByteStorable <Integer> other) {
-    return this.value - other.get();
+  public int compareTo(CBInt other) {
+    return Integer.compare(value, other.value);
   }
 
   @Override
-  public String toString() {
-    return "" + value;
-  }
-
-  /** **************UTILITY METHODS****************************** */
-  /*public static int readInt(byte[] b, int offset) {
-    int char1 = (((char) b[offset]) & 0xFF);
-    int char2 = (((char) b[offset + 1]) & 0xFF);
-    int char3 = (((char) b[offset + 2]) & 0xFF);
-    int char4 = (((char) b[offset + 3]) & 0xFF);
-    return ((char1 << 24) + (char2 << 16) + (char3 << 8) + (char4 << 0));
-  }
-
-  public static int writeInt(byte[] b, int offset, int value) {
-    b[offset] = (byte) ((value >>> 24) & 0xFF);
-    b[offset + 1] = (byte) ((value >>> 16) & 0xFF);
-    b[offset + 2] = (byte) ((value >>> 8) & 0xFF);
-    b[offset + 3] = (byte) ((value >>> 0) & 0xFF);
-    return 4;
-  }*/
-
-  @Override
-  public boolean equals(Object obj) {
-    if(obj instanceof CBInt)
-      return this.value == ((CBInt)obj).value;
+  public boolean equals(Object other) {
+    if(other instanceof CBInt)
+      return value == ((CBInt)other).value;
     return false;
   }
+  
+  @Override
+  public int hashCode(){return value;}
+  
+  @Override
+  public String toString(){return ""+value;}
 
   @Override
   public int byteCompare(int offset1, ByteBuffer bb1, int offset2,

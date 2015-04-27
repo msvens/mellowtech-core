@@ -35,7 +35,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 import org.mellowtech.core.CoreLog;
-import org.mellowtech.core.bytestorable.ByteStorable;
+import org.mellowtech.core.bytestorable.BStorable;
 
 /**
  * Reads ByteStorable objects from a ZIP file.
@@ -43,7 +43,7 @@ import org.mellowtech.core.bytestorable.ByteStorable;
  * @author rickard.coster@asimus.se
  * @version 1.0
  */
-public class StorableZipReader <E extends ByteStorable <?>> {
+public class StorableZipReader <A,E extends BStorable <A,E>> {
 
   ZipFile zipFile;
   E template;
@@ -72,7 +72,7 @@ public class StorableZipReader <E extends ByteStorable <?>> {
 
     E bs = null;
     try {
-      bs = (E) bs.fromBytes(ba, 0, true);
+      bs = template.from(ba, 0);
     }
     catch (Exception e) {
       CoreLog.L().log(Level.WARNING, "", e);

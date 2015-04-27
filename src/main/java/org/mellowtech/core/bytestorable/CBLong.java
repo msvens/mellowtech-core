@@ -34,45 +34,27 @@ import java.nio.ByteBuffer;
  * @author Martin Svensson
  * @version 1.0
  */
-public class CBLong extends ByteComparable <Long>{
+public class CBLong implements BComparable <Long,CBLong>{
+  
+  private final long value;
+  
+  public CBLong() {value = 0l;}
 
-  private long value;
-
-
-  public CBLong() {}
-
-  /**
-   * Initialize with a value
-   * 
-   * @param value
-   *          the value
-   */
-  public CBLong(long value) {
-    this.value = value;
-  }
+  public CBLong(long value) {this.value = value;}
+  
+  public CBLong(Long value) {this.value = value;}
+  
+  @Override
+  public CBLong create(Long value) {return new CBLong(value);}
 
   @Override
-  public void set(Long value){
-    if(value == null) throw new ByteStorableException("null not allowed");
-    this.value = value;
-  }
-
-  @Override
-  public Long get() {
-    return value;
-  }
-
+  public Long get(){return Long.valueOf(value);}
+  
+  public long value(){return value;}
+  
   @Override
   public boolean isFixed(){
     return true;
-  }
-
-  /**
-   * @see Long#hashCode()
-   */
-  @Override
-  public int hashCode() {
-    return (int) (value ^ (value >>> 32));
   }
 
   @Override
@@ -86,40 +68,34 @@ public class CBLong extends ByteComparable <Long>{
   }
 
   @Override
-  public void toBytes(ByteBuffer bb) {
+  public void to(ByteBuffer bb) {
     bb.putLong(value);
   }
 
   @Override
-  public ByteStorable <Long> fromBytes(ByteBuffer bb, boolean doNew) {
-    if (doNew)
-      return new CBLong(bb.getLong());
-    value = bb.getLong();
-    return this;
+  public CBLong from(ByteBuffer bb) {
+    return new CBLong(bb.getLong());
   }
 
   @Override
-  public int compareTo(ByteStorable <Long> other) {
-    //CBLong o = (CBLong) other;
-    if (this.value > other.get())
-      return 1;
-    else if (this.value < other.get())
-      return -1;
-    return 0;
-
+  public int compareTo(CBLong other) {
+    return Long.compare(value, other.value);
   }
 
   @Override
-  public boolean equals(Object obj) {
-    if(obj instanceof CBLong)
-      return compareTo((CBLong) obj) == 0;
+  public boolean equals(Object other) {
+    if(other instanceof CBLong)
+      return compareTo((CBLong) other) == 0;
     return false;
   }
-
+  
   @Override
-  public String toString() {
-    return "" + value;
+  public int hashCode(){
+    return (int)(value ^ (value >>> 32));
   }
+  
+  @Override
+  public String toString(){return ""+value;}
 
   @Override
   public int byteCompare(int offset1, ByteBuffer bb1, int offset2,

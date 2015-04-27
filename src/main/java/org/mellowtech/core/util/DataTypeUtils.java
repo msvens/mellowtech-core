@@ -403,7 +403,7 @@ public class DataTypeUtils {
    *          the value
    * @param numDigits
    *          number of digits in string
-   * @return normalized value, or null if numDigits < new String(value).length()
+   * @return normalized value, or null if numDigits is smaller than new String(value).length()
    */
   public static String normalizeInteger(int value, int numDigits) {
     String valueString = Integer.toString(value);

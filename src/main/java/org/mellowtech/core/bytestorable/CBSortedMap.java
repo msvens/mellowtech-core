@@ -36,117 +36,105 @@ import java.util.*;
  *
  * @author Martin Svensson
  */
-public class CBSortedMap<K,V> extends ByteStorable <SortedMap <K,V>> implements SortedMap<K,V> {
+public class CBSortedMap<K,V> extends BStorableImp <SortedMap<K,V>, CBSortedMap<K,V>> implements SortedMap<K,V> {
 
-  private SortedMap<K,V> map;
 
 
   public CBSortedMap(){
-    this.map = new TreeMap<>();
+    super(new TreeMap<>());
   }
 
   public CBSortedMap(SortedMap <K, V> map){
-    this.map = map;
+    super(map);
+  }
+  
+  @Override
+  public CBSortedMap <K,V> create(SortedMap <K,V> map){return new CBSortedMap <> (map);}
+  
+  private Optional<PrimitiveType> getKeyTemp() throws ByteStorableException{
+    return value.keySet().stream().findAny().map(v -> PrimitiveType.type(v));
+  }
+  
+  private Optional<PrimitiveType> getValueTemp(){
+    return value.values().stream().findAny().map(v -> PrimitiveType.type(v));
   }
 
   @Override
-  public ByteStorable <SortedMap <K,V>> fromBytes(ByteBuffer bb, boolean doNew) {
-    CBSortedMap <K,V> toRet = doNew ? new CBSortedMap <K,V>() : this;
-    toRet.clear();
-    bb.getInt(); //past size;
+  public CBSortedMap <K,V> from(ByteBuffer bb) {
+    CBUtil.getSize(bb, false); //read past size
     int elems = bb.getInt();
-    if(elems < 1) return toRet;
+    if(elems < 1) return new CBSortedMap <K,V> ();
+    
+    //get the key and value types
     PrimitiveType keyType = PrimitiveType.fromOrdinal(bb.get());
-    PrimitiveType valType = PrimitiveType.fromOrdinal(bb.get());
+    PrimitiveType valueType = PrimitiveType.fromOrdinal(bb.get());
 
-    if(keyType == null || valType == null)
+    if(keyType == null || valueType == null)
       throw new ByteStorableException("Unrecognized types");
-
-    ByteStorable <K> keyTemp = PrimitiveType.fromType(keyType);
-    ByteStorable <V> valTemp = PrimitiveType.fromType(valType);
-
-    for(int i = 0; i < elems; i++){
-      K k = (K) keyTemp.fromBytes(bb).get();
-      byte b = bb.get();
-      if(b != 0)
-        toRet.map.put(k, (V) valTemp.fromBytes(bb).get());
-      else
-        toRet.map.put(k, null);
+    
+    BStorable <K,?> keyTemp = PrimitiveType.fromType(keyType);
+    BStorable <V,?> valueTemp = PrimitiveType.fromType(valueType);
+    
+    SortedMap <K,V> tmpMap = new TreeMap <> ();
+    
+    while(elems-- != 0){
+      K k = keyTemp.from(bb).get();
+      if(bb.get() != 0){ //has value
+        tmpMap.put(k, valueTemp.from(bb).get());
+      } else {
+        tmpMap.put(k, null);
+      }
     }
-    return toRet;
+    return new CBSortedMap <> (tmpMap);
+ 
   }
 
   @Override
-  public void toBytes(ByteBuffer bb) {
-    bb.putInt(byteSize()); //this could be done more efficiently
-    bb.putInt(map.size());
-
-    if(map.size() < 1)
+  public void to(ByteBuffer bb) {
+    CBUtil.putSize(internalSize(), bb, false);
+    bb.putInt(value.size());
+    
+    Optional <PrimitiveType> keyTemp = this.getKeyTemp();
+    Optional <PrimitiveType> valueTemp = this.getValueTemp();
+    
+    if(value.size() < 1)
       return;
+    
+    PrimitiveType ptKey = keyTemp.orElseThrow(() -> new ByteStorableException("no valid primitive key type"));
+      
+    bb.put(ptKey.getByte());
+    bb.put(valueTemp.isPresent() ? valueTemp.get().getByte() : -1);
 
-    ByteStorable <K> keyTemp = null;
-    ByteStorable <V> valTemp = null;
-    byte keyType = 0, valType = 0;
-
-    int pos = bb.position(); //we will later write in here:
-    bb.put(keyType); bb.put(valType); //just write dummy values;
-
-    for(Entry <K,V> entry : map.entrySet()){
-      if(keyTemp == null){ //should be the first:
-        PrimitiveType pt = PrimitiveType.type(entry.getKey());
-        if(pt == null) throw new ByteStorableException("Unrecognized key Type");
-        keyType = pt.getByte();
-        keyTemp = PrimitiveType.fromType(pt);
-      }
-      if(valTemp == null && entry.getValue() != null){
-        PrimitiveType pt = PrimitiveType.type(entry.getValue());
-        if(pt == null) throw new ByteStorableException("Unrecognized value Type");
-        valType = pt.getByte();
-        valTemp = PrimitiveType.fromType(pt);
-      }
-      keyTemp.set(entry.getKey());
-      keyTemp.toBytes(bb);
+    for(Map.Entry <K,V> entry : value.entrySet()){
+      PrimitiveType.fromType(ptKey, entry.getKey()).to(bb);
       if(entry.getValue() != null){
         bb.put((byte)1);
-        valTemp.set(entry.getValue());
-        valTemp.toBytes(bb);
-      }
-      else{
+        PrimitiveType.fromType(valueTemp.get(), entry.getValue()).to(bb);
+      } else {
         bb.put((byte)0);
       }
     }
-    bb.put(pos, keyType);
-    bb.put(pos+1, valType);
   }
 
   @Override
   public int byteSize() {
-    int size = 8 + 2; //size + elems + types
-    if(map.size() < 1)
+    return CBUtil.byteSize(internalSize(), false);
+  }
+  
+  private int internalSize() {
+    int size = 4 + 2; //size + elems + types
+    
+    if(value.size() < 1)
       return size;
-    ByteStorable <K> keyTemp = null;
-    ByteStorable <V> valTemp = null;
-    byte keyType, valType;
+    
+    PrimitiveType keyType = this.getKeyTemp().orElseThrow(() -> new ByteStorableException("no known key type"));
+    Optional <PrimitiveType> valueTemp = this.getValueTemp();
 
-    for(Entry <K,V> entry : map.entrySet()){
-      if(keyTemp == null){
-        PrimitiveType pt = PrimitiveType.type(entry.getKey());
-        if(pt == null) throw new ByteStorableException("Unrecognized key Type");
-        keyType = pt.getByte();
-        keyTemp = PrimitiveType.fromType(pt);
-      }
-      if(valTemp == null && entry.getValue() != null){
-        PrimitiveType pt = PrimitiveType.type(entry.getValue());
-        if(pt == null) throw new ByteStorableException("Unrecognized value Type");
-        valType = pt.getByte();
-        valTemp = PrimitiveType.fromType(pt);
-      }
-      keyTemp.set(entry.getKey());
-      size += keyTemp.byteSize();
-      size++; //null indicator
+    for(Map.Entry <K,V> entry : value.entrySet()){
+      size += PrimitiveType.fromType(keyType, entry.getKey()).byteSize();
+      size++;
       if(entry.getValue() != null){
-        valTemp.set(entry.getValue());
-        size += valTemp.byteSize();
+        size += PrimitiveType.fromType(valueTemp.get(), entry.getValue()).byteSize();
       }
     }
     return size;
@@ -154,112 +142,103 @@ public class CBSortedMap<K,V> extends ByteStorable <SortedMap <K,V>> implements 
 
   @Override
   public int byteSize(ByteBuffer bb) {
-    return getSizeFour(bb);
+    return CBUtil.peekSize(bb, false);
   }
 
-  @Override
-  public SortedMap <K,V> get(){
-    return this.map;
-  }
-
-  @Override
-  public void set(SortedMap <K,V> map){
-    this.map = map;
-  }
 
   @Override
   public int size() {
-    return map.size();
+    return value.size();
   }
 
   @Override
   public boolean isEmpty() {
-    return map.isEmpty();
+    return value.isEmpty();
   }
 
   @Override
   public boolean containsKey(Object key) {
-    return map.containsKey(key);
+    return value.containsKey(key);
   }
 
   @Override
-  public boolean containsValue(Object value) {
-    return map.containsValue(value);
+  public boolean containsValue(Object v) {
+    return value.containsValue(value);
   }
 
   @Override
   public V get(Object key) {
-    return map.get(key);
+    return value.get(key);
   }
 
   @Override
-  public V put(K key, V value) {
-    return map.put(key, value);
+  public V put(K key, V v) {
+    return value.put(key, v);
   }
 
   @Override
   public V remove(Object key) {
-    return map.remove(key);
+    return value.remove(key);
   }
 
   @Override
   public void putAll(Map<? extends K, ? extends V> m) {
-    map.putAll(m);
+    value.putAll(m);
   }
 
   @Override
   public void clear() {
-    map.clear();
+    value.clear();
   }
 
   @Override
   public Comparator<? super K> comparator() {
-    return map.comparator();
+    return value.comparator();
   }
 
   @Override
   public SortedMap<K, V> subMap(K fromKey, K toKey) {
-    SortedMap <K, V> sub = map.subMap(fromKey, toKey);
+    SortedMap <K, V> sub = value.subMap(fromKey, toKey);
     CBSortedMap <K,V> toRet = new CBSortedMap <K,V>(sub);
     return toRet;
   }
 
   @Override
   public SortedMap<K, V> headMap(K toKey) {
-    SortedMap <K, V> sub = map.headMap(toKey);
+    SortedMap <K, V> sub = value.headMap(toKey);
     CBSortedMap <K,V> toRet = new CBSortedMap <K,V>(sub);
     return toRet;
   }
 
   @Override
   public SortedMap<K, V> tailMap(K fromKey) {
-    SortedMap <K, V> sub = map.tailMap(fromKey);
+    SortedMap <K, V> sub = value.tailMap(fromKey);
     CBSortedMap <K,V> toRet = new CBSortedMap <K,V>(sub);
     return toRet;
   }
 
   @Override
   public K firstKey() {
-      return map.firstKey();
+      return value.firstKey();
   }
 
   @Override
   public K lastKey() {
-    return map.lastKey();
+    return value.lastKey();
   }
 
   @Override
   public Set<K> keySet() {
-    return map.keySet();
+    return value.keySet();
   }
 
   @Override
   public Collection<V> values() {
-    return map.values();
+    return value.values();
   }
 
   @Override
   public Set<Entry<K, V>> entrySet() {
-    return map.entrySet();
+    return value.entrySet();
   }
 }

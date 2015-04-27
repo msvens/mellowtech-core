@@ -31,6 +31,7 @@ import java.io.IOException;
 import java.nio.MappedByteBuffer;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.function.Consumer;
 
 /**
  * A file that that stores byte records. Implementations of this class is free
@@ -52,7 +53,7 @@ public interface RecordFile {
 
   /**
    * Get the number of records currently stored
-   * @return
+   * @return records
    */
   public int size();
   public int getBlockSize();
@@ -80,6 +81,13 @@ public interface RecordFile {
 
   public Iterator<Record> iterator() throws UnsupportedOperationException;
   public Iterator<Record> iterator(int record) throws UnsupportedOperationException;
+  
+  default public void forEach(Consumer<Record> action){
+    Iterator <Record> iter = iterator();
+    while(iter.hasNext()){
+      action.accept(iter.next());
+    }
+  }
 
 
 

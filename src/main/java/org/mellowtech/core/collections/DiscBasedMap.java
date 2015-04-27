@@ -43,55 +43,53 @@ import java.util.*;
 import java.util.logging.Level;
 
 import org.mellowtech.core.CoreLog;
-import org.mellowtech.core.bytestorable.ByteComparable;
-import org.mellowtech.core.bytestorable.ByteStorable;
-import org.mellowtech.core.collections.mappings.BCMapping;
-import org.mellowtech.core.collections.mappings.BSMapping;
+import org.mellowtech.core.bytestorable.BComparable;
+import org.mellowtech.core.bytestorable.BStorable;
 import org.mellowtech.core.collections.tree.BTree;
-//import org.mellowtech.core.collections.tree.BTreeFactory;
 import org.mellowtech.core.collections.tree.BTreeBuilder;
 import org.mellowtech.core.collections.tree.TreePosition;
-import org.mellowtech.core.disc.MapEntry;
+import org.mellowtech.core.util.MapEntry;
 
 /**
  * Implementation of a Disc Base Map. Based on the Mellowtech BTree. 
  * @author Martin Svensson
  *
  */
-public class DiscBasedMap <K, V> implements NavigableMap<K, V>, DiscMap <K,V> {
+public class DiscBasedMap <A,B extends BComparable<A,B>, 
+  C, D extends BStorable<C,D>> implements NavigableMap<A, C>, DiscMap <A,C> {
   
   
+  private BTree <A,B,C,D> btree;
   
-  private BTree <ByteComparable <K>, ByteStorable <V>> btree;
-  private BCMapping <K> keyMapping;
-  private BSMapping <V> valueMapping;
+  private B keyMapping;
+  private D valueMapping;
   
   public static int DEFAULT_KEY_BLOCK = 2048*1;
   public static int DEFAULT_VALUE_BLOCK = 2048*2;
   
   
 
-  public DiscBasedMap(BCMapping <K> keyMapping, BSMapping <V> valueMapping,
-                      String fileName, boolean blobValues, boolean inMemory) throws IOException{
-    this(keyMapping, valueMapping, fileName, DEFAULT_VALUE_BLOCK, DEFAULT_KEY_BLOCK, blobValues, inMemory);
+  public DiscBasedMap(Class <B> keyClass, Class <D> valueClass,
+                      String fileName, boolean blobValues, boolean inMemory) throws Exception{
+    this(keyClass, valueClass, fileName, DEFAULT_VALUE_BLOCK, DEFAULT_KEY_BLOCK, blobValues, inMemory);
   }
 
-  public DiscBasedMap(BCMapping <K> keyMapping, BSMapping <V> valueMapping,
-                      String fileName, int valueBlockSize, boolean blobValues, boolean inMemory) throws IOException{
-    this(keyMapping, valueMapping, fileName, valueBlockSize, DEFAULT_KEY_BLOCK, blobValues, inMemory);
+  public DiscBasedMap(Class <B> keyClass, Class <D> valueClass,
+                      String fileName, int valueBlockSize, boolean blobValues, boolean inMemory) throws Exception{
+    this(keyClass, valueClass, fileName, valueBlockSize, DEFAULT_KEY_BLOCK, blobValues, inMemory);
   }
   
-  public DiscBasedMap(BCMapping <K> keyMapping, BSMapping <V> valueMapping,
-      String fileName, int valueBlockSize, int keyBlockSize, boolean blobValues, boolean inMemory) throws IOException{
-    this(keyMapping, valueMapping, fileName, new BTreeBuilder().blobValues(blobValues).valuesInMemory(inMemory)
+  public DiscBasedMap(Class <B> keyClass, Class <D> valueClass,
+      String fileName, int valueBlockSize, int keyBlockSize, boolean blobValues, boolean inMemory) throws Exception{
+    this(keyClass, valueClass, fileName, new BTreeBuilder().blobValues(blobValues).valuesInMemory(inMemory)
         .valueBlockSize(valueBlockSize).indexBlockSize(keyBlockSize));
   }
   
-  public DiscBasedMap(BCMapping <K> keyMapping, BSMapping <V> valueMapping, String fileName,
-      BTreeBuilder builder) throws IOException {
-    this.keyMapping = keyMapping;
-    this.valueMapping = valueMapping;
-    this.btree = builder.build(keyMapping.getTemplate(), valueMapping.getTemplate(), fileName);
+  public DiscBasedMap(Class <B> keyClass, Class <D> valueClass, String fileName,
+      BTreeBuilder builder) throws Exception {
+    this.keyMapping = keyClass.newInstance();
+    this.valueMapping = valueClass.newInstance();
+    this.btree = builder.build(keyClass, valueClass, fileName);
   }
   
   public void save() throws IOException{
@@ -113,12 +111,12 @@ public class DiscBasedMap <K, V> implements NavigableMap<K, V>, DiscMap <K,V> {
   }
 
   @Override
-  public Iterator<Entry<K, V>> iterator() {
+  public Iterator<Entry<A, C>> iterator() {
     return new DiscBasedMapIterator();
   }
 
   @Override
-  public Iterator<Entry<K, V>> iterator(K key) {
+  public Iterator<Entry<A, C>> iterator(A key) {
     return new DiscBasedMapIterator(key);
   }
 
@@ -131,16 +129,16 @@ public class DiscBasedMap <K, V> implements NavigableMap<K, V>, DiscMap <K,V> {
   }
 
   @Override
-  public java.util.Map.Entry<K, V> ceilingEntry(K key) {
-    K k = this.ceilingKey(key);
+  public java.util.Map.Entry<A, C> ceilingEntry(A key) {
+    A k = this.ceilingKey(key);
     return k == null ? null : new MapEntry<>(k, this.get(k));
   }
 
   @Override
-  public K ceilingKey(K key) {
+  public A ceilingKey(A key) {
     TreePosition tp;
     try {
-      tp = this.btree.getPositionWithMissing(this.keyMapping.toByteComparable(key));
+      tp = this.btree.getPositionWithMissing(keyMapping.create(key));
     } catch (IOException e) {
       CoreLog.L().log(Level.WARNING, "", e);
       return null;
@@ -153,7 +151,8 @@ public class DiscBasedMap <K, V> implements NavigableMap<K, V>, DiscMap <K,V> {
     int higher = this.size() - tp.getSmaller();
     if(higher > 0){
       try {
-        return this.keyMapping.fromByteComparable(this.btree.getKey(pos));
+        //return this.keyMapping.fromByteComparable(this.btree.getKey(pos));
+        return this.btree.getKey(pos).get();
       } catch (IOException e) {
         CoreLog.L().log(Level.WARNING, "", e);
         return null;
@@ -163,35 +162,35 @@ public class DiscBasedMap <K, V> implements NavigableMap<K, V>, DiscMap <K,V> {
   }
 
   @Override
-  public NavigableSet<K> descendingKeySet() {
+  public NavigableSet<A> descendingKeySet() {
     return null;
   }
 
   @Override
-  public NavigableMap<K, V> descendingMap() {
+  public NavigableMap<A, C> descendingMap() {
     return null;
   }
 
   @Override
-  public java.util.Map.Entry<K, V> firstEntry() {
-    K k = this.firstKey();
+  public java.util.Map.Entry<A, C> firstEntry() {
+    A k = this.firstKey();
     return k == null ? null : new MapEntry <> (k, this.get(k));
   }
 
   @Override
-  public java.util.Map.Entry<K, V> floorEntry(K key) {
-    K k = this.floorKey(key);
+  public java.util.Map.Entry<A, C> floorEntry(A key) {
+    A k = this.floorKey(key);
     return k == null ? null : new MapEntry <> (k, this.get(k));
   }
 
   @Override
-  public K floorKey(K key) {
+  public A floorKey(A key) {
     try {
-      TreePosition tp = this.btree.getPositionWithMissing(this.keyMapping.toByteComparable(key));
+      TreePosition tp = this.btree.getPositionWithMissing(keyMapping.create(key));
       if(tp.isExists())
-        return this.keyMapping.fromByteComparable(this.btree.getKey(tp.getSmaller()));
+        return btree.getKey(tp.getSmaller()).get();
       else if(tp.getSmaller() > 0)
-        return this.keyMapping.fromByteComparable(this.btree.getKey(tp.getSmaller() - 1));
+        return btree.getKey(tp.getSmaller() - 1).get();
       return null;
       
     }
@@ -202,31 +201,31 @@ public class DiscBasedMap <K, V> implements NavigableMap<K, V>, DiscMap <K,V> {
   }
 
   @Override
-  public SortedMap<K, V> headMap(K toKey) {
-    throw new Error("viewss not supported");
-  }
-
-  @Override
-  public NavigableMap<K, V> headMap(K toKey, boolean inclusive) {
+  public SortedMap<A, C> headMap(A toKey) {
     throw new Error("views not supported");
   }
 
   @Override
-  public java.util.Map.Entry<K, V> higherEntry(K key) {
-    K k = this.higherKey(key);
+  public NavigableMap<A, C> headMap(A toKey, boolean inclusive) {
+    throw new Error("views not supported");
+  }
+
+  @Override
+  public java.util.Map.Entry<A, C> higherEntry(A key) {
+    A k = this.higherKey(key);
     return k == null ? null : new MapEntry <> (k, this.get(k));
   }
 
   @Override
-  public K higherKey(K key) {
+  public A higherKey(A key) {
 	try {
-      TreePosition tp = this.btree.getPositionWithMissing(this.keyMapping.toByteComparable(key));
+      TreePosition tp = btree.getPositionWithMissing(keyMapping.create(key));
       if(tp == null) return null;
       // tp.getSmaller() is the total number of smaller elements than "key", so the number of elements 
       // higher than "key" is size() - (tp.getSmaller() + 1)
       int higher = this.size() - (tp.getSmaller()+1); 
       if (higher > 0) {
-        return this.keyMapping.fromByteComparable(this.btree.getKey(tp.getSmaller()+1));
+        return btree.getKey(tp.getSmaller()+1).get();
       }
       return null;
     } catch (IOException e) {
@@ -236,23 +235,23 @@ public class DiscBasedMap <K, V> implements NavigableMap<K, V>, DiscMap <K,V> {
   }
 
   @Override
-  public java.util.Map.Entry<K, V> lastEntry() {
-    K k = this.lastKey();
+  public java.util.Map.Entry<A, C> lastEntry() {
+    A k = this.lastKey();
     return k == null ? null : new MapEntry <> (k, this.get(k));
   }
 
   @Override
-  public java.util.Map.Entry<K, V> lowerEntry(K key) {
-    K k = this.lowerKey(key);
+  public java.util.Map.Entry<A, C> lowerEntry(A key) {
+    A k = this.lowerKey(key);
     return k == null ? null : new MapEntry <> (k, this.get(k));
   }
 
   @Override
-  public K lowerKey(K key) {
+  public A lowerKey(A key) {
     try {
-      TreePosition tp = this.btree.getPositionWithMissing(this.keyMapping.toByteComparable(key));
+      TreePosition tp = btree.getPositionWithMissing(keyMapping.create(key));
       if(tp.getSmaller() > 0)
-        return this.keyMapping.fromByteComparable(this.btree.getKey(tp.getSmaller() - 1));
+        return btree.getKey(tp.getSmaller() - 1).get();
       return null;
       
     }
@@ -263,46 +262,46 @@ public class DiscBasedMap <K, V> implements NavigableMap<K, V>, DiscMap <K,V> {
   }
 
   @Override
-  public NavigableSet<K> navigableKeySet() {
-    return (TreeSet <K>) this.keySet();
+  public NavigableSet<A> navigableKeySet() {
+    return (TreeSet <A>) this.keySet();
   }
 
   @Override
-  public java.util.Map.Entry<K, V> pollFirstEntry() {
-    K key = this.firstKey();
-    V value = this.get(key);
-    MapEntry <K, V> me = new MapEntry <> (key, value);
+  public java.util.Map.Entry<A,C> pollFirstEntry() {
+    A key = this.firstKey();
+    C value = this.get(key);
+    MapEntry <A,C> me = new MapEntry <> (key, value);
     this.remove(key);
     return me;
   }
 
   @Override
-  public java.util.Map.Entry<K, V> pollLastEntry() {
-    K key = this.lastKey();
-    V value = this.get(key);
-    MapEntry <K, V> me = new MapEntry <> (key, value);
+  public java.util.Map.Entry<A,C> pollLastEntry() {
+    A key = this.lastKey();
+    C value = this.get(key);
+    MapEntry <A,C> me = new MapEntry <> (key, value);
     this.remove(key);
     return me;
   }
 
   @Override
-  public SortedMap<K, V> subMap(K fromKey, K toKey) {
+  public SortedMap<A,C> subMap(A fromKey, A toKey) {
     throw new Error("views not supported");
   }
 
   @Override
-  public NavigableMap<K, V> subMap(K fromKey, boolean fromInclusive, K toKey,
+  public NavigableMap<A,C> subMap(A fromKey, boolean fromInclusive, A toKey,
       boolean toInclusive) {
     throw new Error("views not supported");
   }
 
   @Override
-  public SortedMap<K, V> tailMap(K fromKey) {
+  public SortedMap<A,C> tailMap(A fromKey) {
     throw new Error("views not supported");
   }
 
   @Override
-  public NavigableMap<K, V> tailMap(K fromKey, boolean inclusive) {
+  public NavigableMap<A, C> tailMap(A fromKey, boolean inclusive) {
     //Iterator <Map.Entry<K, V>> iter = this.iterator(fromKey);
     throw new Error("views not supported");
     //return null;
@@ -312,27 +311,27 @@ public class DiscBasedMap <K, V> implements NavigableMap<K, V>, DiscMap <K,V> {
    * Always relies on the compare function defined in the keyMapping
    */
   @Override
-  public Comparator<? super K> comparator() {
+  public Comparator<? super A> comparator() {
     return null;
   }
 
   @Override
-  public Set<java.util.Map.Entry<K, V>> entrySet() {
-    Set <Map.Entry<K, V>> toRet = new TreeSet <> ();
-    for(Iterator <KeyValue <ByteComparable <K>, ByteStorable <V>>> iter = this.btree.iterator(); iter.hasNext();){
-      KeyValue <ByteComparable <K>, ByteStorable <V>> keyValue = iter.next();
-      K key = this.keyMapping.fromByteComparable(keyValue.getKey());
-      V value = this.valueMapping.fromByteStorable(keyValue.getValue());
+  public Set<java.util.Map.Entry<A, C>> entrySet() {
+    Set <Map.Entry<A, C>> toRet = new TreeSet <> ();
+    for(Iterator <KeyValue <B,D>> iter = this.btree.iterator(); iter.hasNext();){
+      KeyValue <B, D> keyValue = iter.next();
+      A key = keyValue.getKey().get();
+      C value = keyValue.getValue().get();
       toRet.add(new MapEntry <> (key, value));
     }
     return toRet;
   }
 
   @Override
-  public K firstKey() {
+  public A firstKey() {
     if(this.isEmpty()) return null;
     try {
-      return this.keyMapping.fromByteComparable(this.btree.getKey(0));
+      return btree.getKey(0).get();
     } catch (IOException e) {
       CoreLog.L().log(Level.WARNING, "", e);
     }
@@ -340,26 +339,24 @@ public class DiscBasedMap <K, V> implements NavigableMap<K, V>, DiscMap <K,V> {
   }
 
   @Override
-  public Set<K> keySet() {
-    TreeSet <K> ts = new TreeSet <> ();
-    for(Iterator <KeyValue <ByteComparable <K>, ByteStorable <V>>> iter = this.btree.iterator(); iter.hasNext();){
-      ts.add(this.keyMapping.fromByteComparable(iter.next().getKey()));
+  public Set<A> keySet() {
+    TreeSet <A> ts = new TreeSet <> ();
+    for(Iterator <KeyValue <B, D>> iter = this.btree.iterator(); iter.hasNext();){
+      ts.add(iter.next().getKey().get());
     }
     return ts;
   }
 
   @Override
-  public K lastKey() {
+  public A lastKey() {
     return null;
   }
 
   @Override
-  public Collection <V> values() {
-    ArrayList <V> al = new ArrayList <> ();
-    KeyValue <ByteComparable <K>, ByteStorable <V>> kv;
-    for(Iterator <KeyValue <ByteComparable <K>, ByteStorable <V>>>iter = this.btree.iterator(); iter.hasNext();){
-      kv = iter.next();
-      al.add(this.valueMapping.fromByteStorable(kv.getValue()));
+  public Collection <C> values() {
+    ArrayList <C> al = new ArrayList <> ();
+    for(Iterator <KeyValue <B,D>>iter = this.btree.iterator(); iter.hasNext();){
+      al.add(iter.next().getValue().get());
     }
     return al; 
   }
@@ -373,7 +370,7 @@ public class DiscBasedMap <K, V> implements NavigableMap<K, V>, DiscMap <K,V> {
   @Override
   public boolean containsKey(Object key) {
     try {
-      return this.btree.containsKey(this.keyMapping.toByteComparable((K)key));
+      return btree.containsKey(keyMapping.create((A) key));
     } catch (IOException e) {
       CoreLog.L().log(Level.WARNING, "", e);
     }
@@ -382,9 +379,9 @@ public class DiscBasedMap <K, V> implements NavigableMap<K, V>, DiscMap <K,V> {
 
   @Override
   public boolean containsValue(Object value) {
-    for(Iterator <KeyValue <ByteComparable <K>, ByteStorable <V>>> iter = this.btree.iterator(); iter.hasNext();){
-      V v = this.valueMapping.fromByteStorable(iter.next().getValue());
-      if(v.equals(value))
+    for(Iterator <KeyValue <B,D>> iter = this.btree.iterator(); iter.hasNext();){
+      C c = iter.next().getValue().get();
+      if(c.equals(value))
         return true;
     }
     return false;
@@ -392,11 +389,10 @@ public class DiscBasedMap <K, V> implements NavigableMap<K, V>, DiscMap <K,V> {
 
   @SuppressWarnings("unchecked")
   @Override
-  public V get(Object key) {
-    ByteComparable <K>  bc = this.keyMapping.toByteComparable((K) key);
+  public C get(Object key) {
     try {
-      ByteStorable <V> bs = this.btree.get(bc);
-      if(bs != null) return this.valueMapping.fromByteStorable(bs);
+      D value = this.btree.get(keyMapping.create((A)key));
+      return value != null ? value.get() : null;
     } catch (IOException e) {
       CoreLog.L().log(Level.WARNING, "", e);
     }
@@ -409,12 +405,12 @@ public class DiscBasedMap <K, V> implements NavigableMap<K, V>, DiscMap <K,V> {
   }
 
   @Override
-  public V put(K key, V value) {
-    ByteComparable <K> bc = keyMapping.toByteComparable(key);
-    ByteStorable <V> bs = valueMapping.toByteStorable(value);
-    V toRet = null;
+  public C put(A key, C value) {
+    //ByteComparable <K> bc = keyMapping.toByteComparable(key);
+    //ByteStorableOld <V> bs = valueMapping.toByteStorable(value);
+    C toRet = null;
     try {
-      this.btree.put(bc, bs);
+      this.btree.put(keyMapping.create(key), valueMapping.create(value));
     } catch (IOException e) {
       CoreLog.L().log(Level.WARNING, "", e);
     }
@@ -422,18 +418,18 @@ public class DiscBasedMap <K, V> implements NavigableMap<K, V>, DiscMap <K,V> {
   }
 
   @Override
-  public void putAll(Map<? extends K, ? extends V> m) {
-    for(Entry<? extends K, ? extends V> entry : m.entrySet()){
+  public void putAll(Map<? extends A, ? extends C> m) {
+    for(Entry<? extends A, ? extends C> entry : m.entrySet()){
       this.put(entry.getKey(), entry.getValue());
     }
   }
 
   @SuppressWarnings("unchecked")
   @Override
-  public V remove(Object key) {
+  public C remove(Object key) {
     try{
-      ByteStorable <V> prevValue = this.btree.remove(this.keyMapping.toByteComparable((K)key));
-      return prevValue != null ? this.valueMapping.fromByteStorable(prevValue) : null;
+      D prev = this.btree.remove(keyMapping.create((A)key));
+      return prev != null ? prev.get() : null;
     }
     catch(Exception e){
       CoreLog.L().log(Level.WARNING, "", e);
@@ -452,16 +448,16 @@ public class DiscBasedMap <K, V> implements NavigableMap<K, V>, DiscMap <K,V> {
     return 0;
   }
 
-  class DiscBasedMapIterator implements Iterator<Entry<K, V>>{
+  class DiscBasedMapIterator implements Iterator<Entry<A, C>>{
 
-    Iterator <KeyValue<ByteComparable <K>, ByteStorable <V>>> iter;
+    Iterator <KeyValue<B, D>> iter;
 
     public DiscBasedMapIterator(){
       iter = btree.iterator();
     }
 
-    public DiscBasedMapIterator(K key){
-      iter = btree.iterator(keyMapping.toByteComparable(key));
+    public DiscBasedMapIterator(A key){
+      iter = btree.iterator(keyMapping.create(key));
     }
 
 
@@ -471,13 +467,13 @@ public class DiscBasedMap <K, V> implements NavigableMap<K, V>, DiscMap <K,V> {
     }
 
     @Override
-    public Entry<K, V> next() {
-      KeyValue <ByteComparable <K>, ByteStorable <V>> next = iter.next();
+    public Entry<A, C> next() {
+      KeyValue <B,D> next = iter.next();
       if(next == null) return null;
-      MapEntry <K,V> entry = new MapEntry<>();
-      entry.setKey(keyMapping.fromByteStorable(next.getKey()));
+      MapEntry <A,C> entry = new MapEntry<>();
+      entry.setKey(next.getKey().get());
       if(next.getValue() != null)
-        entry.setValue(valueMapping.fromByteStorable(next.getValue()));
+        entry.setValue(next.getValue().get());
       return entry;
     }
 

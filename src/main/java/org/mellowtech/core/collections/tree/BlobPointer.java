@@ -29,7 +29,7 @@ package org.mellowtech.core.collections.tree;
 
 import java.nio.ByteBuffer;
 
-import org.mellowtech.core.bytestorable.ByteStorable;
+import org.mellowtech.core.bytestorable.BStorableImp;
 
 /**
  * Pointer to hold a file position and a number of bytes
@@ -38,51 +38,49 @@ import org.mellowtech.core.bytestorable.ByteStorable;
  *
  * @author Martin Svensson
  */
-public class BlobPointer extends ByteStorable <BlobPointer.Entry> {
+public class BlobPointer extends BStorableImp <BlobPointer.Entry, BlobPointer> {
 
-  public class Entry {
+  static class Entry {
     long fPointer;
     int bSize;
+    public Entry(){}
+    public Entry(long pointer, int size){fPointer = pointer; bSize = size;}
+    public String toString(){return fPointer+": "+bSize;};
   }
 
   public BlobPointer(){
-    obj = new Entry();
+    super(new Entry());
   }
 
   public BlobPointer(long fPointer, int bSize){
-    this();
-    this.obj.fPointer = fPointer;
-    this.obj.bSize = bSize;
+    super(new Entry(fPointer, bSize));
   }
 
   public long getfPointer() {
-    return obj.fPointer;
+    return value.fPointer;
   }
 
   public void setfPointer(long fPointer) {
-    obj.fPointer = fPointer;
+    value.fPointer = fPointer;
   }
 
   public int getbSize() {
-    return obj.bSize;
+    return value.bSize;
   }
 
   public void setbSize(int bSize) {
-    obj.bSize = bSize;
+    value.bSize = bSize;
   }
 
   @Override
-  public ByteStorable <Entry> fromBytes(ByteBuffer bb, boolean doNew) {
-    BlobPointer toRet = doNew ? new BlobPointer(): this;
-    toRet.obj.fPointer = bb.getLong();
-    toRet.obj.bSize = bb.getInt();
-    return toRet;
+  public BlobPointer from(ByteBuffer bb) {
+    return new BlobPointer(bb.getLong(), bb.getInt());
   }
 
   @Override
-  public void toBytes(ByteBuffer bb) {
-    bb.putLong(obj.fPointer);
-    bb.putInt(obj.bSize);
+  public void to(ByteBuffer bb) {
+    bb.putLong(value.fPointer);
+    bb.putInt(value.bSize);
   }
 
   @Override
@@ -93,9 +91,5 @@ public class BlobPointer extends ByteStorable <BlobPointer.Entry> {
   @Override
   public int byteSize(ByteBuffer bb) {
     return 12;
-  }
-
-  public String toString(){
-    return obj.fPointer+":"+obj.bSize;
   }
 }

@@ -26,13 +26,9 @@
  */
 
 package org.mellowtech.core.bytestorable;
-
-import junit.framework.Assert;
-
-import org.junit.Test;
+import org.junit.Before;
 import org.mellowtech.core.bytestorable.CBDate;
-
-import java.nio.ByteBuffer;
+import java.util.Date;
 
 /**
  * Date: 2013-04-17
@@ -40,19 +36,13 @@ import java.nio.ByteBuffer;
  *
  * @author Martin Svensson
  */
-public class CBDateTest {
+public class CBDateTest extends BComparableTemplate <Date, CBDate> {
 
-  @Test
-  public void test(){
-    CBDate i1 = new CBDate();
-    CBDate i2 = (CBDate) i1.deepCopy();
-    Assert.assertTrue(i1.equals(i2));
-    Assert.assertTrue(i1.compareTo(i2) == 0);
-    ByteBuffer bb = ByteBuffer.allocate(i1.byteSize()+i2.byteSize());
-    i1.toBytes(bb);
-    i2.toBytes(bb);
-    Assert.assertTrue(i1.byteCompare(0, bb, i1.byteSize(), bb) == 0);
-    CBDate i3 = new CBDate(System.currentTimeMillis()-1000);
-    Assert.assertFalse(i1.compareTo(i3) == 0);
+  @Before public void init(){
+    type = CBDate.class;
+    long millis = System.currentTimeMillis();
+    values = new Date[]{new Date(millis-1000), new Date(millis)};
+    sizes = new int[]{8,8};
   }
+  
 }

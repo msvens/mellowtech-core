@@ -46,7 +46,7 @@ import java.util.*;
  */
 public class BPTreeImpTest {
 
-  public BPTreeImp<CBString, CBInt> dbMap;
+  public BPTreeImp<String, CBString, Integer, CBInt> dbMap;
   public static final String dir = "dbmtest";
   public static final String name = "discBasedMap";
   public TestTree tt;
@@ -57,7 +57,7 @@ public class BPTreeImpTest {
     TestUtils.createTempDir(dir);
 
     String fileName = TestUtils.getAbsolutDir(dir+"/"+name);
-    this.dbMap = new BPTreeImp(fileName,  new CBString(), new CBInt(), 1024, 512, 1024*10, 1024);
+    this.dbMap = new BPTreeImp <> (fileName,  CBString.class, CBInt.class, 1024, 512, 1024*10, 1024);
     tt = new TestTree(dbMap);
 
   }
@@ -73,7 +73,7 @@ public class BPTreeImpTest {
     tt.testIterator();
     dbMap.save();
     String fileName = TestUtils.getAbsolutDir(dir+"/"+name);
-    dbMap = new BPTreeImp(fileName,  new CBString(), new CBInt());
+    dbMap = new BPTreeImp <> (fileName,  CBString.class, CBInt.class);
     tt.setDbMap(dbMap);
     tt.testValues();
     tt.testDeleteAll();

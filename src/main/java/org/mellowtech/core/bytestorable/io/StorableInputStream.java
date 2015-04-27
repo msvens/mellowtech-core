@@ -30,19 +30,21 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.channels.Channels;
 
-import org.mellowtech.core.bytestorable.ByteStorable;
+import org.mellowtech.core.bytestorable.BStorable;
 
 /**
- * Reads ByteStorables from a given input stream. Iternally it uses a
+ * Reads ByteStorables from a given input stream. Internally it uses a
  * StorableReadChannel
+ * @param <A> Wrapped BStorable class
+ * @param <B> BStorable class
  * 
  * @author Martin Svensson
  * @version 1.0
  * @see StorableReadChannel
  */
-public class StorableInputStream <E extends ByteStorable <?>> {
+public class StorableInputStream <A, B extends BStorable <A,B>> {
 
-  private StorableReadChannel <E> mChannel;
+  private StorableReadChannel <A,B> mChannel;
 
   /**
    * Initialize to read ByteStorables from a given input stream using the
@@ -55,9 +57,9 @@ public class StorableInputStream <E extends ByteStorable <?>> {
    * @exception IOException
    *              if an error occurs
    */
-  public StorableInputStream(InputStream is, E template)
+  public StorableInputStream(InputStream is, B template)
       throws IOException {
-    mChannel = new StorableReadChannel <E> (Channels.newChannel(is), template);
+    mChannel = new StorableReadChannel <A,B> (Channels.newChannel(is), template);
   }
 
   /**
@@ -67,15 +69,16 @@ public class StorableInputStream <E extends ByteStorable <?>> {
    * @exception IOException
    *              if an error occurs
    */
-  public E next() throws IOException {
+  public B next() throws IOException {
     return mChannel.next();
   }
   
   /**
    * Sets the template to use, useful when same stream is used to read different objects
    * according some rules.
+   * @param template BStorable template
    */
-  public void setTemplate(E template) {
+  public void setTemplate(B template) {
 	  mChannel.setTemplate(template);
   }
 }

@@ -57,7 +57,7 @@ public class ObjectManagerTest {
       f.mkdir();
 
       ObjectManager m = new ObjectManager(f.getAbsolutePath()+"/manager", true, false);
-      m.put("5", new CBString(new java.util.Date().toString()));
+      m.put("5", new CBString("hello world"));
       m.put("6", new CBInt(100));
       m.put("7", new CBList <String>());
       m.put("8", new CBBitSet());

@@ -37,99 +37,106 @@ import java.util.*;
  *
  * @author Martin Svensson
  */
-public class CBMixedList extends ByteStorable <List <Object>> implements List<Object> {
+public class CBMixedList extends BStorableImp <List <Object>, CBMixedList> implements List<Object> {
 
-  private List <Object> list;
 
   public CBMixedList(){
-    this.list = new ArrayList <Object> ();
+    super(new ArrayList <Object> ());
   }
+  
+  public CBMixedList(List <Object> elems){
+    super(elems);
+  }
+  
+  @Override
+  public CBMixedList create(List <Object> elems){return new CBMixedList(elems);}
 
   @Override
-  public ByteStorable <List<Object>> fromBytes(ByteBuffer bb, boolean doNew) {
-    CBMixedList toRet = doNew ? new CBMixedList() : this;
-    toRet.list.clear();
+  public CBMixedList from(ByteBuffer bb) {
+    CBMixedList toRet = new CBMixedList();
     PrimitiveObject po = new PrimitiveObject();
-
-    bb.getInt(); //read past int
+    CBUtil.getSize(bb, true);
     int elems = bb.getInt();
     for(int i = 0; i < elems; i++){
-      toRet.list.add(po.fromBytes(bb, true).get());
+      toRet.add(po.from(bb).get());
     }
     return toRet;
   }
 
   @Override
-  public void toBytes(ByteBuffer bb) {
-    bb.putInt(byteSize());
-    bb.putInt(list.size());
-    PrimitiveObject po = new PrimitiveObject();
-    for(Object o : list){
-      po.set(o);
-      po.toBytes(bb);
+  public void to(ByteBuffer bb) {
+    CBUtil.putSize(internalSize(), bb, true);
+    bb.putInt(value.size());
+    
+    for(Object o : value){
+      PrimitiveObject po = new PrimitiveObject(o);
+      po.to(bb);
     }
   }
 
   @Override
   public int byteSize() {
-    int byteSize = 8; //byteSize indicator + num elements;
-    PrimitiveObject po = new PrimitiveObject();
-    for(Object o : list){
-      po.set(o);
-      byteSize += po.byteSize();
+    return CBUtil.byteSize(internalSize(), true);
+  }
+  
+  private int internalSize() {
+    int size = 4; //num elements
+    for(Object o : value){
+      PrimitiveObject po = new PrimitiveObject(o);
+      size += po.byteSize();
     }
-    return byteSize;
+    return size;
   }
 
   @Override
   public int byteSize(ByteBuffer bb) {
-    return getSizeFour(bb);
+    return CBUtil.peekSize(bb, true);
   }
 
   @Override
   public int size() {
-    return list.size();
+    return value.size();
   }
 
   @Override
   public boolean isEmpty() {
-    return list.isEmpty();
+    return value.isEmpty();
   }
 
   @Override
   public boolean contains(Object o) {
-    return list.contains(o);
+    return value.contains(o);
   }
 
   @Override
   public Iterator<Object> iterator() {
-    return list.iterator();
+    return value.iterator();
   }
 
   @Override
   public Object[] toArray() {
-    return list.toArray();
+    return value.toArray();
   }
 
   @Override
   public <T> T[] toArray(T[] a) {
-    return list.toArray(a);
+    return value.toArray(a);
   }
 
   @Override
   public boolean add(Object o) {
     check(o);
-    return list.add(o);
+    return value.add(o);
   }
 
   @Override
   public boolean remove(Object o) {
-    return list.remove(o);
+    return value.remove(o);
   }
 
   @Override
   public boolean containsAll(Collection<?> c) {
-    return list.containsAll(c);
+    return value.containsAll(c);
   }
 
   @Override
@@ -137,7 +144,7 @@ public class CBMixedList extends ByteStorable <List <Object>> implements List<Ob
     for(Object o : c){
       check(o);
     }
-    return list.addAll(c);
+    return value.addAll(c);
   }
 
   @Override
@@ -149,66 +156,66 @@ public class CBMixedList extends ByteStorable <List <Object>> implements List<Ob
 
   @Override
   public boolean removeAll(Collection<?> c) {
-    return list.removeAll(c);
+    return value.removeAll(c);
   }
 
   @Override
   public boolean retainAll(Collection<?> c) {
-    return list.retainAll(c);
+    return value.retainAll(c);
   }
 
   @Override
   public void clear() {
-    list.clear();
+    value.clear();
   }
 
   @Override
   public Object get(int index) {
-    return list.get(index);
+    return value.get(index);
   }
 
   @Override
   public Object set(int index, Object element) {
     check(element);
-    return list.set(index, element);
+    return value.set(index, element);
   }
 
   @Override
   public void add(int index, Object element) {
     check(element);
-    list.add(index, element);
+    value.add(index, element);
   }
 
   @Override
   public Object remove(int index) {
-    return list.remove(index);
+    return value.remove(index);
   }
 
   @Override
   public int indexOf(Object o) {
-    return list.indexOf(o);
+    return value.indexOf(o);
   }
 
   @Override
   public int lastIndexOf(Object o) {
-    return list.lastIndexOf(o);
+    return value.lastIndexOf(o);
   }
 
   @Override
   public ListIterator<Object> listIterator() {
-    return list.listIterator();
+    return value.listIterator();
   }
 
   @Override
   public ListIterator<Object> listIterator(int index) {
-    return list.listIterator(index);
+    return value.listIterator(index);
   }
 
   @Override
   public List<Object> subList(int fromIndex, int toIndex) {
-    ArrayList <Object> sub = (ArrayList <Object>) list.subList(fromIndex, toIndex);
+    ArrayList <Object> sub = (ArrayList <Object>) value.subList(fromIndex, toIndex);
     CBMixedList toRet = new CBMixedList();
-    toRet.list = sub;
+    toRet.value = sub;
     return toRet;
   }
 

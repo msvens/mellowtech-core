@@ -35,8 +35,8 @@ import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
 
 import org.mellowtech.core.CoreLog;
-import org.mellowtech.core.bytestorable.ByteComparable;
-import org.mellowtech.core.bytestorable.ByteStorable;
+import org.mellowtech.core.bytestorable.BComparable;
+import org.mellowtech.core.bytestorable.CBUtil;
 
 /**
  * Merge a set of sorted files into one large file. This Merge operates on
@@ -45,21 +45,21 @@ import org.mellowtech.core.bytestorable.ByteStorable;
  * @author Martin Svensson
  * @version 1.0
  */
-public class Merge {
+public class Merge{
 
   private static int mBlockSize = 4096 * 4;
 
-  private static class Container implements Comparable {
-    ByteStorable store;
+  private static class Container<A,B extends BComparable<A,B>> implements Comparable<Container<A,B>> {
+    B store;
     int node;
 
-    public Container(ByteStorable bs, int node) {
+    public Container(B bs, int node) {
       store = bs;
       this.node = node;
     }
 
-    public int compareTo(Object o) {
-      return this.store.compareTo(((Container) o).store);
+    public int compareTo(Container<A,B> o) {
+      return this.store.compareTo(o.store);
     }
 
     public String toString() {
@@ -100,10 +100,13 @@ public class Merge {
    * @param compressed
    *          true if the set of files are compressed using
    *          java.util.zip.DeflaterOutputStream.
+   * @param <A> Wrapped BComparable type
+   * @param <B> BComparable type
    * @exception Exception
    *              if an error occurs
    */
-  public static void merge(String fNames[], ByteStorable template,
+  @SuppressWarnings("unchecked")
+  public static <A, B extends BComparable<A,B>> void merge(String fNames[], B template,
       ByteBuffer input, ByteBuffer output, WritableByteChannel outputChannel,
       String dir, boolean compressed) throws Exception {
 
@@ -141,9 +144,9 @@ public class Merge {
 
 
     // merge files:
-    Container low;
+    Container <A,B> low;
     while (true) {
-      low = (Container) heap.delete();
+      low = (Container<A, B>) heap.delete();
       if (low == null)
         break;
       writeOutput(low.store, outputChannel, output);
@@ -172,19 +175,19 @@ public class Merge {
    *          the output buffer
    * @param outputChannel
    *          the channel to print the merged data
-   * @param bc
-   *          The byte comparator
    * @param dir
    *          the dir where to find the input files
    * @param compressed
    *          true if the runs are compressed using
    *          java.util.zip.DeflaterOutputStream
+   * @param <A> Wrapped BComparable type
+   * @param <B> BComparable type
    * @exception Exception
    *              if an error occurs
    */
-  public static void merge(String fNames[], ByteStorable template,
+  public static <A, B extends BComparable<A,B>> void mergeDirect(String fNames[], B template,
       ByteBuffer input, ByteBuffer output, WritableByteChannel outputChannel,
-      ByteComparable bc, String dir, boolean compressed) throws Exception {
+      String dir, boolean compressed) throws Exception {
     // create local containers:
     ReadableByteChannel[] channels = new ReadableByteChannel[fNames.length];
     ByteBuffer[] buffers = new ByteBuffer[fNames.length];
@@ -193,10 +196,10 @@ public class Merge {
     output.clear();
     BufferHeap bufferHeap;
     try {
-      bufferHeap = new ByteHeap(input.array(), bc);
+      bufferHeap = new ByteHeap <> (input.array(), template);
     }
     catch (Exception e) {
-      bufferHeap = new ByteBufferHeap(input, bc);
+      bufferHeap = new ByteBufferHeap <> (input, template);
     }
 
     // fill local containers:
@@ -222,7 +225,7 @@ public class Merge {
       buffers[i].flip();
 
       // input buffer:
-      input(channels, buffers, i * mBlockSize, bufferHeap, template, bc);
+      input(channels, buffers, i * mBlockSize, bufferHeap, template);
 
     }
 
@@ -233,7 +236,7 @@ public class Merge {
       if (low == -1)
         break;
       writeOutput(low, input, outputChannel, output, template);
-      input(channels, buffers, low, bufferHeap, template, bc);
+      input(channels, buffers, low, bufferHeap, template);
     }
     // flush remaining:
     output.flip();
@@ -241,7 +244,7 @@ public class Merge {
   }
 
   private static void writeOutput(int offset, ByteBuffer input,
-      WritableByteChannel outChannel, ByteBuffer output, ByteStorable template)
+      WritableByteChannel outChannel, ByteBuffer output, BComparable<?,?> template)
       throws Exception {
     input.position(offset);
 
@@ -267,7 +270,7 @@ public class Merge {
     input.limit(input.capacity());
   }
 
-  private static void writeOutput(ByteStorable low,
+  private static void writeOutput(BComparable<?,?> low,
       WritableByteChannel outChannel, ByteBuffer output) throws Exception {
 
     if (low.byteSize() > output.remaining()) {
@@ -275,17 +278,17 @@ public class Merge {
       outChannel.write(output);
       output.clear();
     }
-    low.toBytes(output);
+    low.to(output);
   }
 
-  private static void input(ReadableByteChannel[] channels,
-      ByteBuffer[] buffers, int node, Heap heap, ByteStorable template)
+  private static <A, B extends BComparable<A,B>>void input(ReadableByteChannel[] channels,
+      ByteBuffer[] buffers, int node, Heap heap, B template)
       throws Exception {
     if (!channels[node].isOpen())
       return;
-    int slack = ByteStorable.slackOrSize(buffers[node], template);
+    int slack = CBUtil.slackOrSize(buffers[node], template);
     if (slack <= 0) {
-      ByteStorable.copyToBeginning(buffers[node], Math.abs(slack));
+      CBUtil.copyToBeginning(buffers[node], Math.abs(slack));
       if (channels[node].read(buffers[node]) == -1) {
         CoreLog.L().finer("closing merge channel: " + slack);
         channels[node].close();
@@ -295,18 +298,17 @@ public class Merge {
       buffers[node].flip();
       // slack = template.byteSize(buffers[node]);
     }
-    heap.insert(new Container(template.fromBytes(buffers[node]), node));
+    heap.insert(new Container<A,B>(template.from(buffers[node]), node));
   }
 
   private static void input(ReadableByteChannel[] channels,
-      ByteBuffer[] buffers, int offset, BufferHeap heap, ByteStorable template,
-      ByteComparable bc) throws Exception {
+      ByteBuffer[] buffers, int offset, BufferHeap heap, BComparable<?,?> template) throws Exception {
     //if(!channels[node].isOpen()) return;
     int node = offset / mBlockSize;
-    int slack = ByteStorable.slackOrSize(buffers[node], template);
+    int slack = CBUtil.slackOrSize(buffers[node], template);
     if(!channels[node].isOpen()) return;
     if (slack <= 0) {
-      ByteStorable.copyToBeginning(buffers[node], Math.abs(slack));
+      CBUtil.copyToBeginning(buffers[node], Math.abs(slack));
       if (channels[node].read(buffers[node]) == -1) {
         channels[node].close();
         CoreLog.L().finer("closing merge channel "+node+" "+slack);

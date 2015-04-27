@@ -115,6 +115,7 @@ public class BufferOfStrings {
 
   /**
    * Adds a string defined in an implementation of CharSequence.
+   * @param pCharSeq holds the chars to be appended
    */
   public void append(CharSequence pCharSeq) {
     fOffsets[fNumOfStrings] = fBuffer.length();

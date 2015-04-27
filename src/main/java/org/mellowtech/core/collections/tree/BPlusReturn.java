@@ -26,8 +26,8 @@
  */
 package org.mellowtech.core.collections.tree;
 
-import org.mellowtech.core.bytestorable.ByteComparable;
-import org.mellowtech.core.bytestorable.ByteStorable;
+import org.mellowtech.core.bytestorable.BComparable;
+import org.mellowtech.core.bytestorable.BStorable;
 import org.mellowtech.core.collections.KeyValue;
 
 /**
@@ -40,8 +40,7 @@ import org.mellowtech.core.collections.KeyValue;
  * @author Martin Svensson
  */
 
-@SuppressWarnings("rawtypes")
-public class BPlusReturn <K extends ByteComparable, V extends ByteStorable> {
+public class BPlusReturn <K extends BComparable <?,K>, V extends BStorable <?,V>> {
   /**
    * Indicates that a block has been split
    */
@@ -94,7 +93,7 @@ public class BPlusReturn <K extends ByteComparable, V extends ByteStorable> {
    * @param newBlockNo
    *          a block number
    */
-  public BPlusReturn(int action, KeyValue <K,V> returnKey, BTreeKey promo,
+  public BPlusReturn(int action, KeyValue <K,V> returnKey, BTreeKey <K> promo,
       int newBlockNo) {
     this.action = action;
     this.returnKey = returnKey;

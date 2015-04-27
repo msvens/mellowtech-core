@@ -27,12 +27,16 @@
 package org.mellowtech.core.bytestorable.io;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
-import org.mellowtech.core.bytestorable.ByteComparable;
-import org.mellowtech.core.bytestorable.ByteStorable;
+import org.mellowtech.core.bytestorable.BComparable;
+import org.mellowtech.core.bytestorable.BStorable;
+
+//import org.mellowtech.core.bytestorable.ByteComparable;
+//import org.mellowtech.core.bytestorable.ByteStorableOld;
 
 /**
  * The SortedBlock keeps a sorted byte array of ByteStorables. The SortedBlock
@@ -51,12 +55,12 @@ import org.mellowtech.core.bytestorable.ByteStorable;
  */
 
 
-public class SortedBlock <E extends ByteStorable> {
+public class SortedBlock <T extends BComparable<?,T>> {
 
   private byte[] block;
   private byte[] tmpArr = new byte[128];
   private ByteBuffer buffer;
-  private E keyType;
+  private T keyType;
   private int high;
   private int bytesWritten;
   private short reservedSpace;
@@ -159,7 +163,7 @@ public class SortedBlock <E extends ByteStorable> {
    * 
    * @return an <code>Iterator</code> value
    */
-  public Iterator <E> iterator() {
+  public Iterator <T> iterator() {
     return new SBIterator();
   }
 
@@ -170,7 +174,7 @@ public class SortedBlock <E extends ByteStorable> {
    *          a given key to start from
    * @return an <code>Iterator</code> value
    */
-  public Iterator <E> iterator(E key) {
+  public Iterator <T> iterator(T key) {
     return new SBIterator(key);
   }
 
@@ -183,7 +187,7 @@ public class SortedBlock <E extends ByteStorable> {
    * @param keyType
    *          the keyType always has to be provied.
    */
-  public void setBlock(byte[] block, E keyType) {
+  public void setBlock(byte[] block, T keyType) {
     setBlock(block, keyType, false, (byte) -1, (short) -1);
   }
 
@@ -203,7 +207,7 @@ public class SortedBlock <E extends ByteStorable> {
    *          X bytes will be reserved for caller to use freely (for instance
    *          for specific header information).
    */
-  public void setBlock(byte[] block, E keyType, boolean newBlock,
+  public void setBlock(byte[] block, T keyType, boolean newBlock,
       byte ptrSize, short reservedSpace) {
     this.keyType = keyType;
     this.block = block;
@@ -243,7 +247,7 @@ public class SortedBlock <E extends ByteStorable> {
    *          The size of the pointers in this block. If the normal pointer size
    *          is used this block can store up to 32000 keys
    */
-  public void setBlock(byte[] block, E keyType, boolean newBlock,
+  public void setBlock(byte[] block, T keyType, boolean newBlock,
       byte ptrSize) {
     setBlock(block, keyType, newBlock, ptrSize, (short) 0);
   }
@@ -273,12 +277,12 @@ public class SortedBlock <E extends ByteStorable> {
    * 
    * @return The type of keys this block handles
    */
-  public E getKeyType() {
+  public T getKeyType() {
     return keyType;
   }
 
   /**
-   * This returs the start postion of the reserved space in this sorted block.
+   * This returns the start position of the reserved space in this sorted block.
    * Be careful to read/write from the reserved space since the sorted block has
    * no control over this.
    * 
@@ -289,7 +293,7 @@ public class SortedBlock <E extends ByteStorable> {
   }
 
   /**
-   * Returnts the number of bytes that has been reserved in this block.
+   * Returns the number of bytes that has been reserved in this block.
    * 
    * @return an <code>int</code> value
    */
@@ -304,7 +308,7 @@ public class SortedBlock <E extends ByteStorable> {
    *          the key to check
    * @return True if the key can be stored in this block.
    */
-  public boolean fitsKey(E key) {
+  public boolean fitsKey(T key) {
     if (reservedSpace + headerSize + bytesWritten + ((high + 1) * ptrSize)
         + key.byteSize() > buffer.capacity())
       return false;
@@ -375,7 +379,7 @@ public class SortedBlock <E extends ByteStorable> {
    *          the block to merge with.
    * @return true if the two blocks can be merged.
    */
-  public boolean canMerge(SortedBlock <E> other) {
+  public boolean canMerge(SortedBlock <T> other) {
     int totDataBytes = other.getDataBytes() + getDataBytes();
     int totElements = other.getNumberOfElements() + getNumberOfElements();
     if (reservedSpace + headerSize + totDataBytes + (totElements * ptrSize) > buffer
@@ -394,7 +398,7 @@ public class SortedBlock <E extends ByteStorable> {
    *          a <code>ByteStorable</code> value
    * @return true if the two blocks can be merged.
    */
-  public boolean canMerge(SortedBlock <E> other, E additional) {
+  public boolean canMerge(SortedBlock <T> other, T additional) {
     int totDataBytes = other.getDataBytes() + getDataBytes()
         + additional.byteSize();
     int totElements = other.getNumberOfElements() + getNumberOfElements() + 1;
@@ -412,12 +416,12 @@ public class SortedBlock <E extends ByteStorable> {
    * @return null if the block did not contain the key or the index was out of
    *         range
    */
-  public E getKey(int index) {
+  public T getKey(int index) {
     if (index >= high || index < 0)
       return null;
 
     buffer.position(getPhysicalPos(index));
-    return (E) keyType.fromBytes(buffer);
+    return keyType.from(buffer);
 
   }
 
@@ -428,7 +432,7 @@ public class SortedBlock <E extends ByteStorable> {
    *          Key to search for
    * @return the key read from the current block
    */
-  public E getKey(E key) {
+  public T getKey(T key) {
     return getKey(binarySearch(key));
   }
 
@@ -437,7 +441,7 @@ public class SortedBlock <E extends ByteStorable> {
    * 
    * @return null if the block is empty
    */
-  public E getFirstKey() {
+  public T getFirstKey() {
     return getKey(0);
   }
 
@@ -446,7 +450,7 @@ public class SortedBlock <E extends ByteStorable> {
    * 
    * @return null if the block is empty
    */
-  public E getLastKey() {
+  public T getLastKey() {
     return getKey(high - 1);
   }
 
@@ -458,7 +462,7 @@ public class SortedBlock <E extends ByteStorable> {
    *          Key to insert
    * @return true if the insert was successfull
    */
-  public boolean insertKeyUnsorted(E key) {
+  public boolean insertKeyUnsorted(T key) {
     if (!fitsKey(key))
       return false;
     int pPos = buffer.capacity() - bytesWritten - key.byteSize();
@@ -468,7 +472,7 @@ public class SortedBlock <E extends ByteStorable> {
     bytesWritten += key.byteSize();
     writeBytesWritten(bytesWritten);
     buffer.position(pPos);
-    key.toBytes(buffer);
+    key.to(buffer);
     return true;
   }
 
@@ -482,21 +486,21 @@ public class SortedBlock <E extends ByteStorable> {
    * @param index
    *          a value of type 'int'
    */
-  public void updateKey(E key, int index) {
+  public void updateKey(T key, int index) {
     buffer.position(getPhysicalPos(index));
-    key.toBytes(buffer);
+    key.to(buffer);
   }
 
   /**
-   * Inserts a key in this block. Perfoms a binary search to find the correct
+   * Inserts a key in this block. Performs a binary search to find the correct
    * position.
    * 
    * @param key
    *          The key to insert.
-   * @return the index if successfull or < 0 otherwise.
+   * @return the index if successful or 0 otherwise.
    * @see SortedBlock#insertKeyUnsorted
    */
-  public int insertKey(E key) {
+  public int insertKey(T key) {
     // check if it can be inserted here:
     if (!fitsKey(key))
       return -1;
@@ -520,7 +524,7 @@ public class SortedBlock <E extends ByteStorable> {
     bytesWritten += key.byteSize();
     writeBytesWritten(bytesWritten);
     buffer.position(pPos);
-    key.toBytes(buffer);
+    key.to(buffer);
     return pos;
   }
 
@@ -530,12 +534,12 @@ public class SortedBlock <E extends ByteStorable> {
    * 
    * @return A SortedBlock with keys greater than this block's keys
    */
-  public SortedBlock <E> splitBlock() {
-    SortedBlock <E> sb = new SortedBlock <> ();
+  public SortedBlock <T> splitBlock() {
+    SortedBlock <T> sb = new SortedBlock <T> ();
     byte[] newBlock = new byte[block.length];
     sb.setBlock(newBlock, keyType, true, ptrSize, (short) (reservedSpace - 2));
     int half = bytesWritten / 2;
-    E lastKey;
+    T lastKey;
     int numWritten = 0;
 
     // snacka med Rickard om den h�r l�sningen:
@@ -560,7 +564,7 @@ public class SortedBlock <E extends ByteStorable> {
    * @param sortedBlock
    *          The block to merge with this block.
    */
-  public void mergeBlock(SortedBlock <E> sortedBlock) {
+  public void mergeBlock(SortedBlock <T> sortedBlock) {
     // save the reserved space into sortedBlock:
 
     System.arraycopy(block, getReservedSpaceStart(), sortedBlock.getBlock(),
@@ -595,27 +599,30 @@ public class SortedBlock <E extends ByteStorable> {
    * @see SortedBlock#insertKeyUnsorted
    */
   public void sort(boolean mergeSort) {
-    ByteStorable toSort[] = new ByteStorable[high];
+    BComparable toSort[] = new BComparable[high];
     for (int i = 0; i < high; i++) {
       toSort[i] = getKey(i);
     }
-    if (mergeSort)
+    Arrays.parallelSort(toSort);
+    //java.util.Arrays.parallelSort(toSort);
+    /*if (mergeSort)
       java.util.Arrays.sort(toSort);
     else
-      org.mellowtech.core.sort.Sorters.quickSort(toSort);
+      org.mellowtech.core.sort.Sorters.quickSort(toSort);*/
     this.setBlock(block, keyType, true, ptrSize);
     for (int i = 0; i < high; i++) {
-      insertKeyUnsorted((E)toSort[i]);
+      insertKeyUnsorted((T)toSort[i]);
     }
   }
 
   /**
    * Redistribute the keys in a number of blocks as evenly as possible.
    * 
+   * @param <T> BComparable
    * @param blocks
    *          An array of sorted blocks that should be redistributed.
    */
-  public static <E extends ByteStorable <?>> void redistribute(SortedBlock <E> [] blocks) {
+  public static <T extends BComparable<?,T>> void redistribute(SortedBlock <T> [] blocks) {
     // first the total num bytes written and calculate the
     // optimal bytes in each block:
     int totalBytes = 0;
@@ -642,14 +649,14 @@ public class SortedBlock <E extends ByteStorable> {
    *          position
    * @return the deleted key
    */
-  public E deleteKey(int pos) {
+  public T deleteKey(int pos) {
     if (pos < 0)
       return null;
 
     // read the physical position:
     int pPos = getPhysicalPos(pos);
     buffer.position(pPos);
-    E toDelete = (E) keyType.fromBytes(buffer);
+    T toDelete = keyType.from(buffer);
     int firstPos = buffer.capacity() - bytesWritten;
     int byteSize = toDelete.byteSize();
     if (pos < high - 1) { // we have to compact the array:
@@ -682,7 +689,7 @@ public class SortedBlock <E extends ByteStorable> {
    *          The key to delete
    * @return The deleted key read from this block.
    */
-  public E deleteKey(E key) {
+  public T deleteKey(T key) {
     return deleteKey(binarySearch(key));
   }
 
@@ -693,7 +700,7 @@ public class SortedBlock <E extends ByteStorable> {
    *          the key to search for.
    * @return true if the key was found
    */
-  public boolean containsKey(E key) {
+  public boolean containsKey(T key) {
     return (binarySearch(key) >= 0) ? true : false;
   }
 
@@ -705,18 +712,18 @@ public class SortedBlock <E extends ByteStorable> {
    * @return position
    * @see java.util.Arrays
    */
-  public int binarySearch(E key) {
+  public int binarySearch(T key) {
     int highSearch = high - 1;
     int low = 0, mid;
-    E current;
+    T current;
     // compare bytewise if the
-    if (key instanceof ByteComparable) 
-      return binarySearchBC((ByteComparable <?>) key, low, highSearch);
+    //if (key instanceof BComparable) 
+    //  return binarySearchBC((BComparable) key, low, highSearch);
     
     while (low <= highSearch) {
       mid = (low + highSearch) / 2;
       buffer.position(getPhysicalPos(mid));
-      current = (E) keyType.fromBytes(buffer);
+      current = keyType.from(buffer);
       int cmp = current.compareTo(key);
       if (cmp < 0)
         low = mid + 1;
@@ -728,8 +735,8 @@ public class SortedBlock <E extends ByteStorable> {
     return -(low + 1);
   }
   
-  public int binarySearchBC(ByteComparable <?> key, int low, int highSearch) {
-    ByteBuffer bbKey = key.toBytes();
+  public int binarySearchBC(BComparable <?,T> key, int low, int highSearch) {
+    ByteBuffer bbKey = key.to();
     ByteBuffer bbVal = ByteBuffer.wrap(block);
     while (low <= highSearch) {
       int mid = (low + highSearch) / 2;
@@ -761,7 +768,7 @@ public class SortedBlock <E extends ByteStorable> {
       int offset = getPhysicalPos(i);
       sbuff.append("offset: " + offset);
       buffer.position(offset);
-      sbuff.append(" item: " + keyType.fromBytes(buffer) + "\n");
+      sbuff.append(" item: " + keyType.from(buffer) + "\n");
     }
     }
     catch(Exception e){/*e.printStackTrace();*/}
@@ -776,10 +783,10 @@ public class SortedBlock <E extends ByteStorable> {
     return optimal;
   }
 
-  private static <E extends ByteStorable <?>> void putKeysPrevious(SortedBlock <E> [] blocks, int index,
+  private static <T extends BComparable<?,T>> void putKeysPrevious(SortedBlock <T> [] blocks, int index,
       int optimal) {
     int blockBytes;
-    E current;
+    T current;
     int diff;
     int diffPut;
     while (true) {
@@ -798,10 +805,10 @@ public class SortedBlock <E extends ByteStorable> {
     }
   }
 
-  private static <E extends ByteStorable <?>> void getKeysPrevious(SortedBlock <E> [] blocks, int index,
+  private static <T extends BComparable<?,T>> void getKeysPrevious(SortedBlock <T> [] blocks, int index,
       int optimal) {
     int blockBytes;
-    E current;
+    T current;
     int diff;
     int diffPut;
     while (true) {
@@ -820,13 +827,13 @@ public class SortedBlock <E extends ByteStorable> {
     }
   }
 
-  private void mergeBlockSimple(SortedBlock <E> other){
+  private void mergeBlockSimple(SortedBlock <T> other){
     for(int i = 0; i < other.getNumberOfElements(); i++){
       this.insertKey(other.getKey(i));
     }
   }
 
-  private void mergeBlock(SortedBlock <E> smaller, SortedBlock <E> larger) {
+  private void mergeBlock(SortedBlock <T> smaller, SortedBlock <T> larger) {
     int highSmall = smaller.getNumberOfElements();
     int highLarge = larger.getNumberOfElements();
     // int sLastPtrPos = headerSize + (highSmall * ptrSize);
@@ -862,12 +869,12 @@ public class SortedBlock <E extends ByteStorable> {
   }
 
   /** *******************************INNER CLASSES************************* */
-  class SBIterator implements Iterator <E> {
+  class SBIterator implements Iterator <T> {
     int count = high;
     int cursor = 0;
     int lastRet = -1;
 
-    public SBIterator(E start) {
+    public SBIterator(T start) {
       cursor = binarySearch(start);
       if (cursor >= 0)
         return;
@@ -882,11 +889,11 @@ public class SortedBlock <E extends ByteStorable> {
       return (cursor < count);
     }
 
-    public E next() {
+    public T next() {
       check();
       if (cursor > count)
         throw new NoSuchElementException();
-      E key = getKey(cursor);
+      T key = getKey(cursor);
       lastRet = cursor++;
       return key;
     }

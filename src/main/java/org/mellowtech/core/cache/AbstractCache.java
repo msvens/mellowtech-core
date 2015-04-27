@@ -107,10 +107,10 @@ public abstract class AbstractCache <K, V>{
 
 
   /**
-   *
-   * @param key
-   * @return
-   * @throws Exception
+   * Get a value
+   * @param key key to find
+   * @return value
+   * @throws NoSuchValueException if value is not present
    */
   public abstract V get(K key) throws NoSuchValueException;
 
@@ -118,8 +118,8 @@ public abstract class AbstractCache <K, V>{
 
   /**
    * Returns the value only if it is present in the cache
-   * @param key
-   * @return
+   * @param key find
+   * @return value or null
    */
   public abstract V getFromCache(K key);
 
@@ -128,7 +128,7 @@ public abstract class AbstractCache <K, V>{
   /**
    * Checks if this cache is readOnly by checking if it does
    * not have a remover function
-   * @return
+   * @return true if read only
    */
   public boolean isReadOnly(){
     return this.remover == null;
@@ -157,7 +157,7 @@ public abstract class AbstractCache <K, V>{
 
   /**
    * Refresh a value in the cache by loading it again
-   * @param key
+   * @param key key to load
    */
   public abstract void refresh(K key);
 

@@ -33,45 +33,40 @@ import java.nio.ByteBuffer;
  * @author Martin Svensson
  */
 
-public class CBBoolean extends ByteComparable <Boolean> {
+public class CBBoolean implements BComparable <Boolean, CBBoolean> {
 
-  /**
-   * Value of this CBBoolean
-   */
-  private boolean value;
-
+  private final boolean value;
+  
   /**
    * Default constructor is needed to create a new byte from a byte buffer.
    */
-  public CBBoolean() {
-  }
+  public CBBoolean() {value = false;}
 
   /**
    * Initialize with a value
    *
    * @param value the value
    */
-  public CBBoolean(boolean value) {
-    this.value = value;
-  }
+  public CBBoolean(boolean value) {this.value = value;}
+  
+  public CBBoolean(Boolean value) {this.value = value;}
+  
 
-  public CBBoolean(byte b){
-    this.value = (b == 0) ? false : true;
-  }
+  public CBBoolean(byte b){this(b == 0 ? false : true);}
+  
+  @Override
+  public CBBoolean create(Boolean value) {return new CBBoolean(value);}
 
   // ***********GET/SET**************
   @Override
-  public void set(Boolean value){
-    if(value == null) throw new ByteStorableException("null value not allowed");
-    if(!(value instanceof Boolean)) throw new ByteStorableException("not a Byte");
-    this.value = (boolean) value;
+  public Boolean get(){
+    return Boolean.valueOf(value);
   }
-
-  @Override
-  public Boolean get() {
-    return this.value;
+  
+  public boolean value(){
+    return value;
   }
-
+  
   @Override
   public boolean isFixed() {
     return true;
@@ -93,45 +88,37 @@ public class CBBoolean extends ByteComparable <Boolean> {
   }
 
   @Override
-  public void toBytes(ByteBuffer bb) {
+  public void to(ByteBuffer bb) {
     bb.put(value ? (byte) 1 : 0);
   }
 
   @Override
-  public ByteStorable <Boolean> fromBytes(ByteBuffer bb) {
-    return fromBytes(bb, doNew);
+  public CBBoolean from(ByteBuffer bb) {
+    return new CBBoolean(bb.get());
   }
 
   @Override
-  public ByteStorable <Boolean> fromBytes(ByteBuffer bb, boolean doNew) {
-    if (doNew)
-      return new CBBoolean(bb.get());
-    value = (bb.get() == 0) ? false : true;
-    return this;
+  public int compareTo(CBBoolean other) {
+    return Boolean.compare(value, other.value);
   }
 
   @Override
-  public int compareTo(ByteStorable<Boolean> other) {
-    CBBoolean o = (CBBoolean) other;
-    return Boolean.compare(this.value, o.value);
-  }
-
-  @Override
-  public boolean equals(Object obj) {
-    if(obj instanceof CBBoolean)
-      return compareTo((CBBoolean) obj) == 0;
+  public boolean equals(Object other) {
+    if(other instanceof CBBoolean){
+      return compareTo((CBBoolean)other) == 0;
+    }
     return false;
-  }
-
-  @Override
-  public String toString() {
-    return "" + value;
   }
 
   @Override
   public int byteCompare(int offset1, ByteBuffer bb1, int offset2,
                          ByteBuffer bb2) {
     return bb1.get(offset1) - bb2.get(offset2);
+  }
+  
+  @Override
+  public String toString(){
+    return ""+value;
   }
 
 }

@@ -29,7 +29,7 @@ package org.mellowtech.core.sort;
 import java.nio.ByteBuffer;
 import java.util.LinkedList;
 
-import org.mellowtech.core.bytestorable.ByteComparable;
+import org.mellowtech.core.bytestorable.BComparable;
 
 /**
  * A number of static methods for sorting data
@@ -37,6 +37,7 @@ import org.mellowtech.core.bytestorable.ByteComparable;
  * @author Martin Svensson
  * @version 1.0
  */
+@Deprecated
 public class Sorters {
 
   /**
@@ -49,7 +50,7 @@ public class Sorters {
    * @param buffer
    *          has to be either a byte[] or java.nio.ByteBuffer
    */
-  public static void heapSort(int n[], ByteComparable bc, Object buffer) {
+  public static void heapSort(int n[], BComparable bc, Object buffer) {
     if (buffer instanceof ByteBuffer)
       ByteBufferHeap.heapSort(n, (ByteBuffer) buffer, bc);
     else if (buffer instanceof byte[])
@@ -78,7 +79,7 @@ public class Sorters {
    * @param endPos
    *          only sort up to endPos offsets in the array.
    */
-  public static final void quickSort(int n[], ByteComparable bc, Object buffer,
+  public static final void quickSort(int n[], BComparable bc, Object buffer,
       int endPos) {
     if (buffer instanceof ByteBuffer) {
       quickSort(n, 0, endPos - 1, (ByteBuffer) buffer, bc);
@@ -101,7 +102,7 @@ public class Sorters {
    *          has to be either a byte[] or java.nio.ByteBuffer
    * @see java.nio.ByteBuffer
    */
-  public static final void quickSort(int n[], ByteComparable bc, Object buffer) {
+  public static final void quickSort(int n[], BComparable bc, Object buffer) {
     quickSort(n, bc, buffer, n.length);
   }
 
@@ -158,7 +159,7 @@ public class Sorters {
   }
 
   private static final void quickSort(int n[], int left, int right,
-      ByteBuffer bb, ByteComparable bc) {
+      ByteBuffer bb, BComparable bc) {
     int min = 4;
     int middle, j;
     int tmp;
@@ -195,7 +196,7 @@ public class Sorters {
   }
 
   private static void quickSort(int n[], int left, int right, byte[] bb,
-      ByteComparable bc) {
+      BComparable bc) {
     int min = 4;
     int middle, j;
     int tmp;
@@ -344,7 +345,7 @@ public class Sorters {
   }
 
   private static final void insertionSort(int a[], int lo0, int hi0,
-      ByteBuffer bb, ByteComparable bc) {
+      ByteBuffer bb, BComparable bc) {
     int i;
     int j;
     int v;
@@ -361,7 +362,7 @@ public class Sorters {
   }
 
   private static final void insertionSort(int a[], int lo0, int hi0, byte[] bb,
-      ByteComparable bc) {
+      BComparable bc) {
     int i;
     int j;
     int v;

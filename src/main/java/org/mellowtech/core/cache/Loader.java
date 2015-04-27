@@ -29,17 +29,21 @@ package org.mellowtech.core.cache;
 /**
  * The Remover is used as the remover function when the various caches
  * remove a key/value from their cache.
+ * @param <A> key
+ * @param <B> value
  * 
  * @author Martin Svensson
  * @version 1.0
  */
-public interface Loader<K, V> {
+public interface Loader<A, B> {
 
 
   /**
    * Load a key from backend.
-   * @param key
-   * @return
+   * @param key the key
+   * @return value
+   * @throws NoSuchValueException if key is not found
+   * @throws Exception if error
    */
-  public V get(K key) throws Exception, NoSuchValueException;
+  public B get(A key) throws Exception, NoSuchValueException;
 }

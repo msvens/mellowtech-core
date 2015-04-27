@@ -32,7 +32,7 @@ import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
-import org.mellowtech.core.bytestorable.ByteStorable;
+import org.mellowtech.core.bytestorable.BStorable;
 
 /**
  * Static methods for storing a single ByteStorable or ByteBuffer in a File.
@@ -45,17 +45,19 @@ public class StorableFile {
    * 
    * @param fileName
    *          the file name
-   * @param ByteStorable
-   *          template the bytestorable template
-   * @return a <code>ByteStorable</code> value
+   * @param template
+   *          the BComparable template
+   * @param <A> Wrapped BComparable class
+   * @param <B> BComparable class 
+   * @return BComparable of type B
    * @exception IOException
    *              if an error occurs
    */
-  public static <K extends ByteStorable> K  readFileAsByteStorable(String fileName,
-      K template) throws IOException {
+  public static <A, B extends BStorable<A,B>> B readFileAsByteStorable(String fileName,
+      B template) throws IOException {
     ByteBuffer bb = readFileAsByteBuffer(fileName);
     if(bb == null || bb.capacity() < 1) return null;
-    return (K) template.fromBytes((ByteBuffer) bb.flip());
+    return template.from((ByteBuffer) bb.flip());
   }
 
   /**
@@ -64,15 +66,13 @@ public class StorableFile {
    * 
    * @param fileName
    *          the file name
-   * @param ByteStorable
-   *          template the bytestorable template
-   * @return a <code>ByteStorable</code> value
+   * @param object BComparable template
    * @exception IOException
    *              if an error occurs
    */
   public static void writeFileAsByteStorable(String fileName,
-      ByteStorable <?> object) throws IOException {
-    writeFileAsByteBuffer(fileName, (ByteBuffer) object.toBytes().flip());
+      BStorable <?,?> object) throws IOException {
+    writeFileAsByteBuffer(fileName, (ByteBuffer) object.to().flip());
   }
 
   /**

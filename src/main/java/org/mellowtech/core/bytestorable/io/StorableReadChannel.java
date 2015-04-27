@@ -30,17 +30,20 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 
-import org.mellowtech.core.bytestorable.ByteStorable;
+import org.mellowtech.core.bytestorable.BStorable;
+import org.mellowtech.core.bytestorable.CBUtil;
 
 /**
  * Reads ByteStorables from a given byte channel.
+ * @param <A> Wrapped BStorable class
+ * @param <B> BStorable class
  * 
  * @author Martin Svensson
  * @version 1.0
  */
-public class StorableReadChannel <E extends ByteStorable <?>> {
+public class StorableReadChannel <A, B extends BStorable <A,B>> {
 
-  private E mTemplate;
+  private B mTemplate;
   private ReadableByteChannel mRbc;
   private ByteBuffer mBuffer;
   private boolean endOfChannel = false;
@@ -54,7 +57,7 @@ public class StorableReadChannel <E extends ByteStorable <?>> {
    * @param template
    *          a ByteStorable template
    */
-  public StorableReadChannel(ReadableByteChannel rbc, E template) {
+  public StorableReadChannel(ReadableByteChannel rbc, B template) {
     mTemplate = template;
     mRbc = rbc;
     mBuffer = ByteBuffer.allocate(4096 * 4);
@@ -89,9 +92,9 @@ public class StorableReadChannel <E extends ByteStorable <?>> {
    * @exception IOException
    *              if an error occurs
    */
-  public E next() throws IOException {
-    int read;
-    int slack = ByteStorable.slackOrSize(mBuffer, mTemplate);
+  public B next() throws IOException {
+    //int read;
+    int slack = CBUtil.slackOrSize(mBuffer, mTemplate);
     // if(slack <= 0)
     while (slack <= 0) {
       slack = Math.abs(slack);
@@ -113,7 +116,7 @@ public class StorableReadChannel <E extends ByteStorable <?>> {
         mBuffer = tmp;
       }
       else
-        ByteStorable.copyToBeginning(mBuffer, slack);
+        CBUtil.copyToBeginning(mBuffer, slack);
 
       if (mRbc.read(mBuffer) < 0) {
         endOfChannel = true;
@@ -121,9 +124,9 @@ public class StorableReadChannel <E extends ByteStorable <?>> {
       }
       mBuffer.flip();
 
-      slack = ByteStorable.slackOrSize(mBuffer, mTemplate);
+      slack = CBUtil.slackOrSize(mBuffer, mTemplate);
     }
-    return (E) mTemplate.fromBytes(mBuffer);
+    return mTemplate.from(mBuffer);
   } // next
 
   /**
@@ -136,11 +139,10 @@ public class StorableReadChannel <E extends ByteStorable <?>> {
   }
 
   /**
-   * Install a new template, may be needed for optimised conditions.
-   * 
-   * @olds the new template.
+   * Install a new template, may be needed for optimized conditions.
+   * @param pTemplate BStorable template
    */
-  public void setTemplate(E pTemplate) {
+  public void setTemplate(B pTemplate) {
     mTemplate = pTemplate;
   } // setTemplate
 }

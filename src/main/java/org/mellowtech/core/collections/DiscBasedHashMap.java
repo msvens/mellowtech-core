@@ -32,10 +32,11 @@ import java.util.*;
 import java.util.logging.Level;
 
 import org.mellowtech.core.CoreLog;
-import org.mellowtech.core.bytestorable.ByteStorable;
-import org.mellowtech.core.collections.hmap.ExtendibleHashTable;
-import org.mellowtech.core.collections.mappings.BSMapping;
-import org.mellowtech.core.disc.MapEntry;
+import org.mellowtech.core.bytestorable.BComparable;
+import org.mellowtech.core.bytestorable.BStorable;
+import org.mellowtech.core.bytestorable.ByteStorableException;
+import org.mellowtech.core.collections.hmap.EHTableBuilder;
+import org.mellowtech.core.util.MapEntry;
 
 /**
  * User: Martin Svensson
@@ -43,57 +44,45 @@ import org.mellowtech.core.disc.MapEntry;
  * Time: 16:55
  * To change this template use File | Settings | File Templates.
  */
-public class DiscBasedHashMap <K, V> implements DiscMap<K,V>{
+public class DiscBasedHashMap <A,B extends BComparable<A,B>, 
+  C, D extends BStorable<C,D>> implements DiscMap<A,C>{
 
-  private BSMapping<K> keyMapping;
-  private BSMapping<V> valueMapping;
-  ExtendibleHashTable eht;
-  private String fName;
+  private final B keyMapping;
+  private final D valueMapping;
+  private BMap <A,B,C,D> eht;
+  private final String fName;
 
-  public static int DEFAULT_BUCKET_SIZE = 10;
-  public static int DEFAULT_KEY_VALUE_SIZE = 512;
+  public static final int DEFAULT_BUCKET_SIZE = 1024;
+  public static final int MAX_BUCKETS = 1024*1024*2;
 
 
-  public DiscBasedHashMap(BSMapping <K> keyMapping, BSMapping <V> valueMapping,
-                            String fileName) throws IOException{
-    this(keyMapping, valueMapping, fileName, DEFAULT_BUCKET_SIZE, DEFAULT_KEY_VALUE_SIZE);
+  public DiscBasedHashMap(Class <B> keyType, Class <D> valueType,
+                            String fileName, boolean blobValues, boolean inMemory) throws Exception{
+    this(keyType, valueType, fileName, new EHTableBuilder());
   }
 
-  public DiscBasedHashMap(BSMapping <K> keyMapping, BSMapping <V> valueMapping,
-                          String fileName, int maxKeyValueSize) throws IOException{
-    this(keyMapping, valueMapping, fileName, DEFAULT_BUCKET_SIZE, maxKeyValueSize);
+  public DiscBasedHashMap(Class <B> keyType, Class <D> valueType,
+                          String fileName, boolean blobValues, boolean inMemory, int bucketSize,
+                          int maxBuckets) throws Exception{
+    
+    this(keyType, valueType, fileName, new EHTableBuilder().inMemory(inMemory).bucketSize(bucketSize).maxBuckets(maxBuckets));
   }
-
-  public DiscBasedHashMap(BSMapping <K> keyMapping, BSMapping <V> valueMapping,
-                          String fileName, int bucketSize, int maxKeyValueSize) throws IOException{
-    this.keyMapping = keyMapping;
-    this.valueMapping = valueMapping;
+  
+  public DiscBasedHashMap(Class <B> keyType, Class <D> valueType, String fileName,
+      EHTableBuilder builder) throws Exception{
+    this.keyMapping = keyType.newInstance();
+    this.valueMapping = valueType.newInstance();
     this.fName = fileName;
-
-    try{
-      eht = new ExtendibleHashTable(fName);
-      return;
-    }
-    catch(Exception e){
-      CoreLog.I().l().info("hash table did not exist");
-    }
-    try{
-    eht = new ExtendibleHashTable(fName,keyMapping.getTemplate(), valueMapping.getTemplate(),
-            bucketSize, maxKeyValueSize);
-    }
-    catch (Exception e){
-      throw new IOException("could not instantiate disc hash");
-    }
-
+    this.eht = builder.build(keyType, valueType, fileName);
   }
 
   /****************overwritten disc hmap methods******************************/
   public void save() throws IOException{
-    this.eht.saveHashTable();
+    eht.save();
   }
   
   public void close() throws IOException{
-	  this.eht.saveHashTable();
+	  eht.close();
   }
 
   @Override
@@ -103,28 +92,40 @@ public class DiscBasedHashMap <K, V> implements DiscMap<K,V>{
 
   @Override
   public void delete() throws IOException {
-    this.eht.deleteHashTable();
+    eht.delete();
   }
 
   @Override
-  public Iterator<Entry<K, V>> iterator() {
+  public Iterator<Entry<A, C>> iterator() {
     return new DiscBasedHashIterator();
   }
 
   @Override
-  public Iterator<Entry<K, V>> iterator(K key) throws UnsupportedOperationException {
-    throw new UnsupportedOperationException();
+  public Iterator<Entry<A, C>> iterator(A key) throws UnsupportedOperationException {
+    throw new UnsupportedOperationException("hash map does not support ordering of elements");
   }
 
   /********************OVERWRITTEN MAP METHODS************************************/
   @Override
   public int size() {
-    return this.eht.getNumberOfElements();
+    try{
+      return eht.size();
+    }
+    catch(Exception e){
+      CoreLog.L().log(Level.SEVERE, "", e);
+      throw new ByteStorableException(e);
+    }
   }
 
   @Override
   public boolean isEmpty() {
-    return this.eht.isEmpty();
+    try {
+      return eht.isEmpty();
+    }
+    catch(Exception e){
+      CoreLog.L().log(Level.SEVERE, "", e);
+      throw new ByteStorableException(e);
+    }
   }
 
 
@@ -132,8 +133,7 @@ public class DiscBasedHashMap <K, V> implements DiscMap<K,V>{
   @Override
   public boolean containsKey(Object key){
     try{
-      ByteStorable <K> bs = keyMapping.toByteStorable((K) key);
-      return eht.containsKey(bs);
+      return eht.containsKey(keyMapping.create((A) key));
     }
     catch(Exception e){
       CoreLog.I().l().log(Level.SEVERE, "", e);
@@ -143,24 +143,22 @@ public class DiscBasedHashMap <K, V> implements DiscMap<K,V>{
 
   @Override
   public boolean containsValue(Object value) {
-    Iterator <KeyValue> iter = eht.iterator();
-    ByteStorable bs = valueMapping.toByteStorable((V) value);
+    Iterator <KeyValue <B,D>> iter = eht.iterator();
+    D find = valueMapping.create((C)value);
     while(iter.hasNext()){
-      KeyValue kv = iter.next();
-      ByteStorable toComp = kv.getValue();
-      if(toComp.compareTo(kv) == 0){
+      KeyValue <B,D> kv = iter.next();
+      D toComp = kv.getValue();
+      if(toComp.equals(find))
         return true;
-      }
     }
-    return false;  //To change body of implemented methods use File | Settings | File Templates.
+    return false;
   }
 
   @Override
-  public V get(Object key) {
+  public C get(Object key) {
     try{
-      ByteStorable k = keyMapping.toByteStorable((K)key);
-      ByteStorable bs = eht.search(k);
-      return valueMapping.fromByteStorable(bs);
+      D ret = eht.get(keyMapping.create((A)key));
+      return ret != null ? ret.get() : null;
     }
     catch(Exception e){
       CoreLog.L().log(Level.SEVERE, "", e);
@@ -169,28 +167,24 @@ public class DiscBasedHashMap <K, V> implements DiscMap<K,V>{
   }
 
   @Override
-  public V put(K key, V value) {
-    ByteStorable bsk = keyMapping.toByteStorable(key);
-    ByteStorable bsv = valueMapping.toByteStorable(value);
+  public C put(A key, C value) {
+    B bsk = keyMapping.create(key);
+    D vsk = valueMapping.create(value);
     try{
-      bsv = eht.insert(bsk, bsv, true);
-      if(bsv == null) return null;
-      return valueMapping.fromByteStorable(bsv);
+      eht.put(bsk, vsk);
     }
     catch(Exception e){
       CoreLog.L().log(Level.SEVERE, "", e);
     }
-    return null;  //To change body of implemented methods use File | Settings | File Templates.
+    return null;
   }
 
   @Override
-  public V remove(Object key) {
-    ByteStorable bs = keyMapping.toByteStorable((K) key);
+  public C remove(Object key) {
+    B bs = keyMapping.create((A) key);
     try{
-      KeyValue kv = eht.delete(bs);
-      if(kv != null && kv.getValue() != null){
-         return valueMapping.fromByteStorable(kv.getValue());
-      }
+      D v = eht.remove(bs);
+      return v != null ? v.get() : null;
     }
     catch(IOException e){
       CoreLog.L().log(Level.SEVERE, "", e);
@@ -199,8 +193,8 @@ public class DiscBasedHashMap <K, V> implements DiscMap<K,V>{
   }
 
   @Override
-  public void putAll(Map<? extends K,? extends V> m) {
-    for (Entry<? extends K, ? extends V> e : m.entrySet()) {
+  public void putAll(Map<? extends A,? extends C> m) {
+    for (Entry<? extends A, ? extends C> e : m.entrySet()) {
       this.put(e.getKey(), e.getValue());
     }
   }
@@ -211,42 +205,44 @@ public class DiscBasedHashMap <K, V> implements DiscMap<K,V>{
   }
 
   @Override
-  public Set <K> keySet() {
-    HashSet <K> toRet = new HashSet<K> ();
-    Iterator<KeyValue> iter = eht.iterator();
+  public Set <A> keySet() {
+    HashSet <A> toRet = new HashSet<> ();
+    Iterator<KeyValue <B,D>> iter = eht.iterator();
     while(iter.hasNext()){
-      toRet.add(keyMapping.fromByteStorable(iter.next().getKey()));
+      toRet.add(iter.next().getKey().get());
     }
     return toRet;
   }
 
   @Override
-  public Collection <V> values() {
-    ArrayList <V> toRet = new ArrayList<V> ();
-    Iterator<KeyValue> iter = eht.iterator();
+  public Collection <C> values() {
+    ArrayList <C> toRet = new ArrayList <> ();
+    Iterator<KeyValue<B,D>> iter = eht.iterator();
     while(iter.hasNext()){
-      toRet.add(valueMapping.fromByteStorable(iter.next().getValue()));
+      KeyValue <B,D> next = iter.next();
+      if(next.getValue() != null)
+        toRet.add(next.getValue().get());
     }
     return toRet;
   }
 
   @Override
-  public  Set<Map.Entry<K,V>> entrySet() {
-    HashSet <Map.Entry<K,V>> toRet = new HashSet<Entry<K, V>>();
-    Iterator<KeyValue> iter = eht.iterator();
+  public  Set<Map.Entry<A,C>> entrySet() {
+    HashSet <Map.Entry<A,C>> toRet = new HashSet<>();
+    Iterator<KeyValue <B,D>> iter = eht.iterator();
     while(iter.hasNext()){
-      KeyValue kv = iter.next();
-      K key = keyMapping.fromByteStorable(kv.getKey());
-      V value = valueMapping.fromByteStorable(kv.getValue());
-      Map.Entry <K, V> entry = new MapEntry<K, V>(key, value);
+      KeyValue <B,D> kv = iter.next();
+      A key = kv.getKey().get();
+      C value = kv.getValue() != null ? kv.getValue().get() : null;
+      Map.Entry <A, C> entry = new MapEntry<>(key, value);
       toRet.add(entry);
     }
     return toRet;
   }
 
-  class DiscBasedHashIterator implements Iterator<Entry<K,V>>{
+  class DiscBasedHashIterator implements Iterator<Entry<A,C>>{
 
-    Iterator <KeyValue> iter;
+    Iterator <KeyValue <B,D>> iter;
 
     public DiscBasedHashIterator(){
       iter = eht.iterator();
@@ -258,13 +254,13 @@ public class DiscBasedHashMap <K, V> implements DiscMap<K,V>{
     }
 
     @Override
-    public Entry<K, V> next() {
-      KeyValue next = iter.next();
+    public Entry<A, C> next() {
+      KeyValue <B,D> next = iter.next();
       if(next == null) return null;
-      MapEntry <K,V> toRet = new MapEntry<K, V> ();
-      toRet.setKey(keyMapping.fromByteStorable(next.getKey()));
+      MapEntry <A,C> toRet = new MapEntry <> ();
+      toRet.setKey(next.getKey().get());
       if(next.getValue() != null)
-        toRet.setValue(valueMapping.fromByteStorable(next.getValue()));
+        toRet.setValue(next.getValue().get());
       return toRet;
     }
 

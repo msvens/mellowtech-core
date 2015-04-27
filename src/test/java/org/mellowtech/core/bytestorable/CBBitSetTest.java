@@ -27,12 +27,10 @@
 
 package org.mellowtech.core.bytestorable;
 
-import junit.framework.Assert;
-
-import org.junit.Test;
+import org.junit.Before;
 import org.mellowtech.core.bytestorable.CBBitSet;
 
-import java.nio.ByteBuffer;
+import java.util.BitSet;
 
 /**
  * Date: 2013-04-17
@@ -40,11 +38,16 @@ import java.nio.ByteBuffer;
  *
  * @author Martin Svensson
  */
-public class CBBitSetTest {
+public class CBBitSetTest extends BStorableTemplate <BitSet, CBBitSet> {
 
-  @Test
-  public void test(){
-    CBBitSet i1 = new CBBitSet();
-    CBBitSet i2 = (CBBitSet) i1.deepCopy();
+  @Before public void init(){
+    type = CBBitSet.class;
+    BitSet b1 = new BitSet(16);
+    b1.set(3);
+    BitSet b2 = new BitSet(16);
+    b2.set(2);
+    values = new BitSet[]{b1,b2};
+    int bytes = b1.size() / 8;
+    sizes = new int[]{8+bytes,8+bytes};
   }
 }

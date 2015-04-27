@@ -30,7 +30,7 @@ package org.mellowtech.core.bytestorable;
 import junit.framework.Assert;
 
 import org.junit.Test;
-import org.mellowtech.core.bytestorable.ext.CompiledLocale;
+import org.mellowtech.core.util.CompiledLocale;
 
 import java.util.Locale;
 

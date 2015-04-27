@@ -511,8 +511,7 @@ public class MemSplitBlockFile implements SplitRecordFile {
   
   /**
    * Calculates a good number of blocks to map
-   * @param blockSize
-   * @return
+   * @return blocks
    */
   protected int calcBlocksToMap(){
     int region4 = 1024*1024*4;

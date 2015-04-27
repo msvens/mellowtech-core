@@ -32,10 +32,9 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mellowtech.core.TestUtils;
+import org.mellowtech.core.bytestorable.CBByteArray;
+import org.mellowtech.core.bytestorable.CBString;
 import org.mellowtech.core.collections.DiscBasedMap;
-import org.mellowtech.core.collections.mappings.ByteArrayMapping;
-import org.mellowtech.core.collections.mappings.IntegerMapping;
-import org.mellowtech.core.collections.mappings.StringMapping;
 
 import java.util.Map;
 import java.util.Random;
@@ -48,7 +47,7 @@ import java.util.TreeMap;
  */
 public class BlobMapTest {
 
-  public DiscBasedMap<String, byte[]> dbMap;
+  public DiscBasedMap<String, CBString, byte[], CBByteArray> dbMap;
   public TreeMap<String, Integer> inMemoryMap;
   public int numDifferentWords = 1000;
   public int numWords = numDifferentWords * 2;
@@ -66,7 +65,7 @@ public class BlobMapTest {
     //Generate test data...
     text = "";
     this.inMemoryMap = new TreeMap<>();
-    this.dbMap = new DiscBasedMap<>(new StringMapping(), new ByteArrayMapping(),
+    this.dbMap = new DiscBasedMap<>(CBString.class, CBByteArray.class,
             TestUtils.getAbsolutDir(dir+"/"+name), true, false);
 
     //this.dbMap = new BlobMap<String, byte[]>(new StringMapping(), new ByteArrayMapping(),
@@ -127,7 +126,7 @@ public class BlobMapTest {
   private void testReopen() throws Exception {
     this.dbMap.save();
 
-    this.dbMap = new DiscBasedMap<>(new StringMapping(), new ByteArrayMapping(),
+    this.dbMap = new DiscBasedMap<>(CBString.class, CBByteArray.class,
             TestUtils.getAbsolutDir(dir+"/"+name), true, false);
 
     testValue();

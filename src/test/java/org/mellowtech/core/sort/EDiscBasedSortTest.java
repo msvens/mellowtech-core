@@ -67,20 +67,20 @@ public class EDiscBasedSortTest {
     Scanner s = new Scanner(f);
     s.useDelimiter(p);
     String line;
-    stringList = new ArrayList();
+    stringList = new ArrayList <>();
     int charlen = 0;
-    CBString tmpStr = new CBString();
+    CBString tmpStr;
     int i = 0;
     while(s.hasNext() && i++ < 10000){
       String str = s.next();
-      tmpStr.set(str);
+      tmpStr = new CBString(str);
       charlen += tmpStr.byteSize();
       stringList.add(str);
     }
     stringBuffer = ByteBuffer.allocate(charlen);
     for(String str : stringList){
-      tmpStr.set(str);
-      tmpStr.toBytes(stringBuffer);
+      tmpStr = new CBString(str);
+      tmpStr.to(stringBuffer);
     }
     File sortDir = new File(Platform.getTempDir()+"/sort");
     sortDir.mkdirs();
@@ -92,7 +92,7 @@ public class EDiscBasedSortTest {
   }
 
   @Test public void testQuickSort() throws Exception{
-    EDiscBasedSort edb = new EDiscBasedSort(new CBString(), new CBString(),
+    EDiscBasedSort <String, CBString> edb = new EDiscBasedSort <> (new CBString(),
     1, Platform.getTempDir()+"/sort");
     //stringBuffer.flip();
     ByteArrayOutputStream bos = new ByteArrayOutputStream();
@@ -105,8 +105,7 @@ public class EDiscBasedSortTest {
     bos.flush();
     ByteBuffer sorted =  ByteBuffer.wrap(bos.toByteArray());
     for(String str : stringList){
-
-      tStr.fromBytes(sorted, false);
+      tStr = tStr.from(sorted);
       Assert.assertEquals(str, tStr.get());
     }
   }

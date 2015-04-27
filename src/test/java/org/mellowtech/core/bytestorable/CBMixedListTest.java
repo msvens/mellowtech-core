@@ -27,11 +27,11 @@
 
 package org.mellowtech.core.bytestorable;
 
-import junit.framework.Assert;
+import java.lang.reflect.Constructor;
+import java.util.List;
 
+import org.junit.Before;
 import org.junit.Test;
-import org.mellowtech.core.bytestorable.ByteStorableException;
-import org.mellowtech.core.bytestorable.CBInt;
 import org.mellowtech.core.bytestorable.CBMixedList;
 
 /**
@@ -40,26 +40,23 @@ import org.mellowtech.core.bytestorable.CBMixedList;
  *
  * @author Martin Svensson
  */
-public class CBMixedListTest {
+public class CBMixedListTest extends BStorableTemplate <List<Object>, CBMixedList> {
 
-  @Test
-  public void test(){
-    CBMixedList i1 = new CBMixedList();
-    i1.add("one string");
-    i1.add(new Integer(2));
-    CBMixedList i2 = (CBMixedList) i1.deepCopy();
-    Assert.assertTrue(i1.get(0).equals(i2.get(0)));
-    Assert.assertTrue(i2.get(1).equals(i2.get(1)));
-
-    i1.clear();
-    Assert.assertTrue(i1.size() == 0);
-    i2 = (CBMixedList) i1.deepCopy();
-    Assert.assertTrue(i2.size() == 0);
+  @Before public void init(){
+    CBMixedList l1 = new CBMixedList ();
+    l1.add(1);
+    CBMixedList l2 = new CBMixedList ();
+    l2.add(1);
+    
+    type = CBMixedList.class;
+    values = (List <Object>[]) new List[]{l1.get(),l2.get()};
+    sizes = new int[]{12,12};
   }
-
-  @Test(expected = ByteStorableException.class)
-  public void insertUnsupportedType(){
-    CBMixedList i1 = new CBMixedList();
-    i1.add(new CBInt(1));
+  
+  @Test
+  @Override
+  public void testAConstructor() throws Exception{
+    Constructor <CBMixedList> c = type.getConstructor(List.class);
+    c.newInstance(values[0]);
   }
 }

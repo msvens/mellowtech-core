@@ -34,53 +34,30 @@ import java.nio.ByteBuffer;
  * @author Martin Svensson
  * @version 1.0
  */
-public class CBChar extends ByteComparable <Character>{
+public class CBChar implements BComparable <Character, CBChar> {
 
-  /**
-   * Value of this CBInt
-   *
-   */
-  private char value;
-
+  private final char value;
   /**
    * Default constructor is needed to create a new inte from a byte buffer.
    *
    */
-  public CBChar() {
-  }
+  public CBChar() {value = '\u0000';}
 
-  /**
-   * Initialize with a  value
-   *
-   * @param value
-   *          the value
-   */
-  public CBChar(char value) {
-    this.value = value;
-  }
-
-  // ***********GET/SET**************
-  @Override
-  public void set(Character value){
-    if(value == null) throw new ByteStorableException("null value not allowed");
-    this.value = (char) value;
-  }
-
-  @Override
-  public Character get() {
-    return value;
-  }
+  public CBChar(char value) {this.value = value;}
+  
+  public CBChar(Character value) {this.value = value;}
 
   @Override
   public boolean isFixed(){
     return true;
   }
-
-
+  
   @Override
-  public int hashCode() {
-    return (int) value;
+  public Character get(){
+    return value;
   }
+  
+  public char value(){return value;}
 
   // ***********OVERWRITTEN BYTESTORABLE****************
   @Override
@@ -97,42 +74,25 @@ public class CBChar extends ByteComparable <Character>{
    * public int byteSize(byte[] b, int offset){ return 4; }
    */
   @Override
-  public void toBytes(ByteBuffer bb) {
+  public void to(ByteBuffer bb) {
     bb.putChar(value);
   }
 
-  /*
-   * public int toBytes(byte b[], int offset){ CBInt.writeInt(b, offset, value);
-   * return 4; }
-   */
   @Override
-  public ByteStorable <Character> fromBytes(ByteBuffer bb) {
-    return fromBytes(bb, doNew);
+  public CBChar from(ByteBuffer bb) {
+    return new CBChar(bb.getChar());
   }
 
   @Override
-  public ByteStorable <Character> fromBytes(ByteBuffer bb, boolean doNew) {
-    if (doNew)
-      return new CBChar(bb.getChar());
-    value = bb.getChar();
-    return this;
+  public int compareTo(CBChar other) {
+    return Character.compare(value, other.value);
   }
 
   @Override
-  public int compareTo(ByteStorable<Character> other) {
-    return this.value - other.get();
-  }
-
-  @Override
-  public boolean equals(Object obj) {
-    if(obj instanceof CBChar)
-      return this.value == ((CBChar) obj).value;
+  public boolean equals(Object other) {
+    if(other instanceof CBChar)
+      return value == ((CBChar) other).value;
     return false;
-  }
-
-  @Override
-  public String toString() {
-    return "" + value;
   }
 
   @Override
@@ -140,5 +100,16 @@ public class CBChar extends ByteComparable <Character>{
       ByteBuffer bb2) {
     return bb1.getChar(offset1) - bb2.getChar(offset2);
   }
+  
+  @Override
+  public int hashCode(){
+    return (int) value;
+  }
+  
+  @Override
+  public String toString(){
+    return ""+value;
+  }
+  
 
 }

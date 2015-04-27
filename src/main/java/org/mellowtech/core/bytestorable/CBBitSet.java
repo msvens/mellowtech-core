@@ -39,27 +39,13 @@ import java.util.BitSet;
  * @version 2.0
  * @see java.util.BitSet
  */
-public class CBBitSet extends ByteStorable <BitSet> {
+public class CBBitSet extends BStorableImp <BitSet, CBBitSet> {
 
-  private BitSet mSet;
+  //private BitSet mSet;
 
-  /**
-   * Creates a new <code>CBBitSet</code> instance.
-   * 
-   */
-  public CBBitSet() {
-    mSet = new BitSet();
-  }
+  public CBBitSet() { super(new BitSet());}
 
-  /**
-   * Creates a new <code>CBBitSet</code> instance.
-   * 
-   * @param set
-   *          the bitSet to use
-   */
-  public CBBitSet(BitSet set) {
-    mSet = set;
-  }
+  public CBBitSet(BitSet set) {super(set);}
 
   /**
    * Set the n'th position in this bitSet.
@@ -69,50 +55,32 @@ public class CBBitSet extends ByteStorable <BitSet> {
    * @see java.util.BitSet#set(int)
    */
   public void set(int n) {
-    mSet.set(n);
-  }
-  
-  @Override
-  public void set(BitSet bs){
-    this.mSet = bs;
-  }
-  
-  @Override
-  public BitSet get(){
-    return this.mSet;
+    value.set(n);
   }
 
   public int byteSize() {
-    //return 4 + objectByteSize(mSet);
-    return 4 + 4 + (mSet.size() / 8); //bytesize + num elements + bitSize
+    return CBUtil.byteSize(4 + (value.size() / 8), false);
   }
 
   public int byteSize(ByteBuffer bb) {
-    return ByteStorable.getSizeFour(bb);
+    return CBUtil.peekSize(bb, false);
   }
 
-  public void toBytes(ByteBuffer bb) {
-    int size = byteSize();
-    bb.putInt(size);
-    long[] bits = mSet.toLongArray();
+  public void to(ByteBuffer bb) {
+    CBUtil.putSize(4 + (value.size() / 8), bb, false);
+    long[] bits = value.toLongArray();
     bb.putInt(bits.length);
     for(int i = 0; i < bits.length; i++)
       bb.putLong(bits[i]);
   }
 
-  public ByteStorable <BitSet> fromBytes(ByteBuffer bb) {
-    return fromBytes(bb, doNew);
-  }
-
-  public ByteStorable <BitSet> fromBytes(ByteBuffer bb, boolean doNew) {
-    CBBitSet toRet = doNew ? new CBBitSet() : this;
-    bb.getInt(); //byteSize
+  public CBBitSet from(ByteBuffer bb) {
+    CBUtil.getSize(bb, false);
     int numLongs = bb.getInt();
     long[] words = new long[numLongs];
     for(int i = 0; i < words.length; i++)
       words[i] = bb.getLong();
-    toRet.set(BitSet.valueOf(words));
-    return toRet;
+    return new CBBitSet((BitSet.valueOf(words)));
   }
 
 

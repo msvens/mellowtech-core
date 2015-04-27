@@ -27,21 +27,19 @@
 package org.mellowtech.core.bytestorable;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 /**
  * Implements a byte array (byte[]) as a ByteStorable for easy storage and
  * retrieval of byte arrays.
  */
 
-public class CBByteArray extends ByteComparable <byte[]> {
-  private byte[] fByteArray = null;
+public class CBByteArray extends BStorableImp <byte[], CBByteArray> implements BComparable <byte[], CBByteArray> {
 
   /**
    * Empty constructor.
    */
-  public CBByteArray() {
-    this.fByteArray = new byte[0];
-  }
+  public CBByteArray() {super(new byte[0]);}
 
   /**
    * Creates a new CBByteArray which points to the supplied array.
@@ -50,7 +48,7 @@ public class CBByteArray extends ByteComparable <byte[]> {
    *          the byte array
    */
   public CBByteArray(byte[] byteArray) {
-    this.fByteArray = byteArray;
+    super(byteArray);
   }
 
   /**
@@ -66,17 +64,8 @@ public class CBByteArray extends ByteComparable <byte[]> {
    *          the length
    */
   public CBByteArray(byte[] byteArray, int offset, int length) {
-    setArray(byteArray, offset, length);
+    super(Arrays.copyOfRange(byteArray, offset, offset+length));
   }
-
-  /**
-   * Gets the array
-   * 
-   * @return the internal array
-   */
-  public byte[] getArray() {
-    return fByteArray;
-  } // getArray
 
   /**
    * Gets the array length, or 0 if it is null
@@ -84,76 +73,50 @@ public class CBByteArray extends ByteComparable <byte[]> {
    * @return the array length, or 0 if it is null
    */
   public int getArrayLength() {
-    if (fByteArray == null)
-      return 0;
-    return fByteArray.length;
+    return value.length;
   } // getArrayLength
 
-  /**
-   * Sets the content as a pointer to the supplied array.
-   * 
-   * @param byteArray
-   */
-  @Override
-  public void set(byte[] byteArray){
-    if(byteArray == null) throw new ByteStorableException("null is not allowed");
-    this.fByteArray = (byte[]) byteArray;
+  public CBByteArray from(ByteBuffer bb) {
+	  int nBytes = CBUtil.getSize(bb, true);
+	  byte[] tmp = new byte[nBytes];
+	  bb.get(tmp);
+	  return new CBByteArray(tmp);
   }
 
-  @Override
-  public byte[] get(){
-    return this.fByteArray;
-  }
-
-
-  /**
-   * Sets the array contents, a new internal byte array is created if offset !=
-   * 0 and length != byteArray.length, otherwise the internal byte array points
-   * to the supplied byte array.
-   * 
-   * @param byteArray
-   *          the byte array
-   * @param offset
-   *          the offset
-   * @param length
-   *          the length
-   */
-  public void setArray(byte[] byteArray, int offset, int length) {
-    if (offset == 0 && length == byteArray.length)
-      this.fByteArray = byteArray;
-    else {
-      this.fByteArray = new byte[length];
-      System.arraycopy(byteArray, offset, fByteArray, 0, length);
-    }
-  }
-
-  public ByteStorable <byte[]> fromBytes(ByteBuffer bb, boolean doNew) {
-	  CBByteArray aByteArray = this;
-	  if(doNew)
-		  aByteArray = new CBByteArray();
-
-    int nBytes = getSize(bb);
-    aByteArray.fByteArray = new byte[nBytes];
-    bb.get(aByteArray.fByteArray, 0, nBytes);
-
-    return aByteArray;
-  }
-
-  public void toBytes(ByteBuffer bb) {
-    putSize(fByteArray.length, bb);
-    bb.put(fByteArray, 0, fByteArray.length);
+  public void to(ByteBuffer bb) {
+    CBUtil.putSize(value.length, bb, true);
+    bb.put(value);
   }
 
   public int byteSize() {
-    return sizeBytesNeeded(fByteArray.length) + fByteArray.length;
+    return CBUtil.byteSize(value.length, true);
   }
 
   public int byteSize(ByteBuffer bb) {
-    bb.mark();
-    int nBytes = getSize(bb);
-    nBytes = sizeBytesNeeded(nBytes) + nBytes;
-    bb.reset();
-    return nBytes;
+    return CBUtil.peekSize(bb, true);
+  }
+  
+  @Override
+  public boolean equals(Object o){
+    if(o instanceof CBByteArray){
+      return this.compareTo((CBByteArray)o) == 0;
+    }
+    return false;
+  }
+  
+  @Override
+  public int compareTo(CBByteArray other){
+    byte[] val1 = other.value;
+    int n = Math.min(value.length, val1.length);
+    int i = 0;
+    byte c1,c2;
+    while(n-- != 0){
+      c1 = value[i];
+      c2 = val1[i];
+      if(c1 != c2) return c1 - c2;
+      i++;
+    }
+    return value.length - val1.length;
   }
 
   @Override

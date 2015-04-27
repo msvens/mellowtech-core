@@ -27,12 +27,9 @@
 
 package org.mellowtech.core.bytestorable;
 
-import junit.framework.Assert;
-
-import org.junit.Test;
+import org.junit.Before;
 import org.mellowtech.core.bytestorable.CBInt;
 
-import java.nio.ByteBuffer;
 
 /**
  * Date: 2013-04-17
@@ -40,19 +37,12 @@ import java.nio.ByteBuffer;
  *
  * @author Martin Svensson
  */
-public class CBIntTest {
+public class CBIntTest extends BComparableTemplate <Integer, CBInt>{
 
-  @Test
-  public void test(){
-    CBInt int1 = new CBInt(1);
-    CBInt int2 = (CBInt) int1.deepCopy();
-    Assert.assertTrue(int1.equals(int2));
-    Assert.assertTrue(int1.compareTo(int2) == 0);
-    ByteBuffer bb = ByteBuffer.allocate(int1.byteSize()+int2.byteSize());
-    int1.toBytes(bb);
-    int2.toBytes(bb);
-    Assert.assertTrue(int1.byteCompare(0, bb, int1.byteSize(), bb) == 0);
-    CBInt int3 = new CBInt(2);
-    Assert.assertFalse(int1.compareTo(int3) == 0);
+  @Before public void init(){
+    type = CBInt.class;
+    values = new Integer[]{0,1};
+    sizes = new int[]{4,4};
   }
+  
 }

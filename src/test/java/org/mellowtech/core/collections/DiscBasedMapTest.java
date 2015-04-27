@@ -20,9 +20,9 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mellowtech.core.TestUtils;
+import org.mellowtech.core.bytestorable.CBInt;
+import org.mellowtech.core.bytestorable.CBString;
 import org.mellowtech.core.collections.DiscBasedMap;
-import org.mellowtech.core.collections.mappings.IntegerMapping;
-import org.mellowtech.core.collections.mappings.StringMapping;
 import org.mellowtech.core.util.Platform;
 
 
@@ -31,7 +31,7 @@ import org.mellowtech.core.util.Platform;
  */
 public class DiscBasedMapTest {
 
-  public DiscBasedMap<String, Integer> dbMap;
+  public DiscBasedMap<String, CBString, Integer, CBInt> dbMap;
   public TreeMap<String, Integer> inMemoryMap;
   public int numDifferentWords = 1000;
   public int numWords = numDifferentWords * 2;
@@ -49,7 +49,7 @@ public class DiscBasedMapTest {
     text = "";
     this.inMemoryMap = new TreeMap<>();
 
-    this.dbMap = new DiscBasedMap<>(new StringMapping(), new IntegerMapping(),
+    this.dbMap = new DiscBasedMap<>(CBString.class, CBInt.class,
             TestUtils.getAbsolutDir(dir+"/"+name), false, false);
 
     Random r = new Random();
@@ -123,7 +123,7 @@ public class DiscBasedMapTest {
   private void testReopen() throws Exception {
     this.dbMap.save();
 
-    this.dbMap = new DiscBasedMap<>(new StringMapping(), new IntegerMapping(),
+    this.dbMap = new DiscBasedMap<>(CBString.class, CBInt.class,
             TestUtils.getAbsolutDir(dir+"/"+name), false, false);
     Assert.assertEquals(inMemoryMap.size(), dbMap.size());
     for (String str : inMemoryMap.keySet()) {

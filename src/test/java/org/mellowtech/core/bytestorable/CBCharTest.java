@@ -27,12 +27,9 @@
 
 package org.mellowtech.core.bytestorable;
 
-import junit.framework.Assert;
-
-import org.junit.Test;
+import org.junit.Before;
 import org.mellowtech.core.bytestorable.CBChar;
 
-import java.nio.ByteBuffer;
 
 /**
  * Date: 2013-04-17
@@ -40,19 +37,12 @@ import java.nio.ByteBuffer;
  *
  * @author Martin Svensson
  */
-public class CBCharTest {
+public class CBCharTest extends BComparableTemplate <Character, CBChar> {
 
-  @Test
-  public void test(){
-    CBChar i1 = new CBChar('a');
-    CBChar i2 = (CBChar) i1.deepCopy();
-    Assert.assertTrue(i1.equals(i2));
-    Assert.assertTrue(i1.compareTo(i2) == 0);
-    ByteBuffer bb = ByteBuffer.allocate(i1.byteSize()+i2.byteSize());
-    i1.toBytes(bb);
-    i2.toBytes(bb);
-    Assert.assertTrue(i1.byteCompare(0, bb, i1.byteSize(), bb) == 0);
-    CBChar i3 = new CBChar('b');
-    Assert.assertFalse(i1.compareTo(i3) == 0);
+  @Before public void init(){
+    type = CBChar.class;
+    values = new Character[]{'a','b'};
+    sizes = new int[]{2,2};
   }
+  
 }

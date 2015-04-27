@@ -27,12 +27,8 @@
 
 package org.mellowtech.core.bytestorable;
 
-import junit.framework.Assert;
-
-import org.junit.Test;
+import org.junit.Before;
 import org.mellowtech.core.bytestorable.CBString;
-
-import java.nio.ByteBuffer;
 
 /**
  * Date: 2013-04-17
@@ -40,19 +36,12 @@ import java.nio.ByteBuffer;
  *
  * @author Martin Svensson
  */
-public class CBStringTest {
+public class CBStringTest extends BComparableTemplate <String, CBString> {
 
-  @Test
-  public void test(){
-    CBString i1 = new CBString("this is a string");
-    CBString i2 = (CBString) i1.deepCopy();
-    Assert.assertTrue(i1.equals(i2));
-    Assert.assertTrue(i1.compareTo(i2) == 0);
-    ByteBuffer bb = ByteBuffer.allocate(i1.byteSize()+i2.byteSize());
-    i1.toBytes(bb);
-    i2.toBytes(bb);
-    Assert.assertTrue(i1.byteCompare(0, bb, i1.byteSize(), bb) == 0);
-    CBString i3 = new CBString("this is another string");
-    Assert.assertFalse(i1.compareTo(i3) == 0);
+  @Before public void init(){
+    type = CBString.class;
+    values = new String[]{"aöc","aöd"};
+    sizes = new int[]{5,5};
   }
+  
 }

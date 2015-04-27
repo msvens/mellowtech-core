@@ -33,7 +33,7 @@ package org.mellowtech.core.sort;
  * @version 1.0
  */
 public class Heap {
-  private Comparable heap[];
+  private Comparable<?> heap[];
   private float inc;
   private int size;
 

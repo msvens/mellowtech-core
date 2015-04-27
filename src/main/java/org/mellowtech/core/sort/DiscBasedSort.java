@@ -35,10 +35,12 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
+import java.util.Arrays;
 import java.util.logging.Level;
 
 import org.mellowtech.core.CoreLog;
-import org.mellowtech.core.bytestorable.ByteStorable;
+import org.mellowtech.core.bytestorable.BComparable;
+import org.mellowtech.core.bytestorable.CBUtil;
 import org.mellowtech.core.util.ArrayUtils;
 import org.mellowtech.core.util.Platform;
 
@@ -57,13 +59,13 @@ import org.mellowtech.core.util.Platform;
  * @version 1.0
  * @see org.mellowtech.core.sort.EDiscBasedSort
  */
-public class DiscBasedSort <E> {
+public class DiscBasedSort <A, B extends BComparable<A,B>> {
   public static final String SORT_RUN_FILE = "disc_sort_d_run.";
   private static final String SEP = System.getProperties().getProperty(
       "file.separator");
 
   private static int blockSize = 1024;
-  private ByteStorable <E> template;
+  private B template;
   private int complevel = 0;
   private String tempDir = null;
 
@@ -91,7 +93,7 @@ public class DiscBasedSort <E> {
    * @param tempDir
    *          temporary directory for sort runs
    */
-  public DiscBasedSort(ByteStorable <E> template, String tempDir) {
+  public DiscBasedSort(B template, String tempDir) {
     this(template, 0, tempDir);
   }
 
@@ -106,7 +108,7 @@ public class DiscBasedSort <E> {
    * @param tempDir
    *          temporary directory for sort runs
    */
-  public DiscBasedSort(ByteStorable <E> template, int complevel, String tempDir) {
+  public DiscBasedSort(B template, int complevel, String tempDir) {
     this.template = template;
     this.complevel = complevel;
     this.tempDir = tempDir;
@@ -205,10 +207,10 @@ public class DiscBasedSort <E> {
   private int makeRuns(ReadableByteChannel input, int heapSize,
       ByteBuffer large, ByteBuffer ob, String tmpDir) {
     try {
-      DBSContainer <E> hb = new DBSContainer <E> (large, input, blockSize, template,
+      DBSContainer <A,B> hb = new DBSContainer <> (large, input, blockSize, template,
           heapSize);
 
-      ByteStorable [] objs = new ByteStorable [1000000];
+      B [] objs = (B[]) new BComparable [1000000];
       int i = 0;
       int numObjs = 0;
 
@@ -217,8 +219,8 @@ public class DiscBasedSort <E> {
         long l = System.currentTimeMillis();
         if (!hb.prepareRun())
           break;
-        DBSProducer <E> p = new DBSProducer <E> (hb);
-        DBSConsumer <E> c = new DBSConsumer <E> (hb, objs);
+        DBSProducer <A,B> p = new DBSProducer <> (hb);
+        DBSConsumer <A,B> c = new DBSConsumer <> (hb, objs);
         p.start();
         c.start();
         c.join();
@@ -241,7 +243,7 @@ public class DiscBasedSort <E> {
     }
   }
 
-  private int sortRun(ReadableByteChannel c, ByteStorable[] objs, int numObjs,
+  private int sortRun(ReadableByteChannel c, B[] objs, int numObjs,
       int i, String dir, ByteBuffer output) throws Exception {
 
     output.clear(); // clear output buffer:
@@ -251,7 +253,8 @@ public class DiscBasedSort <E> {
     int size = 0, numBytes = 0;
 
     // sort offsets:
-    Sorters.quickSort(objs, numObjs);
+    Arrays.parallelSort(objs, 0, numObjs);
+    //Sorters.quickSort(objs, numObjs);
 
     for (int j = 0; j < numObjs; j++) {
       if (objs[j].byteSize() > output.remaining()) {
@@ -259,7 +262,7 @@ public class DiscBasedSort <E> {
         fc.write(output);
         output.clear();
       }
-      objs[j].toBytes(output);
+      objs[j].to(output);
       numBytes += objs[j].byteSize();
     }
     // flush outputbuffer:
@@ -273,10 +276,10 @@ public class DiscBasedSort <E> {
   }
 }
 
-class DBSProducer <E> extends Thread {
-  private DBSContainer <E> hb;
+class DBSProducer <A, B extends BComparable<A,B>> extends Thread {
+  private DBSContainer <A,B> hb;
 
-  public DBSProducer(DBSContainer <E> hb) {
+  public DBSProducer(DBSContainer <A,B> hb) {
     this.hb = hb;
   }
 
@@ -291,13 +294,13 @@ class DBSProducer <E> extends Thread {
   }
 }
 
-class DBSConsumer <E> extends Thread {
-  private DBSContainer <E> hb;
-  private ByteStorable <E> tmp;
-  private ByteStorable[] objs;
+class DBSConsumer <A, B extends BComparable<A,B>> extends Thread {
+  private DBSContainer <A,B> hb;
+  private B tmp;
+  private B[] objs;
   private int numObjs = 0;
 
-  public DBSConsumer(DBSContainer <E> hb, ByteStorable[] objs) {
+  public DBSConsumer(DBSContainer <A,B> hb, B[] objs) {
     this.objs = objs;
     this.hb = hb;
   }
@@ -306,7 +309,7 @@ class DBSConsumer <E> extends Thread {
     return numObjs;
   }
 
-  public ByteStorable[] getObjects() {
+  public B[] getObjects() {
     return objs;
   }
 
@@ -317,8 +320,9 @@ class DBSConsumer <E> extends Thread {
         if (tmp != null) {
           // just a test:
           if (numObjs == objs.length) {
-            objs = (ByteStorable[]) ArrayUtils.setSize(objs,
-                (int) (objs.length * 1.75));
+            objs = Arrays.copyOf(objs, (int)(objs.length * 1.75));
+            //objs = (ByteStorableOld[]) ArrayUtils.setSize(objs,
+            //    (int) (objs.length * 1.75));
           }
           objs[numObjs++] = tmp;
         }
@@ -330,17 +334,17 @@ class DBSConsumer <E> extends Thread {
   }
 }
 
-class DBSContainer <E> {
+class DBSContainer <A, B extends BComparable<A,B>> {
 
   ByteBuffer buffer;
   ByteBuffer consumerBuffer;
   ReadableByteChannel c;
   boolean noMore = false, consumedAll = false, endOfStream = false;
   int slack = -1, totConsumed, totProduced, blockSize, maxRead;
-  ByteStorable <E> template;
+  B template;
 
   public DBSContainer(ByteBuffer b, ReadableByteChannel c, int blockSize,
-      ByteStorable <E> template, int maxRead) {
+      B template, int maxRead) {
 
     this.blockSize = blockSize;
     this.maxRead = maxRead;
@@ -360,7 +364,7 @@ class DBSContainer <E> {
     consumedAll = false;
     if (slack > 0) {
       buffer.position(buffer.limit() - slack);
-      ByteStorable.copyToBeginning(buffer, slack);
+      CBUtil.copyToBeginning(buffer, slack);
       totProduced = slack;
       buffer.position(slack);
       buffer.limit(slack);
@@ -405,7 +409,7 @@ class DBSContainer <E> {
     return consumedAll;
   }
 
-  public synchronized ByteStorable <E> consume() { // as much as possible
+  public synchronized B consume() { // as much as possible
     try {
       if ((noMore && slack >= 0) || consumedAll) {
         notifyAll();
@@ -415,9 +419,9 @@ class DBSContainer <E> {
       while (slack != -1) {
         wait();
       }
-      ByteStorable <E> tmp;
+      B tmp;
 
-      int bSize = ByteStorable.slackOrSize(consumerBuffer, template);
+      int bSize = CBUtil.slackOrSize(consumerBuffer, template);
       if(bSize < 0 && endOfStream) {
         bSize = Math.abs(bSize);
       }
@@ -426,7 +430,7 @@ class DBSContainer <E> {
         notifyAll();
         return null;
       }
-      tmp = template.fromBytes(consumerBuffer);
+      tmp = template.from(consumerBuffer);
       totConsumed += bSize;
       notifyAll();
       return tmp;
@@ -456,7 +460,7 @@ class DBSContainer <E> {
       else if (slack > 0) { // read buffer completely
         consumerBuffer.clear();
         buffer.position(buffer.capacity() - slack);
-        ByteStorable.copyToBeginning(buffer, slack);
+        CBUtil.copyToBeginning(buffer, slack);
         left = buffer.capacity() - buffer.position();
         buffer.limit(left < blockSize ? left : buffer.position() + blockSize);
         read = c.read(buffer);

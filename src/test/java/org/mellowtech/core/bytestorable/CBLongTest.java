@@ -27,12 +27,9 @@
 
 package org.mellowtech.core.bytestorable;
 
-import junit.framework.Assert;
 
-import org.junit.Test;
+import org.junit.Before;
 import org.mellowtech.core.bytestorable.CBLong;
-
-import java.nio.ByteBuffer;
 
 /**
  * Date: 2013-04-17
@@ -40,19 +37,12 @@ import java.nio.ByteBuffer;
  *
  * @author Martin Svensson
  */
-public class CBLongTest {
+public class CBLongTest extends BComparableTemplate <Long, CBLong>{
 
-  @Test
-  public void test(){
-    CBLong i1 = new CBLong((long)1);
-    CBLong i2 = (CBLong) i1.deepCopy();
-    Assert.assertTrue(i1.equals(i2));
-    Assert.assertTrue(i1.compareTo(i2) == 0);
-    ByteBuffer bb = ByteBuffer.allocate(i1.byteSize()+i2.byteSize());
-    i1.toBytes(bb);
-    i2.toBytes(bb);
-    Assert.assertTrue(i1.byteCompare(0, bb, i1.byteSize(), bb) == 0);
-    CBLong i3 = new CBLong((long)2);
-    Assert.assertFalse(i1.compareTo(i3) == 0);
+  @Before public void init(){
+    type = CBLong.class;
+    values = new Long[]{0L,1L};
+    sizes = new int[]{8,8};
   }
+  
 }

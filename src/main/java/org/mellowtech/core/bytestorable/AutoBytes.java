@@ -102,15 +102,15 @@ class AutoBytes {
     return this.fields.get(clazz.getName()).keySet();
   }
 
-  public void setField(Class clazz, int index, PrimitiveObject po, Object toSet){
+  public void setField(Class clazz, int index, BStorable <?,?> o, Object toSet){
     MultiField mf = fields.get(clazz.getName()).get(index);
     if(mf == null) return;
     try {
       if(mf.isMethod){
-        mf.set.invoke(toSet, po.get());
+        mf.set.invoke(toSet, o.get());
       }
       else {
-        mf.field.set(toSet, po.get());
+        mf.field.set(toSet, o.get());
       }
     }
     catch(Exception e){

@@ -34,48 +34,29 @@ import java.nio.ByteBuffer;
  * @author Martin Svensson
  * @version 1.0
  */
-public class CBShort extends ByteComparable <Short>{
+public class CBShort implements BComparable<Short,CBShort>{
 
+  private final short value;
+  
+  public CBShort() {value = (short)0;}
 
-  private short value;
-
-
-  public CBShort() {}
-
-  /**
-   * Initialize with a value
-   * 
-   * @param value
-   *          the value
-   */
-  public CBShort(short value) {
-    this.value = value;
-  }
-
-  // ***********GET/SET**************
+  public CBShort(short value) {this.value = value;}
+  
+  public CBShort(Short value) {this.value = value;}
+  
   @Override
-  public void set(Short value){
-    if(value == null) throw new ByteStorableException("null value not allowed");
-    this.value = value;
-  }
+  public CBShort create(Short value) {return new CBShort(value);}
 
   @Override
-  public Short get() {
-    return value;
+  public Short get(){
+    return Short.valueOf(value);
   }
-
+  
+  public short value(){return value;}
+  
   @Override
   public boolean isFixed(){
     return true;
-  }
-
-  /**
-   * Uses the hashcode of the current value.
-   *
-   */
-  @Override
-  public int hashCode() {
-    return (int) value;
   }
 
   @Override
@@ -89,34 +70,34 @@ public class CBShort extends ByteComparable <Short>{
   }
 
   @Override
-  public void toBytes(ByteBuffer bb) {
+  public void to(ByteBuffer bb) {
     bb.putShort(value);
   }
 
   @Override
-  public ByteStorable <Short> fromBytes(ByteBuffer bb, boolean doNew) {
-    if (doNew)
-      return new CBShort(bb.getShort());
-    value = bb.getShort();
-    return this;
+  public CBShort from(ByteBuffer bb) {
+    return new CBShort(bb.getShort());
   }
 
   @Override
-  public int compareTo(ByteStorable<Short> other) {
-    return this.value - other.get();
+  public int compareTo(CBShort other) {
+    return Short.compare(value, other.value);
   }
 
   @Override
-  public boolean equals(Object obj) {
-    if(obj instanceof CBShort)
-      return this.value == ((CBShort)obj).value;
+  public boolean equals(Object other) {
+    if(other instanceof CBShort)
+      return value == ((CBShort)other).value;
     return false;
   }
-
+  
   @Override
-  public String toString() {
-    return "" + value;
+  public int hashCode(){
+    return (int) value;
   }
+  
+  @Override
+  public String toString(){return ""+value;}
 
   @Override
   public int byteCompare(int offset1, ByteBuffer bb1, int offset2,

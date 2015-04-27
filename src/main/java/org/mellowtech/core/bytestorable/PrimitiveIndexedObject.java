@@ -35,91 +35,89 @@ import java.nio.ByteBuffer;
  *
  * @author Martin Svensson
  */
-public class PrimitiveIndexedObject extends ByteStorable <PrimitiveIndexedObject.Entry>{
+public class PrimitiveIndexedObject extends BStorableImp <PrimitiveIndexedObject.Entry, PrimitiveIndexedObject>{
 
-  public class Entry {
+  public static class Entry {
     public int index = -1;
-    public ByteStorable primObject = null;
+    @SuppressWarnings("rawtypes")
+    public BStorable primObject = null;
     public PrimitiveType objectType;
   }
   
   
   
-  public PrimitiveIndexedObject(){
-    this.obj = new Entry();
-  }
+  public PrimitiveIndexedObject(){super(new Entry());}
 
   public PrimitiveIndexedObject(Object obj, int index) throws ByteStorableException {
+    this();
     set(obj, index);
   }
 
   public Object getPrimitiveObject(){
-    return obj.primObject != null ? obj.primObject.get() : null;
+    return value.primObject != null ? value.primObject.get() : null;
   }
 
   public int getIndex(){
-    return obj.index;
+    return value.index;
   }
 
   public void setNull(){
-    obj.primObject = null;
+    value.primObject = null;
   }
 
   public void set(Object o, int index){
-    obj.objectType = PrimitiveType.type(o);
-    obj.index = index;
-    if(obj.objectType == null) 
+    value.objectType = PrimitiveType.type(o);
+    value.index = index;
+    if(value.objectType == null) 
       throw new ByteStorableException("Unknown Type "+o.getClass().getName());
     if(o != null){
-      obj.primObject = PrimitiveType.fromType(obj.objectType);
-      obj.primObject.set(o);
+      value.primObject = PrimitiveType.fromType(value.objectType,o);
     }
     else
-      obj.primObject = null;
+      value.primObject = null;
   }
 
 
   @Override
-  public ByteStorable <Entry> fromBytes(ByteBuffer bb, boolean doNew) {
-    PrimitiveIndexedObject toRet = doNew ? new PrimitiveIndexedObject() : this;
-    getSize(bb); //read past length
-    toRet.obj.index = bb.getInt();
-    toRet.obj.objectType = PrimitiveType.fromOrdinal(bb.get());
+  public PrimitiveIndexedObject from(ByteBuffer bb) {
+    PrimitiveIndexedObject toRet = new PrimitiveIndexedObject();
+    CBUtil.getSize(bb, true);
+    toRet.value.index = bb.getInt();
+    toRet.value.objectType = PrimitiveType.fromOrdinal(bb.get());
     if(bb.get() != 1){
-      toRet.obj.primObject = null;
+      toRet.value.primObject = null;
       return toRet;
     }
-    toRet.obj.primObject = PrimitiveType.fromType(toRet.obj.objectType);
-    toRet.obj.primObject.fromBytes(bb, false);
+    toRet.value.primObject = PrimitiveType.fromType(toRet.value.objectType).from(bb);
     return toRet;
   }
 
   @Override
-  public void toBytes(ByteBuffer bb) {
-    putSize(internalSize(), bb);
-    bb.putInt(obj.index);
-    bb.put(obj.objectType.getByte());
-    if(obj.primObject == null){
+  public void to(ByteBuffer bb) {
+    CBUtil.putSize(internalSize(), bb, true);
+    bb.putInt(value.index);
+    bb.put(value.objectType.getByte());
+    if(value.primObject == null){
       bb.put((byte)0);
     }
     else{
       bb.put((byte)1);
-      obj.primObject.toBytes(bb);
+      value.primObject.to(bb);
     }
   }
 
   @Override
   public int byteSize() {
-    return internalSize() + sizeBytesNeeded(internalSize());
+    return CBUtil.byteSize(internalSize(), true);
   }
 
   @Override
   public int byteSize(ByteBuffer bb) {
-    return getSizeVariable(bb);
+    return CBUtil.peekSize(bb, true);
   }
 
   public int internalSize(){
-    if(obj.primObject == null) return 2;
-    return 6 + obj.primObject.byteSize();
+    if(value.primObject == null) return 2;
+    return 6 + value.primObject.byteSize();
   }
 }

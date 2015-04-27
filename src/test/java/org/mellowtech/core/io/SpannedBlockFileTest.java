@@ -52,9 +52,9 @@ public class SpannedBlockFileTest {
     if(f.exists()) f.delete();
 
     SpannedBlockFile rf = new SpannedBlockFile(tmpFile, 512, 1024, 40);
-    byte[] test = new CBString("This is My Test Record").toBytes().array();
+    byte[] test = new CBString("This is My Test Record").to().array();
     CBString reserved = new CBString("this is my reserved");
-    rf.setReserve(reserved.toBytes().array());
+    rf.setReserve(reserved.to().array());
     int b1 = rf.insert(test);
     int b2 = rf.insert(test);
     byte[] test1 = new byte[1034];
@@ -66,7 +66,7 @@ public class SpannedBlockFileTest {
     
     byte[] b = rf.get(b1);
     //System.out.println(b.length);
-    Assert.assertEquals(new CBString("This is My Test Record"), new CBString().fromBytes(b, 0));
+    Assert.assertEquals(new CBString("This is My Test Record"), new CBString().from(b, 0));
     b = rf.get(b3);
     Assert.assertEquals(1034, b.length);
     Assert.assertEquals(1, b[b.length-1]);
@@ -78,9 +78,9 @@ public class SpannedBlockFileTest {
     rf = new SpannedBlockFile(tmpFile, 1024, 1024, 0);
     
     b = rf.getReserve();
-    Assert.assertEquals(new CBString("this is my reserved"), new CBString().fromBytes(b, 0));
+    Assert.assertEquals(new CBString("this is my reserved"), new CBString().from(b, 0));
     b = rf.get(b1);
-    Assert.assertEquals(new CBString("This is My Test Record"), new CBString().fromBytes(b, 0));
+    Assert.assertEquals(new CBString("This is My Test Record"), new CBString().from(b, 0));
     b = rf.get(b3);
     Assert.assertEquals(1034, b.length);
     Assert.assertEquals(1, b[b.length-1]);

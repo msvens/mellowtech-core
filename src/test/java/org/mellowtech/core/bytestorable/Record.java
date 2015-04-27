@@ -37,65 +37,22 @@ import org.mellowtech.core.bytestorable.CBRecord;
  *
  * @author Martin Svensson
  */
-public class Record extends  CBRecord <Record.ARecord>{
+public class Record extends  CBRecord <Record.ARecord, Record>{
   
-  public class ARecord implements AutoRecord {
-    
-    @BSField(2) private Integer f1;
-    @BSField(1) private String f2;
-    
-    private Boolean b;
-    
-    @BSField(3) 
-    private void setF3(Boolean b) {this.b = b;}
-    private Boolean getF3(){ return b;}
-    
-    private Short s;
-    @BSField(4)
-    public void setF4(Short s) {this.s = s; }
-    public Short getF4() {return s;}
-    
-    public String toString(){
-      return f1+" "+f2 + getF3() + " " + getF4();
-    }
-  
+  public class ARecord implements AutoRecord {    
+    @BSField(1) public Integer f1;
   }
   
   public Record(){
     super();
   }
 
-  public Record(Integer field1, String field2, Boolean field3, Short field4){
-    this();
-    this.record.f1 = field1;
-    this.record.f2 = field2;
-    this.record.setF3(field3);
-    this.record.setF4(field4);
+  public Record(Record.ARecord record){
+    super(record);
   }
-
-  public Integer getF1(){
-    return record.f1;
-  }
-
-  public String getF2(){
-    return record.f2;
-  }
-  
-  public Boolean getF3(){
-    return record.getF3();
-  }
-  
-  public Short getF4(){
-    return record.getF4();
-  }
-
-  public String toString() {
-    return record.toString();
-  }
-
 
   @Override
-  protected ARecord newT() {
+  protected ARecord newA() {
     return new ARecord();
   }
 }

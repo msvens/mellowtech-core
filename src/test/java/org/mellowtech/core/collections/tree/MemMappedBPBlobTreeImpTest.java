@@ -40,7 +40,7 @@ import org.mellowtech.core.collections.tree.MemMappedBPBlobTreeImp;
  */
 public class MemMappedBPBlobTreeImpTest {
 
-  public MemMappedBPBlobTreeImp<CBString, CBInt> dbMap;
+  public MemMappedBPBlobTreeImp<String, CBString, Integer, CBInt> dbMap;
 
   public static final String dir = "dbmtest";
   public static final String name = "memBlobDiscBasedMap";
@@ -52,7 +52,7 @@ public class MemMappedBPBlobTreeImpTest {
     TestUtils.createTempDir(dir);
 
     String fileName = TestUtils.getAbsolutDir(dir+"/"+name);
-    this.dbMap = new MemMappedBPBlobTreeImp <> (fileName,  new CBString(), new CBInt(), 1024, 1024, false, 1024*1024, 1024);
+    this.dbMap = new MemMappedBPBlobTreeImp <> (fileName,  CBString.class, CBInt.class, 1024, 1024, false, 1024*1024, 1024);
     tt = new TestTree(dbMap);
 
   }
@@ -68,7 +68,7 @@ public class MemMappedBPBlobTreeImpTest {
     tt.testIterator();
     dbMap.save();
     String fileName = TestUtils.getAbsolutDir(dir+"/"+name);
-    dbMap = new MemMappedBPBlobTreeImp <> (fileName,  new CBString(), new CBInt(), false);
+    dbMap = new MemMappedBPBlobTreeImp <> (fileName,  CBString.class, CBInt.class, false);
     tt.setDbMap(dbMap);
     tt.testValues();
     tt.testDeleteAll();

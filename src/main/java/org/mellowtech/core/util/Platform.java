@@ -242,7 +242,9 @@ public class Platform {
 	 * Windows the Start command will be used in MAC OS the open command will be
 	 * used and for other systems the platform tries to find the given executable
 	 * 
-	 * @param fileName
+	 * @param fileName file to open
+	 * @param executables possible programs to launch
+	 * @throws Exception if error
 	 */
 	public static void openFile(String fileName, String[] executables)
 			throws Exception {

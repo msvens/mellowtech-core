@@ -54,7 +54,7 @@ public class LRUMemoryCacheTest {
   public long cacheSize = 1024;
   public Loader <CBInt, CBString> loader;
   public Remover <CBInt, CBString> remover;
-  public CacheLRUMemory <CBInt, CBString> cache;
+  public CacheLRUMemory <Integer, CBInt, String,CBString> cache;
   
   @Before
   public void before(){

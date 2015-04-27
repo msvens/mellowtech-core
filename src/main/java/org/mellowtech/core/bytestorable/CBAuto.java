@@ -36,26 +36,33 @@ import java.nio.ByteBuffer;
  *
  * @author Martin Svensson
  */
-public abstract class CBAuto <T> extends ByteStorable <T>{
+@Deprecated
+public abstract class CBAuto <T> extends BStorableImp <T, CBAuto<T>>{
 
   /**
    * subclasses should always call this method
    */
   public CBAuto(){
+    super(null);
+    AutoBytes.I().parseClass(getClass());
+  }
+  
+  public CBAuto(T t){
+    super(t);
     AutoBytes.I().parseClass(getClass());
   }
 
   @Override
-  public ByteStorable <T> fromBytes(ByteBuffer bb, boolean doNew) {
+  public CBAuto <T> from(ByteBuffer bb) {
     try{
       Class<? extends CBAuto> clazz = getClass();
-      CBAuto <T> toRet =  doNew ? clazz.newInstance() : this;
-      bb.getInt(); //size indicator
+      CBAuto <T> toRet =  clazz.newInstance();
+      CBUtil.getSize(bb, true);
       short elements = bb.getShort();
       PrimitiveObject po = new PrimitiveObject();
       for(int i = 0; i < elements; i++){
         short index = bb.getShort();
-        po.fromBytes(bb, false);
+        po.from(bb);
         AutoBytes.I().setField(clazz, index, po, toRet);
       }
       return toRet;
@@ -66,10 +73,11 @@ public abstract class CBAuto <T> extends ByteStorable <T>{
   }
 
   @Override
-  public void toBytes(ByteBuffer bb) {
-    bb.putInt(byteSize());
+  public void to(ByteBuffer bb) {
+    CBUtil.putSize(internalSize(), bb, true);
     Class <? extends CBAuto> clazz = getClass();
-    PrimitiveObject po = new PrimitiveObject();
+    //PrimitiveObject po = new PrimitiveObject();
+    PrimitiveObject po;
     int pos = bb.position();
     bb.putShort((byte) 0); //num elements;
     int numElems = 0;
@@ -78,8 +86,8 @@ public abstract class CBAuto <T> extends ByteStorable <T>{
 
       if(toStore != null){
         bb.putShort(i.shortValue());
-        po.set(toStore);
-        po.toBytes(bb);
+        po = new PrimitiveObject(toStore);
+        po.to(bb);
         numElems++;
       }
     }
@@ -88,14 +96,18 @@ public abstract class CBAuto <T> extends ByteStorable <T>{
 
   @Override
   public int byteSize() {
-    int size = 8; //size + num elements;
+    return CBUtil.byteSize(internalSize(), true);
+  }
+  
+  private int internalSize() {
+    int size = 4; //size + num elements;
     Class <? extends CBAuto> clazz = getClass();
-    PrimitiveObject po = new PrimitiveObject();
+    PrimitiveObject po;
     for(Integer i : AutoBytes.I().getFieldIndexes(clazz)){
       Object toStore = AutoBytes.I().getField(clazz, i, this);
       if(toStore != null){
         size += 2; //index;
-        po.set(toStore);
+        po = new PrimitiveObject(toStore);
         size += po.byteSize();
       }
     }
@@ -104,6 +116,6 @@ public abstract class CBAuto <T> extends ByteStorable <T>{
 
   @Override
   public int byteSize(ByteBuffer bb) {
-    return getSize(bb);
+    return CBUtil.peekSize(bb, true);
   }
 }

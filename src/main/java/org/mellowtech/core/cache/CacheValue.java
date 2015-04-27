@@ -72,6 +72,7 @@ public class CacheValue <V> {
 
   /**
    * Set the value and keep the dirty bit as is
+   * @param value value to set
    */
   public void setValue(V value) {
     this.value = value;
@@ -79,6 +80,7 @@ public class CacheValue <V> {
 
   /**
    * Set the value and set the the dirty bit to false
+   * @param value value to set
    */
   public void setAndRestore(V value) {
     this.value = value;

@@ -11,16 +11,13 @@ import java.nio.ByteBuffer;
  */
 public class StorableArrays {
 
-  /**
-   * 
-   */
   public StorableArrays() {}
+  
     /**
      * Get size of array. An array is stored with a four bytes length indicator at
      * the beginning of the byte buffer. The byte size of a short array is
      * therefore 4 + length*2.
      * <p>
-     * 
      * This method does not change the ByteBuffer position.
      * 
      * @param bb
@@ -303,7 +300,7 @@ public class StorableArrays {
      * @return the size (in bytes) of the array, including the four bytes for the
      *         size indicator
      */
-    public static int getByteStorableArrayByteSize(ByteStorable <?> [] array) {
+    public static int getByteStorableArrayByteSize(BStorable <?,?> [] array) {
       int size = 4 + 4;
       for (int i = 0; array != null && i < array.length; i++)
         size += array[i].byteSize();
@@ -319,14 +316,14 @@ public class StorableArrays {
      * @param array
      *          the array to store
      */
-    public static void putByteStorableArray(ByteBuffer bb, ByteStorable <?> [] array) {
+    public static void putByteStorableArray(ByteBuffer bb, BStorable <?,?> [] array) {
       // Increase position.
       int startpos = bb.position();
       bb.position(bb.position() + 4);
 
       bb.putInt(array == null ? 0 : array.length);
       for (int i = 0; array != null && i < array.length; i++)
-        bb.put((ByteBuffer) array[i].toBytes().flip());
+        bb.put((ByteBuffer) array[i].to().flip());
 
       // Store the size in the first four bytes
       int endpos = bb.position();
@@ -334,32 +331,30 @@ public class StorableArrays {
       bb.putInt(startpos, bytes);
       bb.position(endpos);
     }
-
+    
     /**
      * Get an array of ByteStorables from a byte buffer. Moves the byte buffer
      * pointer
-     * 
-     * @param bb
-     *          the byte buffer containing the buffer
-     * @param template
-     *          the template for the specific ByteStorable
-     * @param arrayTemplate
-     *          the template for the array type
+     * @param bb the byte buffer containing the buffer
+     * @param arrayTemplate the template for the specific ByteStorable
+     * @param template the template for the specific ByteStorable
+     * @param <A> wrapped BComparable class
+     * @param <B> BComparabble class
      * @return an array of ByteStorables
      */
-    public static ByteStorable <?> [] getByteStorableArray(ByteBuffer bb,
-        ByteStorable <?> [] arrayTemplate, ByteStorable <?> template) {
-      int bytes = bb.getInt();
+    public static <A,B extends BStorable<A,B>> BStorable <A,B> [] getByteStorableArray(ByteBuffer bb,
+        BStorable <A,B> [] arrayTemplate, BStorable <A,B> template) {
+      bb.getInt();
       int size = bb.getInt();
       if (size <= 0)
         return null;
 
-      ByteStorable <?> [] array;
+      BStorable <A,B> [] array;
       Class <?> arrayClass = arrayTemplate.getClass().getComponentType();
-      array = (ByteStorable[]) java.lang.reflect.Array.newInstance(arrayClass,
+      array = (BStorable<A,B>[]) java.lang.reflect.Array.newInstance(arrayClass,
           size);
       for (int i = 0; i < size; i++)
-        array[i] = template.fromBytes(bb);
+        array[i] = template.from(bb);
       return array;
     }
     

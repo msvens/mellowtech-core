@@ -47,33 +47,32 @@ import org.xml.sax.helpers.DefaultHandler;
 
 /**
  * Loads a set of plug-ins in a generic fashion. PluginSet represents a minimum
- * effort approach to handle plugins of various types. <break> A plug-in is a
+ * effort approach to handle plugins of various types.
+ * <p>
+ * A plug-in is a
  * named class in a jar file. The plug-in must have a class who is a descendent
  * of a named class - this name is given to the PluginSet at instantiation in
- * the constructor. <break> Typical use would be to load classes/jars from a
- * directory and then get an ArrayList of plugin objects. <break> For each jar
- * file that contains a plugin there must be an xml file that specifies which
+ * the constructor.
+ * <p>
+ * Typical use would be to load classes/jars from a
+ * directory and then get an ArrayList of plugin objects.
+ * <p>
+ * For each jar file that contains a plugin there must be an xml file that specifies which
  * class or classes that are plugins. The xml file must be in the META-INF
  * directory inside the jar file and it must be named PLUGIN.XML (all capitals).
  * Format for PLUGIN.XML that defines one class "PluginTestImplementation":
- * several classes may be separated by space, newline or commas. <break>
- * 
- * <p>
+ * several classes may be separated by space, newline or commas.
  * <blockquote>
- * 
  * <pre>
- *  &lt;Plugin&gt
- *   &lt;Classes&gt
+ *  &lt;Plugin&gt;
+ *   &lt;Classes&gt;
  *   PluginTestImplementation
- *   &lt;/Classes&gt
- *  &lt;/Plugin&gt
+ *   &lt;/Classes&gt;
+ *  &lt;/Plugin&gt;
  * </pre>
+ * </blockquote>
  * 
- * </blockquote> <break>
- * 
- * <p>
  * <blockquote>
- * 
  * <pre>
  *  // Sample code &lt;break&gt;
  *  PluginSet ps = new PluginSet(&quot;IPlugin&quot;); &lt;break&gt;

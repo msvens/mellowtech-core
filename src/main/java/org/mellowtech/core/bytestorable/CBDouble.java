@@ -29,44 +29,29 @@ package org.mellowtech.core.bytestorable;
 import java.nio.ByteBuffer;
 
 /**
- * Wraps an double value as a ByteStorable
+ * Wraps a double value as a ByteStorable
  * 
  * @author Martin Svensson
  * @version 1.0
  */
-public class CBDouble extends ByteComparable <Double>{
+public class CBDouble implements BComparable<Double, CBDouble>{
 
-
+  private final double value;
   
+  public CBDouble() {value = 0.0;}
 
-  public CBDouble() {}
+  public CBDouble(double value) {this.value = value;}
+  
+  public CBDouble(Double value) {this.value = value;}
 
-  /**
-   * Initialize with a value
-   * 
-   * @param value
-   *          the value
-   */
-  public CBDouble(double value) {
-    this.obj = value;
-  }
-
-  // ***********GET/SET**************
   @Override
-  public void set(Double value){
-    if(value == null)
-      throw new ByteStorableException("null values not exepted");
-    this.obj = value;
-  }
-
+  public Double get(){return Double.valueOf(value);}
+  
+  public double value() {return value;}
+  
   @Override
   public boolean isFixed(){
     return true;
-  }
-
-  public int hashCode() {
-    long bits = Double.doubleToLongBits(obj);
-    return (int) (bits ^ (bits >>> 32));
   }
 
   @Override
@@ -80,45 +65,42 @@ public class CBDouble extends ByteComparable <Double>{
   }
 
   @Override
-  public void toBytes(ByteBuffer bb) {
-    bb.putDouble(obj);
+  public void to(ByteBuffer bb) {
+    bb.putDouble(value);
   }
 
   @Override
-  public ByteStorable <Double> fromBytes(ByteBuffer bb) {
-    return fromBytes(bb, doNew);
+  public CBDouble from(ByteBuffer bb) {
+    return new CBDouble(bb.getDouble());
   }
 
   @Override
-  public ByteStorable <Double> fromBytes(ByteBuffer bb, boolean doNew) {
-    if (doNew)
-      return new CBDouble(bb.getDouble());
-    obj = bb.getDouble();
-    return this;
+  public int compareTo(CBDouble other) {
+    return Double.compare(value, other.value);
   }
 
   @Override
-  public int compareTo(ByteStorable <Double> other) {
-    return Double.compare(obj, other.get());
-  }
-
-  @Override
-  public boolean equals(Object obj) {
-    if(obj instanceof CBDouble)
-      return compareTo((CBDouble) obj) == 0;
+  public boolean equals(Object other) {
+    if(other instanceof CBDouble)
+      return compareTo((CBDouble) other) == 0;
     return false;
   }
-
+  
   @Override
-  public String toString() {
-    return "" + obj;
+  public int hashCode(){
+    long bits = Double.doubleToLongBits(value);
+    return (int)(bits ^ (bits >>> 32));
+  }
+  
+  @Override
+  public String toString(){
+    return ""+value;
   }
 
   @Override
   public int byteCompare(int offset1, ByteBuffer bb1, int offset2,
       ByteBuffer bb2) {
-    
     return Double.compare(bb1.getDouble(offset1), bb2.getDouble(offset2));
-    
   }
+  
 }

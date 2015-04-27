@@ -36,52 +36,36 @@ import java.nio.ByteBuffer;
  *
  * @author Martin Svensson
  */
-public abstract class CBRecord <T extends AutoRecord> extends ByteStorable <T> {
-
-
-  protected T record;
+public abstract class CBRecord <A extends AutoRecord,
+  B extends CBRecord<A,B>> extends BStorableImp <A, B> {
   
+  protected abstract A newA();
   
-  
-  @Override
-  public T get() {
-    return record;
-  }
-
-  @Override
-  public void set(T obj) {
-    this.record = obj;
-  }
-  
-  protected abstract T newT();
-  
-  
-
   /**
    * subclasses should always call this method
    */
   public CBRecord(){
-    AutoBytes.I().parseClass(newT().getClass());
-    record = newT();
+    super(null);
+    AutoBytes.I().parseClass(newA().getClass());
+    value = newA();
   }
   
-  public CBRecord(T record){
-	AutoBytes.I().parseClass(record.getClass());
-	this.record = record;  
+  public CBRecord(A value){
+    super(value);
+    AutoBytes.I().parseClass(value.getClass());
   }
 
   @Override
-  public ByteStorable <T> fromBytes(ByteBuffer bb, boolean doNew) {
+  public B from(ByteBuffer bb) {
     try{
-      CBRecord <T> toRet =  doNew ? getClass().newInstance() : this;
-      Class<? extends AutoRecord> rclazz = record.getClass();
-      bb.getInt(); //size indicator
+      B toRet =  (B) getClass().newInstance();
+      Class<? extends AutoRecord> rclazz = value.getClass();
+      CBUtil.getSize(bb, true);
       short elements = bb.getShort();
       PrimitiveObject po = new PrimitiveObject();
       for(int i = 0; i < elements; i++){
         short index = bb.getShort();
-        po.fromBytes(bb, false);
-        AutoBytes.I().setField(rclazz, index, po, toRet.record);
+        AutoBytes.I().setField(rclazz, index, po.from(bb), toRet.value);
       }
       return toRet;
     }
@@ -91,37 +75,38 @@ public abstract class CBRecord <T extends AutoRecord> extends ByteStorable <T> {
   }
 
   @Override
-  public void toBytes(ByteBuffer bb) {
-    bb.putInt(byteSize());
-    Class<? extends AutoRecord> rclazz = record.getClass();
-    PrimitiveObject po = new PrimitiveObject();
+  public void to(ByteBuffer bb) {
+    CBUtil.putSize(internalSize(), bb, true);
+    Class<? extends AutoRecord> rclazz = value.getClass();
+    //PrimitiveObject po = new PrimitiveObject();
     int pos = bb.position();
     bb.putShort((byte) 0); //num elements;
     int numElems = 0;
     for(Integer i : AutoBytes.I().getFieldIndexes(rclazz)){
-      Object toStore = AutoBytes.I().getField(rclazz, i, this.record);
-
+      Object toStore = AutoBytes.I().getField(rclazz, i, this.value);
       if(toStore != null){
         bb.putShort(i.shortValue());
-        po.set(toStore);
-        po.toBytes(bb);
+        new PrimitiveObject(toStore).to(bb);
         numElems++;
       }
     }
     bb.putShort(pos, (short) numElems);
   }
-
+  
   @Override
   public int byteSize() {
-    int size = 8; //size + num elements;
-    Class<? extends AutoRecord> rclazz = record.getClass();
-    PrimitiveObject po = new PrimitiveObject();
+    return CBUtil.byteSize(internalSize(), true);
+  }
+
+  private final int internalSize() {
+    int size = 4; //num elements;
+    Class<? extends AutoRecord> rclazz = value.getClass();
+    //PrimitiveObject po = new PrimitiveObject();
     for(Integer i : AutoBytes.I().getFieldIndexes(rclazz)){
-      Object toStore = AutoBytes.I().getField(rclazz, i, this.record);
+      Object toStore = AutoBytes.I().getField(rclazz, i, this.value);
       if(toStore != null){
         size += 2; //index;
-        po.set(toStore);
-        size += po.byteSize();
+        size += new PrimitiveObject(toStore).byteSize();
       }
     }
     return size;
@@ -129,11 +114,6 @@ public abstract class CBRecord <T extends AutoRecord> extends ByteStorable <T> {
 
   @Override
   public int byteSize(ByteBuffer bb) {
-    return getSize(bb);
-  }
-  
-  @Override
-  public String toString(){
-	return get().toString();
+    return CBUtil.peekSize(bb, true);
   }
 }

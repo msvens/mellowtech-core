@@ -39,16 +39,14 @@ import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.Arrays;
 import java.util.logging.Level;
 import java.util.zip.Deflater;
 import java.util.zip.DeflaterOutputStream;
 
 import org.mellowtech.core.CoreLog;
-import org.mellowtech.core.bytestorable.ByteComparable;
-import org.mellowtech.core.bytestorable.ByteStorable;
-import org.mellowtech.core.util.ArrayUtils;
+import org.mellowtech.core.bytestorable.BComparable;
+import org.mellowtech.core.bytestorable.CBUtil;
 import org.mellowtech.core.util.Platform;
 
 /**
@@ -75,11 +73,13 @@ import org.mellowtech.core.util.Platform;
  * If the ByteStorable objects that are to be sorted can be compared at a byte
  * level this sort is highly preferred over ordinary DiscBasedSort
  * 
+ * @param <A> wrapped BComparable class
+ * @param <B> BComparable class
  * @author Martin Svensson
  * @version 1.0
- * @see org.mellowtech.core.bytestorable.ByteComparable
+ * @see org.mellowtech.core.bytestorable.BComparable
  */
-public class EDiscBasedSort {
+public class EDiscBasedSort <A, B extends BComparable<A,B>> {
   public static final String SORT_RUN_FILE = "disc_sort_e_run.";
   private static final String SEP = System.getProperties().getProperty(
       "file.separator");
@@ -98,10 +98,9 @@ public class EDiscBasedSort {
   // ..to handle the large objects.
   private int blockSize = 4096 * 4; // JC 040620, must have a dynamic thing.
 
-  private ByteStorable template;
-  private ByteComparable bc;
-  private int complevel = 0;
-  private String tempDir = null;
+  private final B template;
+  private final int complevel;
+  private final String tempDir;
 
   // Flag to control if execution is to wait occasionally to let other processes
   //..get a go for CPU usage.
@@ -143,14 +142,11 @@ public class EDiscBasedSort {
    * 
    * @param template
    *          the type of object to sort
-   * @param bc
-   *          the object that lets the sort compare the ByteStorable objects at
-   *          a byte level.
    * @param tempDir
    *          temporary directory for sort runs
    */
-  public EDiscBasedSort(ByteStorable template, ByteComparable bc, String tempDir) {
-    this(template, bc, 0, tempDir);
+  public EDiscBasedSort(B template, String tempDir) {
+    this(template, 0, tempDir);
   }
 
   /**
@@ -159,18 +155,13 @@ public class EDiscBasedSort {
    * 
    * @param template
    *          the type of object to sort
-   * @param bc
-   *          the object that lets the sort compare the ByteStorable objects at
-   *          a byte level.
    * @param complevel
    *          the level of GZIP compression for runs (1-9, where 1 is fastest)
    *          and 9 is highest compression)
    * @param tempDir
    *          temporary directory for sort runs
    */
-  public EDiscBasedSort(ByteStorable template, ByteComparable bc,
-      int complevel, String tempDir) {
-    this.bc = bc;
+  public EDiscBasedSort(B template, int complevel, String tempDir) {
     this.template = template;
     this.complevel = complevel;
     this.tempDir = tempDir;
@@ -295,8 +286,8 @@ public class EDiscBasedSort {
     ByteBuffer ob = ByteBuffer.allocate(blockSize);
     ByteBuffer large = ByteBuffer.allocate(memorySize);
 
-    if (tempDir == null)
-      tempDir = ".";
+    //if (tempDir == null)
+    //tempDir = ".";
 
     CoreLog.L().finer("SORT:sort():Making runs.");
     int numFiles = makeRuns(input, large, ob, tempDir);
@@ -311,7 +302,7 @@ public class EDiscBasedSort {
       CoreLog.L().finer("SORT:sort():Merging runs");
       // Clock time to complete.
       long timeStart = System.currentTimeMillis();
-      Merge.merge(fNames, template, large, ob, output, bc, tempDir,
+      Merge.mergeDirect(fNames, template, large, ob, output, tempDir,
           complevel > 0 ? true : false);
 
       CoreLog.L().finer("Merge took "
@@ -342,9 +333,8 @@ public class EDiscBasedSort {
   private int makeRuns(ReadableByteChannel input, ByteBuffer large,
       ByteBuffer ob, String tempDir) {
     try {
-      EDBSContainer hb = new EDBSContainer(large, input, blockSize, template,
-          bc);
-      int[] offsets = new int[10000];
+      EDBSContainer <A,B> hb = new EDBSContainer <> (large, input, blockSize, template);
+      Integer[] offsets = new Integer[10000];
       int i = 0;
       int numSorts = 0;
       int prod = 0, cons = 0;
@@ -382,7 +372,7 @@ public class EDiscBasedSort {
 
   }
 
-  private int sortRun(ByteBuffer bb, ReadableByteChannel c, int[] offsets,
+  private int sortRun(ByteBuffer bb, ReadableByteChannel c, Integer offsets[],
       int numOffsets, int i, String dir, ByteBuffer output) throws Exception {
 
     output.clear(); // clear output buffer:
@@ -400,9 +390,11 @@ public class EDiscBasedSort {
     // sort offsets:
     //System.out.println("has array: "+bb.hasArray()+" "+numOffsets);
     if (bb.hasArray())
-      Sorters.quickSort(offsets, bc, bb.array(), numOffsets);
+      Arrays.parallelSort(offsets, 0, numOffsets, new BComparatorArray <A,B>(template, bb.array()));
+      //Sorters.quickSort(offsets, bc, bb.array(), numOffsets);
     else
-      Sorters.quickSort(offsets, bc, bb, numOffsets);
+      Arrays.parallelSort(offsets, 0, numOffsets, new BComparator <A,B> (template, bb));
+      //Sorters.quickSort(offsets, bc, bb, numOffsets);
     
     for (int j = 0; j < numOffsets; j++) {
       bb.limit(bb.capacity());
@@ -432,9 +424,9 @@ public class EDiscBasedSort {
 
  
   class EDBSProducer extends Thread {
-	  private EDBSContainer hb;
+	  private EDBSContainer<?,?> hb;
 	  private Object monitor = new Object();
-	  public EDBSProducer(EDBSContainer hb) {
+	  public EDBSProducer(EDBSContainer<?,?> hb) {
 	    this.hb = hb;
 	  }
 
@@ -451,13 +443,13 @@ public class EDiscBasedSort {
 	} // EDBSProducer
   
   class EDBSConsumer extends Thread {
-	  private EDBSContainer hb;
+	  private EDBSContainer <?,?> hb;
 	  private int offset;
-	  private int[] offsets;
+	  private Integer[] offsets;
 	  private int numOffsets = 0;
       private Object monitor = new Object();
       
-	  public EDBSConsumer(EDBSContainer hb, int[] offsets) {
+	  public EDBSConsumer(EDBSContainer <?,?> hb, Integer[] offsets) {
 	    this.offsets = offsets;
 	    this.hb = hb;
 	  }
@@ -466,7 +458,7 @@ public class EDiscBasedSort {
 	    return numOffsets;
 	  }
 
-	  public int[] getOffsets() {
+	  public Integer[] getOffsets() {
 	    return offsets;
 	  }
 
@@ -477,8 +469,10 @@ public class EDiscBasedSort {
 	        if (offset != -1) {
 	          // just a test:
 	          if (numOffsets == offsets.length) {
+	            offsets = Arrays.copyOf(offsets, (int) (offsets.length * 1.75));
+	            /*offsets = ArrayUtils
 	            offsets = ArrayUtils
-	                .setSize(offsets, (int) (offsets.length * 1.75));
+	                .setSize(offsets, (int) (offsets.length * 1.75));*/
 	          }
 	          offsets[numOffsets++] = offset;
 	        } // if offset != -1
@@ -501,21 +495,19 @@ public class EDiscBasedSort {
 
 
 
-class EDBSContainer {
+class EDBSContainer <A, B extends BComparable<A,B>> {
   public boolean verbose = false;
   ByteBuffer buffer;
   ByteBuffer consumerBuffer;
-  ByteComparable bc;
   ReadableByteChannel c;
   boolean noMore = false, consumedAll = false, endOfStream = false;
   int slack = -1, totConsumed, totProduced, blockSize, read;
-  ByteStorable template;
+  B template;
 
   public EDBSContainer(ByteBuffer b, ReadableByteChannel c, int blockSize,
-      ByteStorable template, ByteComparable bc) {
+      B template) {
 
     this.blockSize = blockSize;
-    this.bc = bc;
     this.template = template;
     totConsumed = totProduced = 0;
     this.c = c;
@@ -534,7 +526,7 @@ class EDBSContainer {
     buffer.limit(buffer.capacity());
     if (slack > 0) {
       buffer.position(buffer.capacity() - slack);
-      ByteStorable.copyToBeginning(buffer, slack);
+      CBUtil.copyToBeginning(buffer, slack);
       totProduced = slack;
     }
     else {
@@ -587,7 +579,7 @@ class EDBSContainer {
       consumerBuffer.position(totConsumed);
       consumerBuffer.mark();
       int bSize;
-      bSize = ByteStorable.slackOrSize(consumerBuffer, template);
+      bSize = CBUtil.slackOrSize(consumerBuffer, template);
       if(bSize < 0 && endOfStream) {
       bSize = Math.abs(bSize);
       }

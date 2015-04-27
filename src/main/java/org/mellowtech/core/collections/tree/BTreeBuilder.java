@@ -3,10 +3,8 @@
  */
 package org.mellowtech.core.collections.tree;
 
-import java.io.IOException;
-
-import org.mellowtech.core.bytestorable.ByteComparable;
-import org.mellowtech.core.bytestorable.ByteStorable;
+import org.mellowtech.core.bytestorable.BComparable;
+import org.mellowtech.core.bytestorable.BStorable;
 
 /**
  * @author msvens
@@ -68,21 +66,21 @@ public class BTreeBuilder {
     this.forceNew = force;
     return this;
   }
-  
-  @SuppressWarnings("rawtypes")
-  public <K extends ByteComparable,V extends ByteStorable> BTree <K,V> build(K keyType, V valueType, String fileName) throws IOException{
+
+  public <A,B extends BComparable<A,B>, C, D extends BStorable<C,D>> BTree <A,B,C,D> 
+    build(Class<B> keyType, Class<D> valueType, String fileName) throws Exception{
     if(blobValues) return buildBlob(keyType, valueType, fileName);
-    BTree <K,V> toRet = null;
+    BTree <A,B,C,D> toRet = null;
     //first try to open
     try {
-      toRet = indexInMemory ? new MemMappedBPTreeImp (fileName, keyType, valueType, valuesInMemory) :
-        new BPTreeImp(fileName, keyType, valueType);
+      toRet = indexInMemory ? new MemMappedBPTreeImp <> (fileName, keyType, valueType, valuesInMemory) :
+        new BPTreeImp <> (fileName, keyType, valueType);
     } catch (Exception e){
       if(indexInMemory){
-        return new MemMappedBPTreeImp(fileName, keyType, valueType, indexBlockSize, valueBlockSize,
+        return new MemMappedBPTreeImp <> (fileName, keyType, valueType, indexBlockSize, valueBlockSize,
             valuesInMemory, maxBlocks, maxIndexBlocks);
       } else {
-        return new BPTreeImp(fileName, keyType, valueType, valueBlockSize, indexBlockSize, maxBlocks, maxIndexBlocks);
+        return new BPTreeImp <> (fileName, keyType, valueType, valueBlockSize, indexBlockSize, maxBlocks, maxIndexBlocks);
       }
     }
     if(!forceNew) return toRet;
@@ -90,26 +88,26 @@ public class BTreeBuilder {
     //delete old and create new:
     toRet.delete();
     if(indexInMemory){
-      return new MemMappedBPTreeImp(fileName, keyType, valueType, indexBlockSize, valueBlockSize,
+      return new MemMappedBPTreeImp <> (fileName, keyType, valueType, indexBlockSize, valueBlockSize,
           valuesInMemory, maxBlocks, maxIndexBlocks);
     } else {
-      return new BPTreeImp(fileName, keyType, valueType, valueBlockSize, indexBlockSize, maxBlocks, maxIndexBlocks);
+      return new BPTreeImp <> (fileName, keyType, valueType, valueBlockSize, indexBlockSize, maxBlocks, maxIndexBlocks);
     }
   }
   
-  @SuppressWarnings("rawtypes")
-  public <K extends ByteComparable,V extends ByteStorable> BTree <K,V> buildBlob(K keyType, V valueType, String fileName) throws IOException{
-    BTree <K,V> toRet = null;
+  public <A,B extends BComparable<A,B>,C,D extends BStorable<C,D>> BTree <A,B,C,D> 
+    buildBlob(Class<B> keyType, Class<D> valueType, String fileName) throws Exception{
+    BTree <A,B,C,D> toRet = null;
     //first try to open
     try {
-      toRet = indexInMemory ? new MemMappedBPBlobTreeImp (fileName, keyType, valueType, valuesInMemory) :
-        new BPBlobTreeImp(fileName, keyType, valueType);
+      toRet = indexInMemory ? new MemMappedBPBlobTreeImp <> (fileName, keyType, valueType, valuesInMemory) :
+        new BPBlobTreeImp <> (fileName, keyType, valueType);
     } catch (Exception e){
       if(indexInMemory){
-        return new MemMappedBPBlobTreeImp(fileName, keyType, valueType, indexBlockSize, valueBlockSize,
+        return new MemMappedBPBlobTreeImp <> (fileName, keyType, valueType, indexBlockSize, valueBlockSize,
             valuesInMemory, maxBlocks, maxIndexBlocks);
       } else {
-        return new BPBlobTreeImp(fileName, keyType, valueType, valueBlockSize, indexBlockSize, maxBlocks, maxIndexBlocks);
+        return new BPBlobTreeImp <> (fileName, keyType, valueType, valueBlockSize, indexBlockSize, maxBlocks, maxIndexBlocks);
       }
     }
     if(!forceNew) return toRet;
@@ -117,10 +115,10 @@ public class BTreeBuilder {
     //delete old and create new:
     toRet.delete();
     if(indexInMemory){
-      return new MemMappedBPBlobTreeImp(fileName, keyType, valueType, indexBlockSize, valueBlockSize,
+      return new MemMappedBPBlobTreeImp <> (fileName, keyType, valueType, indexBlockSize, valueBlockSize,
           valuesInMemory, maxBlocks, maxIndexBlocks);
     } else {
-      return new BPBlobTreeImp(fileName, keyType, valueType, valueBlockSize, indexBlockSize, maxBlocks, maxIndexBlocks);
+      return new BPBlobTreeImp <> (fileName, keyType, valueType, valueBlockSize, indexBlockSize, maxBlocks, maxIndexBlocks);
     }
   }
   

@@ -27,8 +27,8 @@
 
 package org.mellowtech.core.bytestorable;
 
-import junit.framework.Assert;
-import org.junit.Test;
+import org.junit.Before;
+
 
 /**
  * Date: 2013-04-17
@@ -36,35 +36,21 @@ import org.junit.Test;
  *
  * @author Martin Svensson
  */
-public class CBRecordTest {
-
-  @Test
-  public void testNull(){
+public class CBRecordTest extends BStorableTemplate <Record.ARecord, Record>{
+  
+  @Before public void init(){
+    type = Record.class;
+    Record tmp = new Record();
+    Record.ARecord r1 = tmp.newA();
+    r1.f1 = 0;
+    Record.ARecord r2 = tmp.newA();
+    r2.f1 = 1;
     
-    Record i1 = new Record(1, "one", true, (short) 1024);
-    Record i2 = (Record) i1.deepCopy();
-    Assert.assertTrue(i1.getF1().equals(i2.getF1()));
-    Assert.assertTrue(i1.getF2().equals(i2.getF2()));
-    Assert.assertTrue(i1.getF3().equals(i2.getF3()));
-    Assert.assertTrue(i1.getF4().equals(i2.getF4()));
-
-    //check null
-    i1 = new Record();
-    i2 = (Record) i1.deepCopy();
-    Assert.assertNull(i2.getF1());
-    Assert.assertNull(i2.getF2());
-    Assert.assertNull(i2.getF3());
-    Assert.assertNull(i2.getF4());
+    values = new Record.ARecord[]{r1,r2};
+    
+    //size: totSize + numElements (4) + index (2) + primitive value
+    sizes = new int[]{14,14};
   }
 
-  @Test
-  public void testPrimitives(){
-    Record1 r1 = new Record1((byte)1, (short)10, 100, 1000, (float) 1.0,
-            10.0, 'a', true);
-    Record1 r2;
-    r2 = (Record1) r1.deepCopy();
-    
-    Assert.assertEquals(r1.get().toString(), r2.get().toString());
-
-  }
+  
 }

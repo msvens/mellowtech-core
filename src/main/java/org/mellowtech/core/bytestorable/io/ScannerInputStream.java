@@ -18,7 +18,7 @@ import org.mellowtech.core.bytestorable.CBString;
 public class ScannerInputStream extends InputStream {
 
   ByteBuffer bb = ByteBuffer.allocate(1024);
-  CBString temp = new CBString();
+  //CBString temp = new CBString();
   
   private boolean closed = false;
   
@@ -65,25 +65,26 @@ public class ScannerInputStream extends InputStream {
       closed = true;
       return;
     }
-    temp.set(s.next());
+    CBString temp = new CBString(s.next());
     if(temp.get().length() < 1) System.out.println("zero length");
     int bSize = temp.byteSize();
     if(bb.capacity() < bSize) bb = ByteBuffer.allocate(bSize);
     bb.clear();
     bb.limit(bSize);
-    temp.toBytes(bb);
+    temp.to(bb);
     bb.flip();
   }
   
   private void readMinLength() {
     while(s.hasNext()){
-      temp.set(s.next());
+      CBString temp = new CBString(s.next());
+      //temp.set(s.next());
       if(temp.get().length() > minLength){
         int bSize = temp.byteSize();
         if(bb.capacity() < bSize) bb = ByteBuffer.allocate(bSize);
         bb.clear();
         bb.limit(bSize);
-        temp.toBytes(bb);
+        temp.to(bb);
         bb.flip();
         return;
       }

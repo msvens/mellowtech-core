@@ -33,49 +33,26 @@ import java.nio.ByteBuffer;
  * @author Martin Svensson
  */
 
-public class CBByte extends ByteComparable <Byte> {
+public class CBByte implements BComparable <Byte, CBByte> {
 
-  /**
-   * Value of this CBByte
-   */
-  private byte value;
-
+  private final byte value;
   /**
    * Default constructor is needed to create a new byte from a byte buffer.
    */
-  public CBByte() {
-  }
+  public CBByte() {value = (byte) 0;}
 
-  /**
-   * Initialize with a value
-   *
-   * @param value the value
-   */
-  public CBByte(byte value) {
-    this.value = value;
-  }
-
-  // ***********GET/SET**************
+  public CBByte(byte value) {this.value = value;}
+  
+  public CBByte(Byte value) {this.value = value;}
+  
   @Override
-  public void set(Byte value){
-    if(value == null) throw new ByteStorableException("null value not allowed");
-    if(!(value instanceof Byte)) throw new ByteStorableException("not a Byte");
-    this.value = (byte) value;
-  }
+  public Byte get() {return Byte.valueOf(value);}
 
-  @Override
-  public Byte get() {
-    return this.value;
-  }
-
+  public byte value() {return value;}
+  
   @Override
   public boolean isFixed() {
     return true;
-  }
-
-  @Override
-  public int hashCode() {
-    return value;
   }
 
   @Override
@@ -89,44 +66,39 @@ public class CBByte extends ByteComparable <Byte> {
   }
 
   @Override
-  public void toBytes(ByteBuffer bb) {
+  public void to(ByteBuffer bb) {
     bb.put(value);
   }
 
   @Override
-  public ByteStorable <Byte> fromBytes(ByteBuffer bb) {
-    return fromBytes(bb, doNew);
+  public CBByte from(ByteBuffer bb) {
+    return new CBByte(bb.get());
   }
 
   @Override
-  public ByteStorable <Byte> fromBytes(ByteBuffer bb, boolean doNew) {
-    if (doNew)
-      return new CBByte(bb.get());
-    value = bb.get();
-    return this;
+  public int compareTo(CBByte other) {
+    return this.value - other.value;
   }
 
   @Override
-  public int compareTo(ByteStorable <Byte> other) {
-    return this.value - other.get();
-  }
-
-  @Override
-  public boolean equals(Object obj) {
-    if(obj instanceof CBByte)
-      return this.value == ((CBByte)obj).value;
+  public boolean equals(Object other) {
+    if(other instanceof CBByte)
+      return this.value == ((CBByte)other).value;
     return false;
-  }
-
-  @Override
-  public String toString() {
-    return "" + value;
   }
 
   @Override
   public int byteCompare(int offset1, ByteBuffer bb1, int offset2,
                          ByteBuffer bb2) {
     return bb1.get(offset1) - bb2.get(offset2);
+  }
+  
+  @Override
+  public int hashCode(){return (int) value;}
+  
+  @Override
+  public String toString(){
+    return ""+value;
   }
 
 }

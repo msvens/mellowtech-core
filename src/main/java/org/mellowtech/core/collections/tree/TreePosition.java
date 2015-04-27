@@ -53,6 +53,8 @@ public class TreePosition {
    *          an <code>int</code> value
    * @param elementsInBlock
    *          an <code>int</code> value
+   * @param exists
+   *          true if exists
    */
   public TreePosition(int smaller, int elements, int smallerInBlock,
       int elementsInBlock, boolean exists) {

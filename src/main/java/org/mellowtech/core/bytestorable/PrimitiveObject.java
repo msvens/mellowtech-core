@@ -37,63 +37,58 @@ import java.nio.ByteBuffer;
  *
  * @author Martin Svensson
  */
-public class PrimitiveObject <T> extends ByteStorable <T> {
+public class PrimitiveObject <T> extends BStorableImp <T, PrimitiveObject<T>> {
 
   private PrimitiveType pt;
   
-  public PrimitiveObject(){
-    //this(null);
-  }
+  public PrimitiveObject(){super(null);}
 
-  public PrimitiveObject(T obj) throws ByteStorableException{
-    set(obj);
-  }
-  
-  @Override
-  public void set(T obj) {
-    super.set(obj);
-    if(obj != null)
-      pt = PrimitiveType.type(obj);
+  public PrimitiveObject(T value) throws ByteStorableException{
+    super(value);
+    if(value != null)
+      pt = PrimitiveType.type(value);
   }
 
   @Override
-  public ByteStorable <T> fromBytes(ByteBuffer bb, boolean doNew) {
-    PrimitiveObject <T> toRet = (doNew ? new PrimitiveObject <T> () : this);
+  public PrimitiveObject <T> from(ByteBuffer bb) {
+    PrimitiveObject <T> toRet; // = (doNew ? new PrimitiveObject <T> () : this);
     //toRet.pt = this.pt;
-    getSize(bb);
+    //getSize(bb);
+    CBUtil.getSize(bb, true);
+    
     PrimitiveType prim = PrimitiveType.fromOrdinal(bb.get());
-    toRet.pt = prim;
+    BStorable <T,?> temp = PrimitiveType.fromType(prim);
     if(bb.get() != 1){
-      toRet.set(null);
-      return toRet;
+      toRet = new PrimitiveObject <> ();
+    } else {
+      T value = temp.from(bb).get();
+      toRet = new PrimitiveObject <> (value);
     }
-    ByteStorable <T> obj = PrimitiveType.fromType(toRet.pt);
-    obj.fromBytes(bb, false);
-    toRet.set(obj.get());
+    toRet.pt = prim;
     return toRet;
   }
 
   @Override
-  public void toBytes(ByteBuffer bb) {
-    putSize(internalSize(), bb);
+  public void to(ByteBuffer bb) {
+    CBUtil.putSize(internalSize(), bb, true);
     bb.put(pt.getByte());
     if(get() == null){
       bb.put((byte)0);
     }
     else{
       bb.put((byte)1);
-      asStorable().toBytes(bb);
+      asStorable().to(bb);
     }
   }
 
   @Override
   public int byteSize() {
-    return internalSize() + sizeBytesNeeded(internalSize());
+    return CBUtil.byteSize(internalSize(), true);
   }
 
   @Override
   public int byteSize(ByteBuffer bb) {
-    return getSizeVariable(bb);
+    return CBUtil.peekSize(bb, true);
   }
 
   public int internalSize(){
@@ -101,9 +96,7 @@ public class PrimitiveObject <T> extends ByteStorable <T> {
     return 2 + asStorable().byteSize();
   }
   
-  private ByteStorable <T> asStorable(){
-    ByteStorable <T> bs = PrimitiveType.fromType(pt);
-    bs.set(get());
-    return bs;
+  private BStorable <T,?> asStorable(){
+    return PrimitiveType.fromType(pt, value);
   }
 }

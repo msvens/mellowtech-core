@@ -18,9 +18,9 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mellowtech.core.TestUtils;
+import org.mellowtech.core.bytestorable.CBInt;
+import org.mellowtech.core.bytestorable.CBString;
 import org.mellowtech.core.collections.DiscBasedHashMap;
-import org.mellowtech.core.collections.mappings.IntegerMapping;
-import org.mellowtech.core.collections.mappings.StringMapping;
 import org.mellowtech.core.util.Platform;
 
 import java.io.File;
@@ -33,7 +33,7 @@ import java.util.*;
  */
 public class DiscBasedHashMapTest {
   
-  public DiscBasedHashMap <String, Integer> dbMap;
+  public DiscBasedHashMap <String, CBString, Integer, CBInt> dbMap;
   public HashMap<String, Integer> inMemoryMap;
   public int numDifferentWords = 1000;
   public int numWords = numDifferentWords * 2;
@@ -52,8 +52,8 @@ public class DiscBasedHashMapTest {
     text = "";
     this.inMemoryMap = new HashMap <String, Integer> ();
 
-    this.dbMap = new DiscBasedHashMap <String, Integer> (new StringMapping(), new IntegerMapping(),
-      TestUtils.getAbsolutDir(dir+"/"+name));
+    this.dbMap = new DiscBasedHashMap <> (CBString.class, CBInt.class,
+      TestUtils.getAbsolutDir(dir+"/"+name), false, false);
     
     Random r = new Random();
     for(int i = 0; i < numWords; i++){
@@ -127,8 +127,8 @@ public class DiscBasedHashMapTest {
 
   private void testReopen() throws Exception{
     this.dbMap.save();
-    this.dbMap = new DiscBasedHashMap <String, Integer> (new StringMapping(), new IntegerMapping(),
-            TestUtils.getAbsolutDir(dir+"/"+name));
+    this.dbMap = new DiscBasedHashMap <> (CBString.class, CBInt.class,
+            TestUtils.getAbsolutDir(dir+"/"+name), false, false);
     Assert.assertEquals(inMemoryMap.size(), dbMap.size());
     for(String str : inMemoryMap.keySet()){
       Integer inValue = inMemoryMap.get(str);
