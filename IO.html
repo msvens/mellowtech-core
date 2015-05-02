@@ -56,10 +56,12 @@
                 <ul class="nav nav-list">
                     <li class="nav-header">Overview</li>
                                 
-      <li class="active">
+      <li>
     
-            <a href="#"><i class="none"></i>introduction</a>
-          </li>
+                          <a href="index.html" title="introduction">
+          <i class="none"></i>
+        introduction</a>
+            </li>
                   
       <li>
     
@@ -68,12 +70,10 @@
         byte storables</a>
             </li>
                   
-      <li>
+      <li class="active">
     
-                          <a href="IO.html" title="IO">
-          <i class="none"></i>
-        IO</a>
-            </li>
+            <a href="#"><i class="none"></i>IO</a>
+          </li>
                   
       <li>
     
@@ -124,42 +124,66 @@
         <div id="bodyColumn"  class="span9" >
                                   
             <h1>Overview</h1>
-<p>Mellowtech Core is a set of components that we use for working with disc based and byte based manipulation of Objects. It is typically useful for any scenario that involves</p>
+<p>Mellowtech Core IO is an IO abstraction layer for working with files that contains data organized as records. The API is defined in RecordFile and SplitRecordFile respectively. A SplitRecordFile is a RecordFile with some added functionality.</p>
+<p>You can create a record file with any of the following properties</p>
 
 <ul>
   
-<li>a need for storing your collections on disc</li>
+<li><b>DISC</b> - This type of record file is backed up by a normal file and all read and writes are directly reflected in the file</li>
   
-<li>sorting large collections of objects that will not fit in memory</li>
+<li><b>MEM</b> - This type of record file uses NIO memory maps for reading and writing records</li>
   
-<li>consistent access to files that contains objects</li>
+<li><b>SPLIT</b> - This type of record file splits the file into two distinct regions of records. All read/writes are directly reflected in the file</li>
   
-<li>fast transformation of objects from and to byte representations (instead of using normal  Java Serialization)</li>
+<li><b>MEM_SPLIT</b> - Same as split files but uses NIO memory maps for reading and writing records</li>
 </ul>
-<p>In our own work we have used this library mainly for developing search engines.</p>
-<p>The library itself was initially created by Martin Svensson and Rickard C&#xf6;ster while working at the Swedish Institue of Computer Science in 2002. Since then it has undergone a lot of changes and enhancements and is now maintained and developed by mellowtech.org.</p>
+<p>Common to all record files is that all has a <i>reseve</i> space in the beginning that can be used for storing additional non-record data. All record files are also backed by a single file and uses a memory mapped bit buffer for keeping track of free/full records. This means that a record file will always have a size overhead close to (num records / 8) bytes. So if you create a RecordFile with a capacity of 1M records it will have a size overhead of roughly 125K bytes. For MEM files this is slightly different since it sets the file size to the largest mapped region. So always expect file sizes to be larger than the actual data you store.</p>
+<p><b>Never assume that the various record files are binary compatible</b></p>
 <div class="section">
-<h2><a name="Download"></a>Download</h2>
-<p>All mellowtech.org APIs can be downloaded from our maven repository <a class="externalLink" href="http://www.mellowtech.org/nexus/content/repositories/snapshots">http://www.mellowtech.org/nexus/content/repositories/snapshots</a></p>
+<h2><a name="Creating_and_Using_RecordFiles"></a>Creating and Using RecordFiles</h2>
+<p>The preferred way of creating files is to use the RecordFileBuilder, then you don&#x2019;t need to worry about which underlying implementation to use. Lets say you want to instantiate a memory mapped RecordFile.</p>
 
 <div class="source">
 <div class="source">
-<pre>&lt;repository&gt;
-   &lt;id&gt;mellowtech-snapshots&lt;/id&gt;
-   &lt;name&gt;Mellowtech Snapshots&lt;/name&gt;
-   &lt;url&gt;http://www.mellowtech.org/nexus/content/repositories/snapshots/&lt;/url&gt;
-&lt;/repository&gt;
+<pre>RecordFileBuilder builder = new RecordFileBuilder();
+builder.blockSize(2048).mem().reserve(100).maxBlocks(1024*1024);
+RecordFile rf = builder.build(&quot;/tmp/myfile.rf&quot;);
 </pre></div></div>
-<p>In your &lt;pom.xml&gt; include the following dependency</p>
+<p>This would create a memory mapped record file that can store 1M of records of size 2048K. To add records you use the insert method</p>
 
 <div class="source">
 <div class="source">
-<pre>&lt;dependency&gt;
-  &lt;groupId&gt;com.mellowtech&lt;/groupId&gt;
-  &lt;artifactId&gt;core&lt;/artifactId&gt;
-  &lt;version&gt;0.7-SNAPSHOT&lt;/version&gt;
-&lt;/dependency&gt;
-</pre></div></div></div>
+<pre>byte[] b = new CBString(&quot;some string&quot;).toBytes().array();
+rf.insert(100000, b);
+rf.insert(512, b);
+</pre></div></div>
+<p>To retrieve your records you use the get method</p>
+
+<div class="source">
+<div class="source">
+<pre>byte[] b = rf.get(100000);
+ByteStorable &lt;String&gt; str = new CBString().fromBytes(b, 0);
+System.out.println(str.get());
+</pre></div></div>
+<p>You can also iterate over your record file. This will iterate over all set records</p>
+
+<div class="source">
+<div class="source">
+<pre>for(Iterator&lt;Record&gt;iter = rf.iterator(); iter.hasNext();){
+  System.out.println(&quot;record: &quot;+iter.next().record);
+}
+</pre></div></div>
+<div class="section">
+<h3><a name="Dynamically_Sized_Records"></a>Dynamically Sized Records</h3>
+<p>In some circumstances you will need a way of allocating records that can grow and shrink in size. That is you might need one record that is 100K in size and another that is only 1K in size. Creating a RecordFile with record sizes to handle your largest record might result in a lot of wasted space (and you might not even know the maximum size to start with). For this you can use the SpannedBlockFile and IteratingSpannedBlockFile.</p>
+<p>The easiest way to create a SpannedBlockFile is to use the RecordFileBuilder</p>
+
+<div class="source">
+<div class="source">
+<pre>builder.span(true).iterate(true)
+</pre></div></div>
+<p>This would create a spanning block file that you can iterate over. You can turn any of the underlying block files (mem, split, disc, memsplit) to spanned one.</p>
+<p><b>Observe</b> that a spanned block file that you can iterate over will use the reserve space to store a bitset so you will not be able to use the reserve space for other purposes</p></div></div>
                   </div>
             </div>
           </div>

@@ -1,0 +1,8 @@
+org.mellowtech.core
+org.mellowtech.core.bytestorable
+org.mellowtech.core.cache
+org.mellowtech.core.collections
+org.mellowtech.core.collections.tree
+org.mellowtech.core.io
+org.mellowtech.core.sort
+org.mellowtech.core.util
