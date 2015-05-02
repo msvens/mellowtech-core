@@ -36,8 +36,7 @@ import java.nio.ByteBuffer;
  *
  * @author Martin Svensson
  */
-@Deprecated
-public abstract class CBAuto <T> extends BStorableImp <T, CBAuto<T>>{
+public abstract class CBAuto <T extends CBAuto<T>> extends BStorableImp <T, T>{
 
   /**
    * subclasses should always call this method
@@ -53,10 +52,10 @@ public abstract class CBAuto <T> extends BStorableImp <T, CBAuto<T>>{
   }
 
   @Override
-  public CBAuto <T> from(ByteBuffer bb) {
+  public T from(ByteBuffer bb) {
     try{
-      Class<? extends CBAuto> clazz = getClass();
-      CBAuto <T> toRet =  clazz.newInstance();
+      Class<T> clazz = (Class<T>) getClass();
+      T toRet =  clazz.newInstance();
       CBUtil.getSize(bb, true);
       short elements = bb.getShort();
       PrimitiveObject po = new PrimitiveObject();
@@ -75,7 +74,7 @@ public abstract class CBAuto <T> extends BStorableImp <T, CBAuto<T>>{
   @Override
   public void to(ByteBuffer bb) {
     CBUtil.putSize(internalSize(), bb, true);
-    Class <? extends CBAuto> clazz = getClass();
+    Class <T> clazz = (Class<T>) getClass();
     //PrimitiveObject po = new PrimitiveObject();
     PrimitiveObject po;
     int pos = bb.position();
@@ -101,7 +100,7 @@ public abstract class CBAuto <T> extends BStorableImp <T, CBAuto<T>>{
   
   private int internalSize() {
     int size = 4; //size + num elements;
-    Class <? extends CBAuto> clazz = getClass();
+    Class <T> clazz = (Class<T>) getClass();
     PrimitiveObject po;
     for(Integer i : AutoBytes.I().getFieldIndexes(clazz)){
       Object toStore = AutoBytes.I().getField(clazz, i, this);
