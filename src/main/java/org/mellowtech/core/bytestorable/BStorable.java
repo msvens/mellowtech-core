@@ -12,8 +12,13 @@ import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
 
 /**
- * @author msvens
+ * Interface that defines base functionality for objects that can be
+ * transformed to and from bytes.
+ * 
+ * @author Martin Svensson
  *
+ * @param <A> type of the wrapped object
+ * @param <B> self type
  */
 public interface BStorable <A, B extends BStorable<A,B>> {
   

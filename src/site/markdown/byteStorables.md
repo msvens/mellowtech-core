@@ -16,12 +16,12 @@ Google's Protobuf protocol. We are looking into how Mellowtech Core can support
 that.
 
 Before we go on you should note that you would typically not have to create your
-own ByteStorable objects since the API comes with a lot of wrappers for common data types
+own BStorable objects since the API comes with a lot of wrappers for common data types
 
 
-##Using Built in ByteStorables
+##Using Built in BStorables
 
-The library comes with a set of built in ByteStorable types to handle most
+The library comes with a set of built in BStorable types to handle most
 situations that you would need when serializing objects. The primitive types are:
 
 * CBBoolean - stores a boolean
@@ -49,14 +49,13 @@ In the first example we simply use the API to serialize an integer and read it b
 ```
   public static void serialize(){
     CBInt firstInt = new CBInt(1);
-    ByteBuffer bb = firstInt.toBytes();
-    CBInt secondInt = new CBInt();
-    secondInt.fromBytes(bb, false);
+    ByteBuffer bb = firstInt.to();
+    CBInt secondInt = firstInt.from(bb);
     System.out.println(firstInt.get()+" "+secondInt.get());
   }
 ```
 
-In the second example (below) we are using the CBMixedList to store a list of primitive ByteStorables.
+In the second example (below) we are using the CBMixedList to store a list of primitive BStorables.
 
 ```
   public static void list(){
@@ -66,11 +65,11 @@ In the second example (below) we are using the CBMixedList to store a list of pr
     list.add(new Long(100));
     list.add(true);
 
-    ByteBuffer bb = list.toBytes();
+    ByteBuffer bb = list.to();
     list.clear();
 
     //don't create a new object
-    list.fromBytes(bb, false);
+    list = list.from(bb);
     Integer first = (Integer) list.get(0);
     String second = (String) list.get(1);
     Long third = (Long) list.get(2);
@@ -79,36 +78,36 @@ In the second example (below) we are using the CBMixedList to store a list of pr
   }
 ```
 
-It is easy to see how you can use ByteStorables as a way of doing deep copies
+It is easy to see how you can use BStorables as a way of doing deep copies
 
 ```
-ByteBuffer bb = byteStorable.toBytes();
+ByteBuffer bb = BStorable.to();
 bb.flip();
-byteStorable.fromBytes(bb, true)
+BStorable.fromBytes(bb)
 ```
 
-This creates a true copy of your object. Since this is a common function it is also directly implemented in ByteStorable as
+This creates a true copy of your object. Since this is a common function it is also directly implemented in BStorable as
 
 ```
-ByteStorable copy = byteStorable.deepCopy();
+BStorable copy = BStorable.deepCopy();
 ```
 
 
-##Creating ByteStorables
+##Creating BStorables
 
-In many situations using the in-built ByteStorables are enough. However, if
+In many situations using the in-built BStorables are enough. However, if
 you need a more complex structure you will have to implement it. Again,
 this is the difference from e.g. java.io.Serializable. It is a little
-bit more work but it typically offers better performance. _ByteStorable_
+bit more work but it typically offers better performance. _BStorable_
 contains a lot of methods to assist the developer. At a minimum you are
 required to implement four methods and the empty constructor in your subclass.
 
-###Subclassing ByteStorable
+###Subclassing BStorable
 
-Lets implement a ByteStorable that contains an integer and a string value
+Lets implement a BStorable that contains an integer and a string value
 
 ```
-public class Container1 extends ByteStorable <Container1> {
+public class Container1 extends BStorable <Container1, Container1> {
 
   private CBInt f1 = new CBInt();
   private CBString f2 = new CBString();
@@ -121,69 +120,59 @@ public class Container1 extends ByteStorable <Container1> {
   }
 
   @Override
-  public ByteStorable <Container1> fromBytes(ByteBuffer bb, boolean doNew) {
-    Container1 toRet = doNew ? new Container1() : this;
-    bb.getInt(); //read past size indicator
-    toRet.f1.fromBytes(bb, false); //no need to create a new object
-    toRet.f2.fromBytes(bb, false); //no need to create a new object
+  public Container1 from(ByteBuffer bb) {
+    Container1 toRet = doNew ? new Container1();
+    CBUtil.getSize(bb, false);
+    toRet.f1 = toRet.f1.from(bb); //no need to create a new object
+    toRet.f2 ) toRet.f1.from(bb); //no need to create a new object
     return toRet;
   }
 
   @Override
-  public void toBytes(ByteBuffer bb) {
-    bb.putInt(byteSize()); //write size
+  public void to(ByteBuffer bb) {
+    CBUtil.putSize(f1.byteSize()+f2.byteSize(), bb, false);
     f1.toBytes(bb);
     f2.toBytes(bb);
   }
 
   @Override
   public int byteSize() {
-    int size = 4; //size indicator
-    size += f1.byteSize();
-    size += f2.byteSize();
-    return size;
+    return CBUtil.byteSize(f1.byteSize()+f2.byteSize(), false);
   }
 
   @Override
   public int byteSize(ByteBuffer bb) {
-    return getSizeFour(bb); //read size indicator without moving pos in bb
+    return CBUtil.peekSize(bb, false);
   }
 }
 ```
 
-A couple of important things to note when you create your own ByteStorables
+A couple of important things to note when you create your own BStorables
 
 1. 	You have to be able to determine the byte size within the first 4 bytes of
 	the serialized object (that is why we include a size indicator
 
 1.	When calculating the byteSize don't forget to include any bytes that
-	a size indicator would occupy (that is why we added 4 in the <byteSize()> method
+	a size indicator would occupy
 
-1.	When reading the byteSize from a ByteBuffer your ByteStorable should
-	not change the position in the ByteBuffer (that why we used the utility
-	function <getSizeFour()>
+1.	When reading the byteSize from a ByteBuffer your BStorable should
+	not change the position in the ByteBuffer (that is why we used the utility
+	function <CBUtil.peekSize>
 
-1.	ByteStorables should implement the empty constructor
+1.	BStorables should implement the empty constructor
 
-1.	The get/set methods are overwritten when your ByteStorable acts as a
-	wrappper for another object (e.g. new CBInt(1).get() returns an Integer)
-
-
-In most situations implementing the above 4 methods are fine. However,
-if you need to fine tune the performance it might make sense to override
-the other from/to byte methods
 
 ###Using CBRecord and AutoRecord
 
 As an alternative to the above pattern where you implement the to/from bytes yourself
 you can use the CBRecord/AutoRecord pattern if you need to a complex object. The only thing to watch
-out for is that it only supports the built-in ByteStorables. The previous ByteStorable would
+out for is that it only supports the built-in BStorables. The previous BStorable would
 be implemented using this pattern in the following way
 
 ```
-public class Container3 extends CBRecord <Container3.Record> {
+public class Container3 extends CBRecord <Container3.Record, Container3> {
 
-  class Record implements AutoRecord {
+  static class Record implements AutoRecord {
 	  @BSField(2) private Integer f1;
 	  @BSField(1) private String f2;
   }
@@ -195,14 +184,14 @@ public class Container3 extends CBRecord <Container3.Record> {
 }
 ```
 
-The idea with the CBRecord/AutoRecord pattern is to keep a clean separation of the wrapping ByteStorable
+The idea with the CBRecord/AutoRecord pattern is to keep a clean separation of the BStorable
 (CBRecord) and the object (AutoRecord) it wraps. In other words the actual data record is a regular
-java object without any notion of ByteStorables. There are a couple of things to be aware of when using this pattern
+java object without any notion of BStorables. There are a couple of things to be aware of when using this pattern
 
 * your wrapping CBRecord has to implement the newT function
 * your wrapping CBRecord has to call the empty constructor of super - if it implements it's own constructors
 
-##Comparing With ByteComparable
+##Comparing With BComparable
 
 The original (and still) main purpose of the Mellowtech Core library
 was to offer functionality to sort and store objects on disc. In order
@@ -218,20 +207,20 @@ million objects that have been serialized this scheme might impact
 performance quite a bit if you constantly have to create objects when
 doing comparisons.
 
-_ByteComparable_ allows do do object comparison on a byte level. All in-built
-ByteStorables (apart from CBMixedList) are also ByteComparables.
+_BComparable_ allows do do object comparison on a byte level. All in-built
+BStorables (except from CBMixedList) are also BComparables.
 
 ```
 public static void compareStrings(){
-  ByteBuffer str1 = new CBString("a string").toBytes();
-	ByteBuffer str2 = new CBString("a string").toBytes();
+  ByteBuffer str1 = new CBString("a string").to();
+	ByteBuffer str2 = new CBString("a string").to();
 	System.out.println(new CBString().byteCompare(0, str1, 0, str2));
 }
 ```
 
 In the above example we compare two string on a byte level that are stored in 2 different ByteBuffers.
 
-A slightly more involved use case of how to use the ByteComparable pattern would be two compare
+A slightly more involved use case of how to use the BComparable pattern would be two compare
 objects that are stored in the same ByteBuffer. An example of this could look something like this
 
 ```
@@ -239,8 +228,8 @@ public static void compareInSameBuffer(){
   CBString str1 = new CBString("a string 1");
   CBString str2 = new CBString("a string");
   ByteBuffer bb = ByteBuffer.wrap(new byte[str1.byteSize()+str2.byteSize()]);
-  str1.toBytes(bb);
-  str2.toBytes(bb);
+  str1.to(bb);
+  str2.to(bb);
   System.out.println(new CBString().byteCompare(0, str1.byteSize(), bb));
 }
 ```
