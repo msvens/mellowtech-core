@@ -30,13 +30,13 @@ public static void parse() throws Exception{
   InputStream is = new GZIPInputStream(new FileInputStream("/tmp/english.1024MB.gz"));
   Scanner s = new Scanner(is);
   s.useDelimiter(p);
-  CBString tmp = new CBString();
+  CBString tmp;
   StorableOutputStream sos = new StorableOutputStream(new FileOutputStream("/tmp/english.1024MB.bs"));
   int i = 0;
   while(s.hasNext()){
     String n = s.next();
     if(n.length() > 1){
-      tmp.set(n);
+      tmp = new CBString(n);
       sos.write(tmp);
       i++;
     }
@@ -53,7 +53,7 @@ and store them in a new file containing CBStrings. Later we will show a way of r
 The final step is to sort the words and stored them in a new file
 
 ```
-public static void sort() throws Exception {
+public static void sSort() throws Exception {
   CoreLog.setLevel(Level.FINER);
   long l = System.currentTimeMillis();
   EDiscBasedSort edb = new EDiscBasedSort(new CBString(), new CBString(), "/tmp");
@@ -89,7 +89,24 @@ public static void parseAndSort() throws Exception {
 As you can see the code is very similar with the difference that we now sort an ScannerInputStream and outputs an OutputStream.
 Doing this way will reduce the need of creating a file of ByteStorables first
 
+###5 Verifying
 
+A simple way to verify the output is to iterate through it is to use a _StorableInputStream_ to read the sorted file and make
+sure no BStorable is smaller than the previous one
+
+```java
+public static void verify() throws Exception {
+    StorableInputStream<String, CBString> sis = new StorableInputStream <>(new FileInputStream("/tmp/english-sorted.bs"), new CBString());
+    CBString prev = sis.next();
+    CBString next = null;
+    while((next = sis.next()) != null){
+      if(prev.compareTo(next) > 0){
+        System.out.println("previous word greater than next "+prev+" "+next);
+      }
+      prev = next;
+    }
+  }
+```
 
 
 

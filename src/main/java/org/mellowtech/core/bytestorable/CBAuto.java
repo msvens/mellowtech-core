@@ -36,33 +36,27 @@ import java.nio.ByteBuffer;
  *
  * @author Martin Svensson
  */
-public abstract class CBAuto <T extends CBAuto<T>> extends BStorableImp <T, T>{
+public abstract class CBAuto <T extends CBAuto<T>> implements BStorable <T, T>{
 
   /**
    * subclasses should always call this method
    */
   public CBAuto(){
-    super(null);
     AutoBytes.I().parseClass(getClass());
   }
-  
-  public CBAuto(T t){
-    super(t);
-    AutoBytes.I().parseClass(getClass());
-  }
+
 
   @Override
   public T from(ByteBuffer bb) {
     try{
-      Class<T> clazz = (Class<T>) getClass();
-      T toRet =  clazz.newInstance();
+      Class clazz = getClass();
+      T toRet =  (T) clazz.newInstance();
       CBUtil.getSize(bb, true);
       short elements = bb.getShort();
       PrimitiveObject po = new PrimitiveObject();
       for(int i = 0; i < elements; i++){
         short index = bb.getShort();
-        po.from(bb);
-        AutoBytes.I().setField(clazz, index, po, toRet);
+        AutoBytes.I().setField(clazz, index, po.from(bb), toRet);
       }
       return toRet;
     }
@@ -74,19 +68,17 @@ public abstract class CBAuto <T extends CBAuto<T>> extends BStorableImp <T, T>{
   @Override
   public void to(ByteBuffer bb) {
     CBUtil.putSize(internalSize(), bb, true);
-    Class <T> clazz = (Class<T>) getClass();
+    Class clazz = getClass();
     //PrimitiveObject po = new PrimitiveObject();
-    PrimitiveObject po;
+    //PrimitiveObject po;
     int pos = bb.position();
     bb.putShort((byte) 0); //num elements;
     int numElems = 0;
     for(Integer i : AutoBytes.I().getFieldIndexes(clazz)){
       Object toStore = AutoBytes.I().getField(clazz, i, this);
-
       if(toStore != null){
         bb.putShort(i.shortValue());
-        po = new PrimitiveObject(toStore);
-        po.to(bb);
+        new PrimitiveObject(toStore).to(bb);
         numElems++;
       }
     }
@@ -101,13 +93,11 @@ public abstract class CBAuto <T extends CBAuto<T>> extends BStorableImp <T, T>{
   private int internalSize() {
     int size = 4; //size + num elements;
     Class <T> clazz = (Class<T>) getClass();
-    PrimitiveObject po;
     for(Integer i : AutoBytes.I().getFieldIndexes(clazz)){
       Object toStore = AutoBytes.I().getField(clazz, i, this);
       if(toStore != null){
         size += 2; //index;
-        po = new PrimitiveObject(toStore);
-        size += po.byteSize();
+        size += new PrimitiveObject(toStore).byteSize();
       }
     }
     return size;
@@ -117,4 +107,7 @@ public abstract class CBAuto <T extends CBAuto<T>> extends BStorableImp <T, T>{
   public int byteSize(ByteBuffer bb) {
     return CBUtil.peekSize(bb, true);
   }
+
+  @Override
+  public T get(){return (T) this;}
 }

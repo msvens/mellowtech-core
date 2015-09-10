@@ -200,9 +200,14 @@ public class CBCharArray extends BStorableImp <char[], CBCharArray> implements B
    * @return true if the Strings are equal
    * @see String#equals(Object)
    */
+  @Override
   public boolean equals(Object o) {
-    if(o instanceof CBCharArray)
-      return compareTo((CBCharArray)o) == 0 ? true : false;
+    System.out.println("executing equals");
+    if(o instanceof CBCharArray) {
+      int ret =  compareTo((CBCharArray) o);
+      System.out.println(this+" "+(CBCharArray)o +" "+ ret);
+      return ret == 0;
+    }
     return false;
   }
 

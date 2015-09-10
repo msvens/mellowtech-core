@@ -46,7 +46,7 @@ In addition to the primitive types you also have the following built ins
 
 In the first example we simply use the API to serialize an integer and read it back again.
 
-```
+```java
   public static void serialize(){
     CBInt firstInt = new CBInt(1);
     ByteBuffer bb = firstInt.to();
@@ -57,8 +57,8 @@ In the first example we simply use the API to serialize an integer and read it b
 
 In the second example (below) we are using the CBMixedList to store a list of primitive BStorables.
 
-```
-  public static void list(){
+```java
+ public static void list(){
     CBMixedList list = new CBMixedList();
     list.add(1);
     list.add("a string");
@@ -69,18 +69,19 @@ In the second example (below) we are using the CBMixedList to store a list of pr
     list.clear();
 
     //don't create a new object
+    bb.flip();
     list = list.from(bb);
     Integer first = (Integer) list.get(0);
     String second = (String) list.get(1);
     Long third = (Long) list.get(2);
-    Boolean b = (Boolean) list.get(3);
-
+    Boolean forth = (Boolean) list.get(3);
+    System.out.println(first+" "+second+" "+third+" "+forth);
   }
 ```
 
 It is easy to see how you can use BStorables as a way of doing deep copies
 
-```
+```java
 ByteBuffer bb = BStorable.to();
 bb.flip();
 BStorable.fromBytes(bb)
@@ -106,7 +107,7 @@ required to implement four methods and the empty constructor in your subclass.
 
 Lets implement a BStorable that contains an integer and a string value
 
-```
+```java
 public class Container1 extends BStorable <Container1, Container1> {
 
   private CBInt f1 = new CBInt();
@@ -147,6 +148,17 @@ public class Container1 extends BStorable <Container1, Container1> {
 }
 ```
 
+Later you can simply use Container1 as any of the predefined _ByteStorables_
+
+```java
+  public static void testContainer1(){
+    Container1 c1 = new Container1(10,"ten");
+    Container1 c2 = c1.deepCopy();
+    System.out.println("testContainer1: "+c2.f1+" "+c2.f2);
+  }
+```
+
+
 A couple of important things to note when you create your own BStorables
 
 1. 	You have to be able to determine the byte size within the first 4 bytes of
@@ -161,26 +173,50 @@ A couple of important things to note when you create your own BStorables
 
 1.	BStorables should implement the empty constructor
 
+###Using CBAuto
+
+As an alternative to the above pattern where you implment the to/from bytes yourself you can use a CBAuto or CBRecord
+to simplify things. The first, CBAuto is the simplest but it will not allow you to separate the BStorable from the 
+data you want to encapsulate. For both CBAuto and CBRecord the only caveat is that they will only support built in
+types (string, int, double, etc.)
+
+```java
+public class Container2 extends CBAuto <Container2> {
+
+  @BSField(2) private Integer f1;
+  @BSField(1) private String f2;
+
+  public Container2(){
+    super();
+  }
+
+  public Container2(Integer field1, String field2){
+    this();
+    this.f1 = field1;
+    this.f2 = field2;
+  } 
+}
+```
+
 
 ###Using CBRecord and AutoRecord
 
-As an alternative to the above pattern where you implement the to/from bytes yourself
-you can use the CBRecord/AutoRecord pattern if you need to a complex object. The only thing to watch
-out for is that it only supports the built-in BStorables. The previous BStorable would
-be implemented using this pattern in the following way
+So similar to CBAuto the CBRecord simplifies things for you and it has the added benefit of separating your model (AutoRecord)
+from the BStorable implementation
 
-```
+```java
 public class Container3 extends CBRecord <Container3.Record, Container3> {
 
   static class Record implements AutoRecord {
-	  @BSField(2) private Integer f1;
-	  @BSField(1) private String f2;
+	  @BSField(2) public Integer f1;
+	  @BSField(1) public String f2;
   }
 
   @Override
-  protected Record newT() {
+  protected Record newA() {
 	return new Record();
   }
+
 }
 ```
 
@@ -198,7 +234,7 @@ was to offer functionality to sort and store objects on disc. In order
 to do this we have to be able to compare objects. In many situations
 the following would be sufficient
 
-```
+```java
 new CBString("string").get().equals("string")
 ```
 
@@ -210,7 +246,7 @@ doing comparisons.
 _BComparable_ allows do do object comparison on a byte level. All in-built
 BStorables (except from CBMixedList) are also BComparables.
 
-```
+```java
 public static void compareStrings(){
   ByteBuffer str1 = new CBString("a string").to();
 	ByteBuffer str2 = new CBString("a string").to();
@@ -223,7 +259,7 @@ In the above example we compare two string on a byte level that are stored in 2 
 A slightly more involved use case of how to use the BComparable pattern would be two compare
 objects that are stored in the same ByteBuffer. An example of this could look something like this
 
-```
+```java
 public static void compareInSameBuffer(){
   CBString str1 = new CBString("a string 1");
   CBString str2 = new CBString("a string");

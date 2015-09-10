@@ -58,8 +58,8 @@ public abstract class BStorableTemplate <A, B extends BStorable<A,B>> {
   @Test
   public void testDeepCopy() throws Exception {
     B b = newB(0);
-    b.deepCopy();
-    //Assert.assertEquals(values[0], b1.get());
+    B b1 = b.deepCopy();
+    Assert.assertNotNull(b1.get());
   }
   
   @Test
@@ -136,7 +136,7 @@ public abstract class BStorableTemplate <A, B extends BStorable<A,B>> {
     b.to(channel);
   }
   
-  private B newB(int index) throws Exception{
+  public B newB(int index) throws Exception{
     return type.newInstance().create(values[index]);
   }
   

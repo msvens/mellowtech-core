@@ -116,4 +116,6 @@ public abstract class CBRecord <A extends AutoRecord,
   public int byteSize(ByteBuffer bb) {
     return CBUtil.peekSize(bb, true);
   }
+
+
 }

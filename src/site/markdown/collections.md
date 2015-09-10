@@ -46,22 +46,34 @@ If you prefer to work with normal objects (i.e. not ByteStorables) the *org.mell
 It extends *java.util.Map* and adds a couple of methods for closing/saving a map to disc as well as 2 entry iterators.
 
 DiscMap comes with 2 concrete implementations (DiscBasedMap and DiscBasedHashMap) that use BTree and ExtendibleHashTable
-respectively. DiscMaps use Mappings to convert objects to and from ByteStorables so when you use the DiscMap API you need to
-make sure that there is a corresponding Mapping for it. mellowtech.core comes with a default set of Mappings that can be
-extended with user defined mappings
+respectively.
 
-```
-BCMapping m = MappingFactory.createMapping(String.class);
-DiscMap map = new DiscBasedMap(m,m,"someFileName",new BTreeBuilder().valuesInMemory(true));
-map.put("firstKey", "firstValue");
+```java
+//sorted disc based map that memory maps both index and key/values
+DiscMap <String, Integer> db = new DiscBasedMap <> (CBString.class, CBInt.class, "/tmp/discbasedmap", false, true);
+
+//hash based map that stores blob values with index and blob pointer in memory
+DiscMap <String, String> db1 = new DiscBasedHashMap <> (CBString.class, CBString.class, "tmp/hashbasedmap", true, false);
 ```
 
-Would create the same underlying structure as the previous example but expose it is as an ordinary map
+If you prefer to work with the underlying structure directly you can do this as well using the tree and hash builders
+
+```java
+BTreeBuilder builder = new BTreeBuilder();
+BTree<String, CBString, Integer, CBInt> db;
+db = builder.indexInMemory(true).valuesInMemory(true).build(CBString.class, CBInt.class, "/tmp/treemap");
+
+EHTableBuilder ehbuilder = new EHTableBuilder();
+BMap<String, CBString, String, CBString> db1;
+db1 = ehbuilder.inMemory(true).blobValues(true).build(CBString.class, CBString.class,"/tmp/hashmap");
+```
+
+Would create the same underlying structure as the DiscMaps above
 
 ##Example
 In this example we will build on the data we sorted in the [sorting](sorting.html) section. The idea is to create a
-BTree that holds all unique words and the number of times the occur. Given large enough data it is a lot faster to
-sort it first and then insert it than continuously update a counter value of a key in a tree.
+BTree that holds all unique words and the number of times is occurs. _Given large enough data it is a lot faster to
+sort it first and then insert it than continuously update a counter value of a key in a tree_.
 
 The first thing we need to implement is an iterator that emits CBString,CBInt pairs based on a sorted input file.
 
@@ -146,6 +158,8 @@ Iterator <KeyValue<CBString,CBInt>> iter = tree.iterator();
 while(iter.hasNext()){
   KeyValue <CBString, CBInt> kv = iter.next();
   System.out.println(kv.getKey()+": "+kv.getValue());
+  
+ 
 }
 ```
 

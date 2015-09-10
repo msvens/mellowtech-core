@@ -123,7 +123,7 @@ public abstract class BComparableTemplate <A, B extends BComparable<A,B>>
   
   
   
-  private B newB(int index) throws Exception{
+  public B newB(int index) throws Exception{
     return type.newInstance().create(values[index]);
   }
   

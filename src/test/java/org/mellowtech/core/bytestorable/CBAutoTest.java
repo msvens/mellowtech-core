@@ -27,42 +27,32 @@
 
 package org.mellowtech.core.bytestorable;
 
-import com.sun.org.apache.bcel.internal.generic.ARETURN;
-import org.mellowtech.core.bytestorable.AutoRecord;
-import org.mellowtech.core.bytestorable.BSField;
-import org.mellowtech.core.bytestorable.CBRecord;
+
+import junit.framework.Assert;
+import org.junit.Before;
+import org.junit.Test;
+
 
 /**
  * Date: 2013-04-17
- * Time: 19:01
+ * Time: 17:59
  *
  * @author Martin Svensson
  */
-public class Record extends  CBRecord <Record.ARecord, Record>{
+public class CBAutoTest extends BStorableTemplate <CBAutoRecord, CBAutoRecord>{
   
-  public class ARecord implements AutoRecord {    
-    @BSField(1) public Integer f1;
+  @Before public void init(){
+    type = CBAutoRecord.class;
 
-    @Override
-    public boolean equals(Object obj) {
-      if(!(obj instanceof ARecord)) return false;
-      ARecord o = (ARecord) obj;
-      if(o.f1 == null && f1 == null) return true;
-      if(o.f1 == null || f1 == null) return false;
-      return o.f1.equals(f1);
-    }
+    CBAutoRecord cba1 = new CBAutoRecord(); cba1.f1 = 2;
+    CBAutoRecord cba2 = new CBAutoRecord(); cba2.f1 = 3;
+
+    
+    values = new CBAutoRecord[]{cba1,cba2};
+    
+    //size: totSize + numElements (4) + index (2) + primitive value
+    sizes = new int[]{14,14};
   }
+
   
-  public Record(){
-    super();
-  }
-
-  public Record(Record.ARecord record){
-    super(record);
-  }
-
-  @Override
-  protected ARecord newA() {
-    return new ARecord();
-  }
 }

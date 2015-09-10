@@ -27,42 +27,32 @@
 
 package org.mellowtech.core.bytestorable;
 
-import com.sun.org.apache.bcel.internal.generic.ARETURN;
-import org.mellowtech.core.bytestorable.AutoRecord;
-import org.mellowtech.core.bytestorable.BSField;
-import org.mellowtech.core.bytestorable.CBRecord;
-
 /**
  * Date: 2013-04-17
  * Time: 19:01
  *
  * @author Martin Svensson
  */
-public class Record extends  CBRecord <Record.ARecord, Record>{
-  
-  public class ARecord implements AutoRecord {    
-    @BSField(1) public Integer f1;
+public class CBAutoRecord extends  CBAuto <CBAutoRecord>{
 
-    @Override
-    public boolean equals(Object obj) {
-      if(!(obj instanceof ARecord)) return false;
-      ARecord o = (ARecord) obj;
-      if(o.f1 == null && f1 == null) return true;
-      if(o.f1 == null || f1 == null) return false;
-      return o.f1.equals(f1);
-    }
-  }
-  
-  public Record(){
+  @BSField(1) public Integer f1;
+
+
+  public CBAutoRecord(){
     super();
   }
 
-  public Record(Record.ARecord record){
-    super(record);
+  public CBAutoRecord(CBAutoRecord record){
+    super();
+    f1 = record.f1;
   }
 
   @Override
-  protected ARecord newA() {
-    return new ARecord();
+  public boolean equals(Object obj) {
+    if(obj == null || !(obj instanceof CBAutoRecord)) return false;
+    CBAutoRecord o = (CBAutoRecord) obj;
+    if(o.f1 == null && this.f1 == null) return true;
+    if(o.f1 == null || this.f1 == null) return false;
+    return o.f1.equals(this.f1);
   }
 }
