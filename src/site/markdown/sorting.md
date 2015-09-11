@@ -54,10 +54,9 @@ The final step is to sort the words and stored them in a new file
 
 ```java
 public static void sSort() throws Exception {
-  CoreLog.setLevel(Level.FINER);
   long l = System.currentTimeMillis();
-  EDiscBasedSort edb = new EDiscBasedSort(new CBString(), new CBString(), "/tmp");
-  edb.sort("/tmp/english.1024MB.bs", "/tmp/english-sorted.bs", 1024*1024*80);
+  EDiscBasedSort<String,CBString> edb = new EDiscBasedSort <>(new CBString(), "/tmp");
+  edb.sort("/tmp/english.1024MB.bs", "/tmp/english-sorted.bs", 1024*1024*160);
   System.out.println("esort took: "+ (System.currentTimeMillis() - l) + "ms");
 }
 ```
@@ -80,8 +79,8 @@ public static void parseAndSort() throws Exception {
   Scanner s = new Scanner(is);
   s.useDelimiter(p);
   BufferedOutputStream os = new BufferedOutputStream(new FileOutputStream("/tmp/english-sorted-1.bs"),1024*1024);
-  EDiscBasedSort edb = new EDiscBasedSort(new CBString(), new CBString(), "/tmp");
-  edb.sort(new ScannerInputStream(s,1), os, 1024*1024*80);
+  EDiscBasedSort <String, CBString> edb = new EDiscBasedSort <>(new CBString(), "/tmp");
+  edb.sort(new ScannerInputStream(s,1), os, 1024*1024*160);
   os.close();
 }
 ```
