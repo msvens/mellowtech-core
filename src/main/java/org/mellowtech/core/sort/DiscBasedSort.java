@@ -43,6 +43,7 @@ import org.mellowtech.core.bytestorable.BComparable;
 import org.mellowtech.core.bytestorable.CBUtil;
 import org.mellowtech.core.util.ArrayUtils;
 import org.mellowtech.core.util.Platform;
+import sun.jvm.hotspot.oops.ExceptionTableElement;
 
 /**
  * DiscBased sort sorts large amounts of data by combining in-memory sorting
@@ -93,7 +94,7 @@ public class DiscBasedSort <A, B extends BComparable<A,B>> {
    * @param tempDir
    *          temporary directory for sort runs
    */
-  public DiscBasedSort(B template, String tempDir) {
+  public DiscBasedSort(Class<B> template, String tempDir) {
     this(template, 0, tempDir);
   }
 
@@ -108,8 +109,10 @@ public class DiscBasedSort <A, B extends BComparable<A,B>> {
    * @param tempDir
    *          temporary directory for sort runs
    */
-  public DiscBasedSort(B template, int complevel, String tempDir) {
-    this.template = template;
+  public DiscBasedSort(Class<B> template, int complevel, String tempDir) {
+    try {
+      this.template = template.newInstance();
+    } catch(Exception e){throw new Error("could not create template instance");}
     this.complevel = complevel;
     this.tempDir = tempDir;
     try {

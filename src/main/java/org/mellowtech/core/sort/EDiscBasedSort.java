@@ -145,7 +145,7 @@ public class EDiscBasedSort <A, B extends BComparable<A,B>> {
    * @param tempDir
    *          temporary directory for sort runs
    */
-  public EDiscBasedSort(B template, String tempDir) {
+  public EDiscBasedSort(Class<B> template, String tempDir) {
     this(template, 0, tempDir);
   }
 
@@ -161,11 +161,14 @@ public class EDiscBasedSort <A, B extends BComparable<A,B>> {
    * @param tempDir
    *          temporary directory for sort runs
    */
-  public EDiscBasedSort(B template, int complevel, String tempDir) {
-    this.template = template;
+  public EDiscBasedSort(Class<B> template, int complevel, String tempDir) {
+    try {
+      this.template = template.newInstance();
+    } catch(Exception e){throw new Error("could not create template instance");}
     this.complevel = complevel;
     this.tempDir = tempDir;
     try {
+
       File file = new File(tempDir);
       if (!file.isDirectory())
         throw new Exception("");
@@ -173,6 +176,7 @@ public class EDiscBasedSort <A, B extends BComparable<A,B>> {
     catch (Exception e) {
       CoreLog.L().info("could not open temp dir, using default tempdir");
       tempDir = Platform.getTempDir();
+
     }
   }
   
