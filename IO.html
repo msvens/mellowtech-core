@@ -39,7 +39,7 @@
                 
                     
                   <li id="publishDate">Last Published: 2015-09-11</li>
-                  <li class="divider">|</li> <li id="projectVersion">Version: 3.0</li>
+                  <li class="divider">|</li> <li id="projectVersion">Version: 3.0.1</li>
                       
                 
                     
@@ -137,7 +137,7 @@
   
 <li><b>MEM_SPLIT</b> - Same as split files but uses NIO memory maps for reading and writing records</li>
 </ul>
-<p>Common to all record files is that all has a <i>reseve</i> space in the beginning that can be used for storing additional non-record data. All record files are also backed by a single file and uses a memory mapped bit buffer for keeping track of free/full records. This means that a record file will always have a size overhead close to (num records / 8) bytes. So if you create a RecordFile with a capacity of 1M records it will have a size overhead of roughly 125K bytes. For MEM files this is slightly different since it sets the file size to the largest mapped region. So always expect file sizes to be larger than the actual data you store.</p>
+<p>Common to all record files is that all have a <i>reseve</i> space in the beginning that can be used for storing additional non-record data. All record files are also backed by a single file and uses a memory mapped bit buffer for keeping track of free/full records. This means that a record file will always have a size overhead close to (num records / 8) bytes. So if you create a RecordFile with a capacity of 1M records it will have a size overhead of roughly 125K bytes. For MEM files this is slightly different since it sets the file size to the largest mapped region. So always expect file sizes to be larger than the actual data you store.</p>
 <p><b>Never assume that the various record files are binary compatible</b></p>
 <div class="section">
 <h2><a name="Creating_and_Using_RecordFiles"></a>Creating and Using RecordFiles</h2>
@@ -146,36 +146,40 @@
 <div class="source">
 <div class="source">
 <pre>RecordFileBuilder builder = new RecordFileBuilder();
-builder.blockSize(2048).mem().reserve(100).maxBlocks(1024*1024);
+builder.blockSize(2048).mem().reserve(0).maxBlocks(1024*1024);
 RecordFile rf = builder.build(&quot;/tmp/myfile.rf&quot;);
+System.out.println(&quot;free blocks: &quot;+rf.getFreeBlocks());
 </pre></div></div>
 <p>This would create a memory mapped record file that can store 1M of records of size 2048K. To add records you use the insert method</p>
 
 <div class="source">
 <div class="source">
-<pre>byte[] b = new CBString(&quot;some string&quot;).toBytes().array();
+<pre>byte[] b = new CBString(&quot;first string&quot;).to().array();
+byte[] b1 = new CBString(&quot;second string&quot;).to().array();
 rf.insert(100000, b);
-rf.insert(512, b);
+rf.insert(512, b1);
 </pre></div></div>
 <p>To retrieve your records you use the get method</p>
 
 <div class="source">
 <div class="source">
-<pre>byte[] b = rf.get(100000);
-ByteStorable &lt;String&gt; str = new CBString().fromBytes(b, 0);
+<pre>b = rf.get(100000);
+CBString str = new CBString().from(b, 0);
 System.out.println(str.get());
 </pre></div></div>
 <p>You can also iterate over your record file. This will iterate over all set records</p>
 
 <div class="source">
 <div class="source">
-<pre>for(Iterator&lt;Record&gt;iter = rf.iterator(); iter.hasNext();){
-  System.out.println(&quot;record: &quot;+iter.next().record);
+<pre>CBString tmp = new CBString();
+for(Iterator&lt;Record&gt;iter = rf.iterator(); iter.hasNext();){
+  Record r = iter.next();
+  System.out.println(&quot;record: &quot;+r.record+&quot; &quot;+tmp.from(r.data,0));
 }
 </pre></div></div>
 <div class="section">
 <h3><a name="Dynamically_Sized_Records"></a>Dynamically Sized Records</h3>
-<p>In some circumstances you will need a way of allocating records that can grow and shrink in size. That is you might need one record that is 100K in size and another that is only 1K in size. Creating a RecordFile with record sizes to handle your largest record might result in a lot of wasted space (and you might not even know the maximum size to start with). For this you can use the SpannedBlockFile and IteratingSpannedBlockFile.</p>
+<p>In some circumstances you will need a way of allocating records that can grow and shrink in size. That is, you might need one record that is 100K in size and another that is only 1K in size. Creating a RecordFile with record sizes to handle your largest record might result in a lot of wasted space (and you might not even know the maximum size to start with). For this you can use the SpannedBlockFile and IteratingSpannedBlockFile.</p>
 <p>The easiest way to create a SpannedBlockFile is to use the RecordFileBuilder</p>
 
 <div class="source">

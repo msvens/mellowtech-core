@@ -39,7 +39,7 @@
                 
                     
                   <li id="publishDate">Last Published: 2015-09-11</li>
-                  <li class="divider">|</li> <li id="projectVersion">Version: 3.0</li>
+                  <li class="divider">|</li> <li id="projectVersion">Version: 3.0.1</li>
                       
                 
                     
@@ -169,10 +169,9 @@
 <div class="source">
 <div class="source">
 <pre>public static void sSort() throws Exception {
-  CoreLog.setLevel(Level.FINER);
   long l = System.currentTimeMillis();
-  EDiscBasedSort edb = new EDiscBasedSort(new CBString(), new CBString(), &quot;/tmp&quot;);
-  edb.sort(&quot;/tmp/english.1024MB.bs&quot;, &quot;/tmp/english-sorted.bs&quot;, 1024*1024*80);
+  EDiscBasedSort&lt;String,CBString&gt; edb = new EDiscBasedSort &lt;&gt;(new CBString(), &quot;/tmp&quot;);
+  edb.sort(&quot;/tmp/english.1024MB.bs&quot;, &quot;/tmp/english-sorted.bs&quot;, 1024*1024*160);
   System.out.println(&quot;esort took: &quot;+ (System.currentTimeMillis() - l) + &quot;ms&quot;);
 }
 </pre></div></div>
@@ -189,8 +188,8 @@
   Scanner s = new Scanner(is);
   s.useDelimiter(p);
   BufferedOutputStream os = new BufferedOutputStream(new FileOutputStream(&quot;/tmp/english-sorted-1.bs&quot;),1024*1024);
-  EDiscBasedSort edb = new EDiscBasedSort(new CBString(), new CBString(), &quot;/tmp&quot;);
-  edb.sort(new ScannerInputStream(s,1), os, 1024*1024*80);
+  EDiscBasedSort &lt;String, CBString&gt; edb = new EDiscBasedSort &lt;&gt;(new CBString(), &quot;/tmp&quot;);
+  edb.sort(new ScannerInputStream(s,1), os, 1024*1024*160);
   os.close();
 }
 </pre></div></div>
