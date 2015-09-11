@@ -57,7 +57,8 @@ public class PrimitiveObject <T> extends BStorableImp <T, PrimitiveObject<T>> {
     CBUtil.getSize(bb, true);
     
     PrimitiveType prim = PrimitiveType.fromOrdinal(bb.get());
-    BStorable <T,?> temp = PrimitiveType.fromType(prim);
+    @SuppressWarnings("unchecked")
+    BStorable <T,?> temp = (BStorable <T,?>) PrimitiveType.fromType(prim);
     if(bb.get() != 1){
       toRet = new PrimitiveObject <> ();
     } else {
@@ -95,8 +96,9 @@ public class PrimitiveObject <T> extends BStorableImp <T, PrimitiveObject<T>> {
     if(get() == null) return 2;
     return 2 + asStorable().byteSize();
   }
-  
+
+  @SuppressWarnings("unchecked")
   private BStorable <T,?> asStorable(){
-    return PrimitiveType.fromType(pt, value);
+    return (BStorable<T,?>) PrimitiveType.fromType(pt, value);
   }
 }

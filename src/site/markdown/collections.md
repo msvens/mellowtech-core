@@ -30,7 +30,7 @@ The MemMappedBPTreeImp is suitable when you
 
 The simplest way of creating a BTree is to use *org.mellowtech.core.collections.tree.BTreeBuilder*
 
-```
+```java
 BTree bt = new BTreeBuilder().valuesInMemory(true).build("someFileName",new CBString(), new CBString())
 ```
 
@@ -77,7 +77,7 @@ sort it first and then insert it than continuously update a counter value of a k
 
 The first thing we need to implement is an iterator that emits CBString,CBInt pairs based on a sorted input file.
 
-```
+```java
   static class WordIter implements Iterator<KeyValue<CBString, CBInt>> {
 
     StorableInputStream<CBString> sis;
@@ -140,7 +140,7 @@ relies on a sorted input file.
 
 Once we have our iterator in place it is simple enough to generate our tree
 
-```
+```java
 BTreeBuilder builder = new BTreeBuilder();
 BTree <CBString, CBInt> tree = builder.indexInMemory(true).build(new CBString(), new CBInt(), "/some/path/to/tree");
 StorableInputStream <CBString> sis = new StorableInputStream <>(new FileInputStream("/tmp/english-sorted.bs"), new CBString());
@@ -151,7 +151,7 @@ tree.close();
 
 To make sure that everything works as expected we could for instance iterate over the tree and print the results
 
-```
+```java
 BTreeBuilder builder = new BTreeBuilder();
 BTree <CBString, CBInt> tree = builder.indexInMemory(true).build(new CBString(), new CBInt(), "/some/path/to/tree");
 Iterator <KeyValue<CBString,CBInt>> iter = tree.iterator();

@@ -24,7 +24,7 @@ A nicely prepared download can be found at [pizzachili](http://pizzachili.dcc.uc
 ###2 Parse your Data
 The next step is to transform the downloaded text file to a file of ByteStorables (CBStrings in this case).
 
-```
+```java
 public static void parse() throws Exception{
   Pattern p = Pattern.compile("[\\s|\\p{Punct}]+");
   InputStream is = new GZIPInputStream(new FileInputStream("/tmp/english.1024MB.gz"));
@@ -52,7 +52,7 @@ and store them in a new file containing CBStrings. Later we will show a way of r
 ###3 Sort Data
 The final step is to sort the words and stored them in a new file
 
-```
+```java
 public static void sSort() throws Exception {
   CoreLog.setLevel(Level.FINER);
   long l = System.currentTimeMillis();
@@ -73,7 +73,7 @@ In many cases it does not make sense to store an intermediate file (Step 2 above
 This can be done in many different ways. The core library contains a special InputStream that takes as input a Scanner and
 emits ByteStorables. So if we wanted to combine step 2 and 3 above we could do the following:
 
-```
+```java
 public static void parseAndSort() throws Exception {
   Pattern p = Pattern.compile("[\\s|\\p{Punct}]+");
   InputStream is = new GZIPInputStream(new FileInputStream("/tmp/english.1024MB.gz"));

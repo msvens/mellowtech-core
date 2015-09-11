@@ -42,78 +42,78 @@ public enum PrimitiveType {
   CharObject, BooleanObject, ByteArrayObject, DateObject,
   ListObject, MapObject, SortedMapObject, BitSetObject, SetObject;
 
-  public static final <A,B extends BStorable<A,B>> BStorable <A,B> fromType(PrimitiveType pt){
+  public static final BStorable fromType(PrimitiveType pt){
     switch(pt){
       case StringObject:
-        return (BStorable <A,B>) new CBString();
+        return new CBString();
       case ByteObject:
-        return (BStorable <A,B>) new CBByte();
+        return new CBByte();
       case ShortObject:
-        return (BStorable <A,B>) new CBShort();
+        return new CBShort();
       case IntObject:
-        return (BStorable <A,B>) new CBInt();
+        return new CBInt();
       case LongObject:
-        return (BStorable <A,B>) new CBLong();
+        return new CBLong();
       case FloatObject:
-        return (BStorable <A,B>) new CBFloat();
+        return new CBFloat();
       case DoubleObject:
-        return (BStorable <A,B>) new CBDouble();
+        return new CBDouble();
       case CharObject:
-        return (BStorable <A,B>) new CBChar();
+        return new CBChar();
       case BooleanObject:
-        return (BStorable <A,B>) new CBBoolean();
+        return new CBBoolean();
       case DateObject:
-        return (BStorable <A,B>) new CBDate();
+        return new CBDate();
       case ByteArrayObject:
-        return (BStorable <A,B>) new CBByteArray();
+        return new CBByteArray();
       case ListObject:
-        return (BStorable <A,B>) new CBList <> ();
+        return new CBList <> ();
       case MapObject:
-        return (BStorable <A,B>) new CBMap<>();
+        return new CBMap<>();
       case SortedMapObject:
-        return (BStorable <A,B>) new CBSortedMap<>();
+        return new CBSortedMap<>();
       case BitSetObject:
-        return (BStorable <A,B>) new CBBitSet();
+        return new CBBitSet();
       case SetObject:
-        return (BStorable <A,B>) new CBSet <>();
+        return new CBSet <>();
     }
     return null;
   }
   
-  public static final <A,B extends BStorable<A,B>> BStorable <A,B> fromType(PrimitiveType pt, Object o){
+  public static final BStorable fromType(PrimitiveType pt, Object o){
     switch(pt){
       case StringObject:
-        return (BStorable <A,B>) new CBString((String)o);
+        return new CBString((String)o);
       case ByteObject:
-        return (BStorable <A,B>) new CBByte((Byte)o);
+        return new CBByte((Byte)o);
       case ShortObject:
-        return (BStorable <A,B>) new CBShort((Short)o);
+        return new CBShort((Short)o);
       case IntObject:
-        return (BStorable <A,B>) new CBInt((Integer)o);
+        return new CBInt((Integer)o);
       case LongObject:
-        return (BStorable <A,B>) new CBLong((Long)o);
+        return new CBLong((Long)o);
       case FloatObject:
-        return (BStorable <A,B>) new CBFloat((Float)o);
+        return new CBFloat((Float)o);
       case DoubleObject:
-        return (BStorable <A,B>) new CBDouble((Double)o);
+        return new CBDouble((Double)o);
       case CharObject:
-        return (BStorable <A,B>) new CBChar((char)o);
+        return new CBChar((char)o);
       case BooleanObject:
-        return (BStorable <A,B>) new CBBoolean((Boolean)o);
+        return new CBBoolean((Boolean)o);
       case DateObject:
-        return (BStorable <A,B>) new CBDate((Date)o);
+        return new CBDate((Date)o);
       case ByteArrayObject:
-        return (BStorable <A,B>) new CBByteArray((byte[])o);
+        return new CBByteArray((byte[])o);
       case ListObject:
-        return (BStorable <A,B>) new CBList <> ((List)o);
+        return new CBList <> ((List)o);
       case MapObject:
-        return (BStorable <A,B>) new CBMap<>();
+        return new CBMap<>();
       case SortedMapObject:
-        return (BStorable <A,B>) new CBSortedMap<>();
+        return new CBSortedMap<>();
       case BitSetObject:
-        return (BStorable <A,B>) new CBBitSet((BitSet)o);
+        return new CBBitSet((BitSet)o);
       case SetObject:
-        return (BStorable <A,B>) new CBSet <>();
+        return new CBSet <>();
     }
     return null;
   }

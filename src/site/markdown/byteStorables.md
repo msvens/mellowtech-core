@@ -89,7 +89,7 @@ BStorable.fromBytes(bb)
 
 This creates a true copy of your object. Since this is a common function it is also directly implemented in BStorable as
 
-```
+```java
 BStorable copy = BStorable.deepCopy();
 ```
 
