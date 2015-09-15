@@ -99,7 +99,7 @@ public class DiscBasedSortTest {
   }
 
   @Test public void testQuickSort() throws Exception{
-    DiscBasedSort <String, CBString> edb = new DiscBasedSort <> (new CBString(), 0, Platform.getTempDir()+"sort");
+    DiscBasedSort <String, CBString> edb = new DiscBasedSort <> (CBString.class, 0, Platform.getTempDir()+"sort");
     //stringBuffer.flip();
     ByteArrayOutputStream bos = new ByteArrayOutputStream();
     ByteArrayInputStream bis = new ByteArrayInputStream(stringBuffer.array());

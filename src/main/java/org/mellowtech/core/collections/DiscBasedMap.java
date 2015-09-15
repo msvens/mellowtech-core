@@ -349,6 +349,12 @@ public class DiscBasedMap <A,B extends BComparable<A,B>,
 
   @Override
   public A lastKey() {
+    if(this.isEmpty()) return null;
+    try{
+      return btree.getKey(btree.size()-1).get();
+    } catch(IOException e){
+      CoreLog.L().log(Level.WARNING, "", e);
+    }
     return null;
   }
 

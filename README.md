@@ -27,15 +27,7 @@ Go to the detailed descriptions for usage instructions
 
 ##Download
 
-All mellowtech.org APIs can be downloaded from our [maven repository](http://www.mellowtech.org/nexus)
-
-```
-<repository>
-   <id>mellowtech-snapshots</id>
-   <name>Mellowtech Snapshots</name>
-   <url>http://www.mellowtech.org/nexus/content/repositories/snapshots/</url>
-</repository>
-```
+The core mellowtech.org API can be downloaded from the central maven repository
 
 
 In your <pom.xml> include the following dependency
@@ -45,6 +37,6 @@ In your <pom.xml> include the following dependency
 <dependency>
   <groupId>com.mellowtech</groupId>
   <artifactId>core</artifactId>
-  <version>2.0.2-SNAPSHOT</version>
+  <version>3.0.2</version>
 </dependency>
 ```

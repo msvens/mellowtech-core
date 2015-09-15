@@ -43,7 +43,7 @@ import org.mellowtech.core.bytestorable.BComparable;
 import org.mellowtech.core.bytestorable.CBUtil;
 import org.mellowtech.core.util.ArrayUtils;
 import org.mellowtech.core.util.Platform;
-import sun.jvm.hotspot.oops.ExceptionTableElement;
+//import sun.jvm.hotspot.oops.ExceptionTableElement;
 
 /**
  * DiscBased sort sorts large amounts of data by combining in-memory sorting

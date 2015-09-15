@@ -65,6 +65,8 @@ public class DiscBasedMapTest {
   public void doTest() throws Exception {
     this.insert();
     this.testContains();
+    this.testFirstKey();
+    this.testLastKey();
     this.testIterator();
     this.testValues();
     this.testReopen();
@@ -101,6 +103,14 @@ public class DiscBasedMapTest {
       boolean contains = dbMap.containsKey(str);
       Assert.assertTrue(contains);
     }
+  }
+
+  private void testFirstKey() {
+    Assert.assertEquals(inMemoryMap.firstKey(), dbMap.firstKey());
+  }
+
+  private void testLastKey() {
+    Assert.assertEquals(inMemoryMap.lastKey(), dbMap.lastKey());
   }
 
   private void testValues() {

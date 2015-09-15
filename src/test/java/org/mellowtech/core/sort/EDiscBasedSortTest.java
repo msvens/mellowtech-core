@@ -92,7 +92,7 @@ public class EDiscBasedSortTest {
   }
 
   @Test public void testQuickSort() throws Exception{
-    EDiscBasedSort <String, CBString> edb = new EDiscBasedSort <> (new CBString(),
+    EDiscBasedSort <String, CBString> edb = new EDiscBasedSort <> (CBString.class,
     1, Platform.getTempDir()+"/sort");
     //stringBuffer.flip();
     ByteArrayOutputStream bos = new ByteArrayOutputStream();
