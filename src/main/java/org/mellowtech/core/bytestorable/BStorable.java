@@ -17,18 +17,19 @@ import java.nio.channels.WritableByteChannel;
  * 
  * @author Martin Svensson
  *
- * @param <A> type of the wrapped object
+ * @param <A> type of value
  * @param <B> self type
  */
 public interface BStorable <A, B extends BStorable<A,B>> {
   
   
-  public A get();
+  A get();
   
-  public B from(ByteBuffer bb);
+  B from(ByteBuffer bb);
   
-  public default B create(A t){
+  default B create(A t){
     try {
+      @SuppressWarnings("unchecked")
       Constructor <B> c = (Constructor<B>) this.getClass().getConstructor(t.getClass());
       return c.newInstance(t);
     }
@@ -37,13 +38,13 @@ public interface BStorable <A, B extends BStorable<A,B>> {
     }
   }
   
-  public default B from(byte[] b, int offset) {
+  default B from(byte[] b, int offset) {
     ByteBuffer bb = ByteBuffer.wrap(b);
     bb.position(offset);
     return from(bb);
   }
   
-  public default B from(InputStream is) throws IOException{
+  default B from(InputStream is) throws IOException{
       ByteBuffer bb = ByteBuffer.allocate(4);
       int b;
       int i;
@@ -67,7 +68,7 @@ public interface BStorable <A, B extends BStorable<A,B>> {
       return this.from(bb1);
   }
   
-  public default B from(ReadableByteChannel rbc) throws IOException{
+  default B from(ReadableByteChannel rbc) throws IOException{
     ByteBuffer bb = ByteBuffer.allocate(4);
     ByteBuffer one = ByteBuffer.allocate(1);
     //int b;
@@ -84,32 +85,26 @@ public interface BStorable <A, B extends BStorable<A,B>> {
     ByteBuffer bb1 = ByteBuffer.allocate(byteSize);
     bb1.put(bb);
     rbc.read(bb1);
-    /*for(; i < byteSize; i++){
-      b = is.read();
-      if(b == -1)
-        throw new IOException("Unexpected end of stream: read object");
-      bb1.put((byte)b);
-    }*/
     bb1.flip();
     return this.from(bb1);
   }
   
-  public void to(ByteBuffer bb);
+  void to(ByteBuffer bb);
   
-  public default ByteBuffer to() {
+  default ByteBuffer to() {
     ByteBuffer bb = ByteBuffer.allocate(byteSize());
     to(bb);
     return bb;
   }
   
-  public default int to(byte[] b, int offset) {
+  default int to(byte[] b, int offset) {
     ByteBuffer bb = ByteBuffer.wrap(b);
     bb.position(offset);
     to(bb);
     return bb.position() - offset;
   }
   
-  public default int to(OutputStream os) throws IOException{
+  default int to(OutputStream os) throws IOException{
     int byteSize = byteSize();
     byte[] b = new byte[byteSize];
     to(b, 0);
@@ -118,7 +113,7 @@ public interface BStorable <A, B extends BStorable<A,B>> {
     return byteSize;
   }
   
-  public default int to(WritableByteChannel wbc) throws IOException {
+  default int to(WritableByteChannel wbc) throws IOException {
     int byteSize = byteSize();
     ByteBuffer bb = ByteBuffer.allocate(byteSize);
     to(bb);
@@ -127,15 +122,15 @@ public interface BStorable <A, B extends BStorable<A,B>> {
     return byteSize;
   }
   
-  public int byteSize();
-  public int byteSize(ByteBuffer bb);
+  int byteSize();
+  int byteSize(ByteBuffer bb);
   
-  public default B deepCopy(){
+  default B deepCopy(){
     ByteBuffer bb = to();
     bb.flip();
     return from(bb);
   }
   
-  default public boolean isFixed() {return false;}
+  default boolean isFixed() {return false;}
 
 }

@@ -49,6 +49,7 @@ public class MemMappedBPTreeImpTest {
 
   @Before
   public void before() throws Exception {
+    //TestUtils.deleteTempDir(dir);
     TestUtils.createTempDir(dir);
 
     String fileName = TestUtils.getAbsolutDir(dir+"/"+name);

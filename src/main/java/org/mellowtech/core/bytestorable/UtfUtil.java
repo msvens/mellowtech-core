@@ -13,7 +13,7 @@ import java.util.Arrays;
  */
 public class UtfUtil {
 
-  public static final int utfLength(final String str) {
+  public static int utfLength(final String str) {
     int len = str.length();
     int c;
     int utflen = 0;
@@ -30,11 +30,11 @@ public class UtfUtil {
     return utflen;
   }
   
-  public static final int utfLength(final char[] str){
+  public static int utfLength(final char[] str){
     return utfLength(str, 0, str.length);
   }
 
-  public static final int utfLength(final char[] str, int offset, int length) {
+  public static int utfLength(final char[] str, int offset, int length) {
     int c;
     int utflen = 0;
     for (int i = 0; i < length; i++) {
@@ -50,19 +50,19 @@ public class UtfUtil {
     return utflen;
   }
 
-  public static final byte[] encode(final String str) {
+  public static byte[] encode(final String str) {
     byte b[] = new byte[utfLength(str)];
     encode(str, b, 0);
     return b;
   }
   
-  public static final byte[] encode(final char[] str) {
+  public static byte[] encode(final char[] str) {
     byte b[] = new byte[utfLength(str)];
     encode(str, b, 0);
     return b;
   }
 
-  public static final int encode(final String str, final byte[] b,
+  public static int encode(final String str, final byte[] b,
       final int offset) {
     int len = str.length();
     int c, count = offset;
@@ -93,7 +93,7 @@ public class UtfUtil {
     return count - offset;
   }
   
-  public static final int encode(final char[] str, final byte[] b,
+  public static int encode(final char[] str, final byte[] b,
       final int offset) {
     int len = str.length;
     int c, count = offset;
@@ -124,7 +124,7 @@ public class UtfUtil {
     return count - offset;
   }
   
-  public static final void encode(final String str, final ByteBuffer b) {
+  public static void encode(final String str, final ByteBuffer b) {
     /*if(b.hasArray()){
       b.position(b.position()+encode(str, b.array(), b.position()));
       return;
@@ -157,7 +157,7 @@ public class UtfUtil {
     }
   }
   
-  public static final void encode(final char[] str, final ByteBuffer b) {
+  public static void encode(final char[] str, final ByteBuffer b) {
     /*if(b.hasArray()){
       encode(str, b.array(), b.position());
       return;
@@ -190,15 +190,15 @@ public class UtfUtil {
     }
   }
   
-  public static final String decode(final byte[] b) throws Exception{
+  public static String decode(final byte[] b) throws Exception{
     return decode(b, 0, b.length);
   }
   
-  public static final char[] decodeChars(final byte[] b) throws Exception{
+  public static char[] decodeChars(final byte[] b) throws Exception{
     return decodeChars(b, 0, b.length);
   }
 
-  public static final String decode(final byte[] b, int offset, int length){
+  public static String decode(final byte[] b, int offset, int length){
     int count = offset, c_count = 0;
     int c, char2, char3;
     char arr[] = new char[length];
@@ -262,7 +262,7 @@ public class UtfUtil {
     return new String(arr, 0, c_count);
   }
   
-  public static final char[] decodeChars(final byte[] b, int offset, int length){
+  public static char[] decodeChars(final byte[] b, int offset, int length){
     int count = offset, c_count = 0;
     int c, char2, char3;
     char arr[] = new char[length];
@@ -326,7 +326,7 @@ public class UtfUtil {
     return Arrays.copyOfRange(arr, 0, c_count);
   }
   
-  public static final String decode(final ByteBuffer b, int length){
+  public static String decode(final ByteBuffer b, int length){
     /*if(b.hasArray()){
       String toRet = decode(b.array(), b.position(), length);
       b.position(b.position()+length);
@@ -398,7 +398,7 @@ public class UtfUtil {
     return new String(arr, 0, c_count);
   }
   
-  public static final char[] decodeChars(final ByteBuffer b, int length){
+  public static char[] decodeChars(final ByteBuffer b, int length){
     if(b.hasArray()){
       return decodeChars(b.array(), b.position(), length);
     }
@@ -467,7 +467,7 @@ public class UtfUtil {
   }
   
   //compare
-  public static final int compare(byte[] b1, int o1, byte[] b2, int o2){
+  public static int compare(byte[] b1, int o1, byte[] b2, int o2){
     int length1, length2, c1,c2, num = 0, i = 0;
     
     // length1
@@ -596,7 +596,7 @@ public class UtfUtil {
     return length1 - length2;
   }
   
-  public static final int compare(ByteBuffer b1, int o1, ByteBuffer b2, int o2){
+  public static int compare(ByteBuffer b1, int o1, ByteBuffer b2, int o2){
     /*if(b1.hasArray() && b2.hasArray()){
       return compare(b1.array(), o1, b2.array(), o2);
     }*/
@@ -729,7 +729,7 @@ public class UtfUtil {
     return length1 - length2;
   }
   
-  public static final int compare(byte[] b1, int o1, byte[] b2, int o2, char[] map){
+  public static int compare(byte[] b1, int o1, byte[] b2, int o2, char[] map){
     int length1, length2, c1,c2, num = 0, i = 0;
     
     // length1
@@ -858,7 +858,7 @@ public class UtfUtil {
     return length1 - length2;
   }
   
-  public static final int compare(ByteBuffer b1, int o1, ByteBuffer b2, int o2, char[] map){
+  public static int compare(ByteBuffer b1, int o1, ByteBuffer b2, int o2, char[] map){
     /*if(b1.hasArray() && b2.hasArray()){
       return compare(b1.array(), o1, b2.array(), o2, map);
     }*/

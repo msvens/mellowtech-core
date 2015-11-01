@@ -4,6 +4,8 @@
 package org.mellowtech.core.io;
 
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 /**
  * @author msvens
@@ -82,29 +84,29 @@ public class RecordFileBuilder {
     this.reserve = bytes;
     return this;
   }
-  
+
   public RecordFile build(String fileName) throws IOException{
-    RecordFile rf = RecordFileBuilder.create(strategy, maxBlocks, fileName, blockSize, reserve, splitMaxBlocks, splitBlockSize);
-    if(spanned){
-      if(iterate){
-        return new IteratingSpannedBlockFile(rf);
-      }
-      return new SpannedBlockFile(rf);
-    }
-    return rf;
+    return build(Paths.get(fileName));
+  }
+
+  public RecordFile build(Path path) throws IOException{
+    if(spanned)
+      return new VariableRecordFile(path,maxBlocks,reserve);
+    else
+      return RecordFileBuilder.create(strategy, maxBlocks, path, blockSize, reserve, splitMaxBlocks, splitBlockSize);
   }
   
-  private static RecordFile create(Strategy s, Integer maxBlocks, String fName, 
+  private static RecordFile create(Strategy s, Integer maxBlocks, Path path,
       int blockSize, int reserve, Integer splitMaxBlocks, Integer splitBlockSize) throws IOException {
     switch(s) {
       case DISC:
-        return maxBlocks != null ? new BlockFile(fName, blockSize, maxBlocks, reserve) : new BlockFile(fName);
+        return maxBlocks != null ? new BlockFile(path, blockSize, maxBlocks, reserve) : new BlockFile(path);
       case SPLIT:
-        return maxBlocks != null ? new SplitBlockFile(fName, blockSize, maxBlocks, reserve, splitMaxBlocks, splitBlockSize) : new SplitBlockFile(fName);
+        return maxBlocks != null ? new SplitBlockFile(path, blockSize, maxBlocks, reserve, splitMaxBlocks, splitBlockSize) : new SplitBlockFile(path);
       case MEM_SPLIT :
-        return maxBlocks != null ? new MemSplitBlockFile(fName, blockSize, maxBlocks, reserve, splitMaxBlocks, splitBlockSize) : new MemSplitBlockFile(fName);
+        return maxBlocks != null ? new MemSplitBlockFile(path, blockSize, maxBlocks, reserve, splitMaxBlocks, splitBlockSize) : new MemSplitBlockFile(path);
       case MEM :
-        return maxBlocks != null ? new MemBlockFile(fName, blockSize, maxBlocks, reserve) : new MemBlockFile(fName);
+        return maxBlocks != null ? new MemBlockFile(path, blockSize, maxBlocks, reserve) : new MemBlockFile(path);
     }
     return null;
   }

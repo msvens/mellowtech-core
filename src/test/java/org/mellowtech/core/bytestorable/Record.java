@@ -27,10 +27,6 @@
 
 package org.mellowtech.core.bytestorable;
 
-import com.sun.org.apache.bcel.internal.generic.ARETURN;
-import org.mellowtech.core.bytestorable.AutoRecord;
-import org.mellowtech.core.bytestorable.BSField;
-import org.mellowtech.core.bytestorable.CBRecord;
 
 /**
  * Date: 2013-04-17

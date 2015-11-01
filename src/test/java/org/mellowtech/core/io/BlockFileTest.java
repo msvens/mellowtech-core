@@ -37,6 +37,7 @@ import org.mellowtech.core.io.RecordFile;
 import org.mellowtech.core.util.Platform;
 
 import java.io.File;
+import java.nio.file.Paths;
 import java.util.Iterator;
 
 /**
@@ -45,42 +46,19 @@ import java.util.Iterator;
  *
  * @author Martin Svensson
  */
-public class BlockFileTest {
+public class BlockFileTest extends RecordFileTemplate {
 
-  @Test
-  public void test() throws Exception{
-    String tmpFile = Platform.getTempDir()+"/blockFileTest"+BlockFile.FILE_EXT;
-    File f = new File(tmpFile);
-    if(f.exists()) f.delete();
+  @Override
+  public String fname() {return "blockFileTest.blf";}
 
-    RecordFile rf = new BlockFile(tmpFile, 1024, 1024, 40);
-    byte[] test = "This is My Test Record".getBytes();
-    CBString reserved = new CBString("this is my reserved");
-    rf.setReserve(reserved.to().array());
-    rf.insert(test);
-    rf.insert(test);
-    rf.insert(test);
-    rf.delete(1);
-    Iterator<Record> iter = rf.iterator();
-    while(iter.hasNext()){
-      Record next = iter.next();
-      String str = new String(next.data, 0, test.length);
-      Assert.assertEquals("This is My Test Record", str);
-    }
-
-    rf.close();
-    rf = new BlockFile(tmpFile, 1024, 1024, 0);
-    iter = rf.iterator();
-    while(iter.hasNext()){
-      Record next = iter.next();
-      String str = new String(next.data, 0, test.length);
-      Assert.assertEquals("This is My Test Record", str);
-    }
-    reserved = reserved.from(rf.getReserve(), 0);
-    Assert.assertEquals("this is my reserved", reserved.get());
-    Assert.assertEquals(2, rf.size());
-    Assert.assertTrue(rf.contains(0));
-    Assert.assertTrue(rf.contains(2));
-    Assert.assertFalse(rf.contains(1));
+  @Override
+  public RecordFile reopen(String fname) throws Exception {
+    return new BlockFile(Paths.get(fname));
   }
+  @Override
+  public RecordFile init(int blockSize, int reserve, int maxBlocks, String fname) throws Exception {
+    return new BlockFile(Paths.get(fname), blockSize, maxBlocks, reserve);
+  }
+
+
 }

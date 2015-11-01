@@ -291,11 +291,6 @@ public class ObjectManager implements DiscMap <String, BStorable>{
 
 
 
-  @Override
-  public Iterator<java.util.Map.Entry<String, BStorable>> iterator(String key)
-      throws UnsupportedOperationException {
-    return new ObjectManagerIterator(key);
-  }
   
   class ObjectManagerIterator implements Iterator<Entry<String, BStorable>>{
 

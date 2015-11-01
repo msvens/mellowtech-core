@@ -30,10 +30,16 @@ package org.mellowtech.core.io;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Iterator;
 import java.util.Map;
 
 /**
+ * @deprecated
+ * The SpannedBlockFile is complex in its implementation and unsafe in usage.
+ *
+ *
  * Date: 2013-04-06
  * Time: 12:27
  *
@@ -47,12 +53,12 @@ public class SpannedBlockFile implements RecordFile{
     this.bf = rf;
   }
 
-  public SpannedBlockFile(String fileName) throws IOException {
-    bf = new BlockFile(fileName);
+  public SpannedBlockFile(Path p) throws IOException {
+    bf = new BlockFile(p);
   }
 
-  public SpannedBlockFile(String fileName, int blockSize, int maxBlocks, int reserve) throws IOException{
-    bf = new BlockFile(fileName, blockSize, maxBlocks, reserve);
+  public SpannedBlockFile(Path p, int blockSize, int maxBlocks, int reserve) throws IOException{
+    bf = new BlockFile(p, blockSize, maxBlocks, reserve);
   }
 
   @Override
@@ -92,6 +98,7 @@ public class SpannedBlockFile implements RecordFile{
   
   @Override
   public boolean delete(int record) throws IOException{
+    if(!bf.contains(record)) return false;
     //Delete record
     ByteBuffer bb;
     byte b[] = bf.get(record);
@@ -113,6 +120,7 @@ public class SpannedBlockFile implements RecordFile{
     ByteBuffer bb;
     //read first block
     byte b[] = bf.get(record);
+    if(b == null) return null;
     bb = ByteBuffer.wrap(b);
     int length = bb.getInt();
     int nextBlock = bb.getInt();
@@ -144,6 +152,7 @@ public class SpannedBlockFile implements RecordFile{
     ByteBuffer bb;
     //read first block
     byte b[] = bf.get(record);
+    if(b == null) return false;
     bb = ByteBuffer.wrap(b);
     int length = bb.getInt();
     int nextBlock = bb.getInt();
@@ -176,7 +185,7 @@ public class SpannedBlockFile implements RecordFile{
   
   @Override
   public int getFirstRecord() {
-    return bf.getBlockSize();
+    return bf.getFirstRecord();
   }
 
   @Override
@@ -278,6 +287,7 @@ public class SpannedBlockFile implements RecordFile{
 
   @Override
   public boolean update(int record, byte[] block, int offset, int length) throws IOException{
+    if(!bf.contains(record)) return false;
     delButFirst(record);
     int numBlocks = numBlocks(block);
     if(bf.getFreeBlocks() < numBlocks - 1){ //we alrady have one block allocated

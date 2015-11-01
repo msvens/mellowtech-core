@@ -44,41 +44,32 @@ public interface DiscMap <K,V> extends Map<K,V> {
    * persist the disc map
    * @throws IOException if an error occurs
    */
-  public void save() throws IOException;
+  void save() throws IOException;
   
   /**
    * close this disc map. After close has to reopen it again
    * @throws IOException if an error occurs
    */
-  public void close() throws IOException;
+  void close() throws IOException;
 
 
   /**
    * Perform a compaction of this disc map
    * @throws IOException if an error occurs
    */
-  public void compact() throws IOException, UnsupportedOperationException;
+  void compact() throws IOException, UnsupportedOperationException;
 
   /**
    * Delete this disc map on disc
    * @throws IOException if an error occurs
    */
-  public void delete() throws IOException;
+  void delete() throws IOException;
 
   /**
    * Iterate over the entries of this disc map...
    * @return iterator
    */
-  public Iterator <Entry <K,V>> iterator();
-
-  /**
-   * Iterate over the entries in this map starting from
-   * position pos
-   * @param key start key
-   * @return iterator
-   * @throws UnsupportedOperationException if this DiscMap does not support the operation
-   */
-  public Iterator <Entry <K,V>> iterator(K key) throws UnsupportedOperationException;
+  Iterator <Entry <K,V>> iterator();
 
 
 }

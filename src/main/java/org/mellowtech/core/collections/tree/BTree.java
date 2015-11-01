@@ -51,7 +51,7 @@ public interface BTree <A,B extends BComparable<A,B>, C, D extends BStorable<C,D
 
   
   //bulk creation:
-  public void createIndex(Iterator<KeyValue <B,D>> iterator) throws IOException;
+  void createIndex(Iterator<KeyValue <B,D>> iterator) throws IOException;
 
 
   /**
@@ -60,7 +60,7 @@ public interface BTree <A,B extends BComparable<A,B>, C, D extends BStorable<C,D
    * @return key
    * @throws IOException if an error occurs
    */
-  public B getKey(int position) throws IOException;
+  B getKey(int position) throws IOException;
 
   /**
    * Returns the tree position for a given key. TreePosition contains the the
@@ -71,7 +71,7 @@ public interface BTree <A,B extends BComparable<A,B>, C, D extends BStorable<C,D
    * @return null if the key was not found
    * @throws IOException if an error occurs
    */
-  public TreePosition getPosition(B key) throws IOException;
+  TreePosition getPosition(B key) throws IOException;
 
   /**
    * Returns the tree position for a given key or the position in which the
@@ -83,7 +83,7 @@ public interface BTree <A,B extends BComparable<A,B>, C, D extends BStorable<C,D
    * @return null if the key was not found
    * @throws java.io.IOException if an error occurs
    */
-  public TreePosition getPositionWithMissing(B key) throws IOException;
+  TreePosition getPositionWithMissing(B key) throws IOException;
 
 
   /**
@@ -95,6 +95,6 @@ public interface BTree <A,B extends BComparable<A,B>, C, D extends BStorable<C,D
    * @return this tree's iterator
    * @see org.mellowtech.core.collections.KeyValue
    */
-  public Iterator<KeyValue <B, D>> iterator(B from);
+  Iterator<KeyValue <B, D>> iterator(B from);
 
 }

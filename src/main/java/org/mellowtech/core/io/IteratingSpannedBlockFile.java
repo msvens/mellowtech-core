@@ -31,10 +31,15 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.LongBuffer;
 import java.nio.MappedByteBuffer;
+import java.nio.file.Path;
 import java.util.BitSet;
 import java.util.Iterator;
 
 /**
+ * @deprecated
+ * Complex implementation and error prone since It breaks the general contract of a record file.
+ * Use VariableRecordFile instead
+ *
  * Date: 2013-04-06
  * Time: 12:27
  *
@@ -66,14 +71,14 @@ public class IteratingSpannedBlockFile extends SpannedBlockFile{
   
   
 
-  public IteratingSpannedBlockFile(String fileName, int blockSize, int maxBlocks)
+  public IteratingSpannedBlockFile(Path p, int blockSize, int maxBlocks)
       throws IOException {
-    super(fileName, blockSize, maxBlocks, (maxBlocks / 8) + 4);
+    super(p, blockSize, maxBlocks, (maxBlocks / 8) + 4);
     openRecords();
   }
 
-  public IteratingSpannedBlockFile(String fileName) throws IOException {
-    super(fileName);
+  public IteratingSpannedBlockFile(Path p) throws IOException {
+    super(p);
     openRecords();
   }
   

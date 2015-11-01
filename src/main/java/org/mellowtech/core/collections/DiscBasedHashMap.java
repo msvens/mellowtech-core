@@ -100,10 +100,6 @@ public class DiscBasedHashMap <A,B extends BComparable<A,B>,
     return new DiscBasedHashIterator();
   }
 
-  @Override
-  public Iterator<Entry<A, C>> iterator(A key) throws UnsupportedOperationException {
-    throw new UnsupportedOperationException("hash map does not support ordering of elements");
-  }
 
   /********************OVERWRITTEN MAP METHODS************************************/
   @Override

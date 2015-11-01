@@ -29,7 +29,6 @@ package org.mellowtech.core.io;
 
 import java.io.IOException;
 import java.nio.MappedByteBuffer;
-import java.nio.channels.FileChannel.MapMode;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.logging.Level;
@@ -43,6 +42,7 @@ import org.mellowtech.core.cache.*;
  *
  * @author Martin Svensson
  */
+@Deprecated
 public class CachedRecordFile implements RecordFile {
 
   private final RecordFile file;
@@ -151,16 +151,6 @@ public class CachedRecordFile implements RecordFile {
   @Override
   public boolean update(int record, byte[] bytes) throws IOException {
     return update(record, bytes, 0, bytes.length);
-    /*if(cache.isReadOnly()){
-      cache.remove(record);
-      return file.update(record, bytes);
-    }
-    else{
-      byte b[] = new byte[file.getBlockSize()];
-      System.arraycopy(bytes, 0, b, 0, Math.min(file.getBlockSize(), bytes.length));
-      cache.put(record, b);
-      return true;
-    }*/
   }
 
   @Override

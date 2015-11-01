@@ -27,18 +27,7 @@
 
 package org.mellowtech.core.io;
 
-import junit.framework.Assert;
-
-import org.junit.Test;
-import org.mellowtech.core.bytestorable.CBString;
-import org.mellowtech.core.io.BlockFile;
-import org.mellowtech.core.io.Record;
-import org.mellowtech.core.io.SplitBlockFile;
-import org.mellowtech.core.util.Platform;
-
-import java.io.File;
 import java.nio.file.Paths;
-import java.util.Iterator;
 
 /**
  * Date: 2013-03-11
@@ -46,19 +35,21 @@ import java.util.Iterator;
  *
  * @author Martin Svensson
  */
-public class SplitBlockFileTest extends SplitRecordFileTemplate{
+public class MemBlockFileTest extends RecordFileTemplate {
+
 
   @Override
-  public String fname() {return "splitBlockFileTest.blf";}
+  public String fname() {return "memBlockFileTest.blf";}
 
   @Override
-  public SplitRecordFile init(int blockSize, int reserve, int maxBlocks, String fname) throws Exception {
-    return new SplitBlockFile(Paths.get(fname), blockSize, maxBlocks, reserve, maxBlocks, blockSize);
+  public RecordFile init(int blockSize, int reserve, int maxBlocks, String fname) throws Exception {
+    return new MemBlockFile(Paths.get(fname), blockSize, maxBlocks, reserve);
   }
 
   @Override
   public RecordFile reopen(String fname) throws Exception {
-    return new SplitBlockFile(Paths.get(fname));
+    return new MemBlockFile(Paths.get(fname));
   }
+
 
 }

@@ -28,6 +28,7 @@
 package org.mellowtech.core.collections;
 
 import java.util.Iterator;
+import java.util.NavigableMap;
 import java.util.SortedMap;
 
 /**
@@ -38,11 +39,18 @@ import java.util.SortedMap;
  * Time: 11:04
  * To change this template use File | Settings | File Templates.
  */
-public interface SortedDiscMap<K,V> extends DiscMap<K,V>{
+public interface SortedDiscMap<K,V> extends DiscMap<K,V>, NavigableMap<K,V>{
 
-    public Iterator <Entry<K,V>> iterator(K from);
+    /**
+     * Iterate over the entries in this map starting from
+     * position pos
+     * @param key start key
+     * @return iterator
+     */
+    Iterator <Entry <K,V>> iterator(K key);
 
-    public Iterator <Entry<K,V>> iterator(K from, K to, boolean inclusive);
+
+    /*public Iterator <Entry<K,V>> iterator(K from, K to, boolean inclusive);
 
     public K firstKey();
 
@@ -60,7 +68,7 @@ public interface SortedDiscMap<K,V> extends DiscMap<K,V>{
 
     public K getGreater(K key, boolean strict);
 
-    public SortedMap <K,V> asMemoryMap(K from, K to);
+    public SortedMap <K,V> asMemoryMap(K from, K to);*/
 
 
 

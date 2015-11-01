@@ -56,7 +56,7 @@ import org.mellowtech.core.util.MapEntry;
  *
  */
 public class DiscBasedMap <A,B extends BComparable<A,B>, 
-  C, D extends BStorable<C,D>> implements NavigableMap<A, C>, DiscMap <A,C> {
+  C, D extends BStorable<C,D>> implements SortedDiscMap<A, C> {
   
   
   private BTree <A,B,C,D> btree;
@@ -71,18 +71,18 @@ public class DiscBasedMap <A,B extends BComparable<A,B>,
 
   public DiscBasedMap(Class <B> keyClass, Class <D> valueClass,
                       String fileName, boolean blobValues, boolean inMemory) throws Exception{
-    this(keyClass, valueClass, fileName, DEFAULT_VALUE_BLOCK, DEFAULT_KEY_BLOCK, blobValues, inMemory);
+    this(keyClass, valueClass, fileName, DEFAULT_VALUE_BLOCK, DEFAULT_KEY_BLOCK, blobValues, true, inMemory);
   }
 
   public DiscBasedMap(Class <B> keyClass, Class <D> valueClass,
                       String fileName, int valueBlockSize, boolean blobValues, boolean inMemory) throws Exception{
-    this(keyClass, valueClass, fileName, valueBlockSize, DEFAULT_KEY_BLOCK, blobValues, inMemory);
+    this(keyClass, valueClass, fileName, valueBlockSize, DEFAULT_KEY_BLOCK, blobValues, true, inMemory);
   }
   
   public DiscBasedMap(Class <B> keyClass, Class <D> valueClass,
-      String fileName, int valueBlockSize, int keyBlockSize, boolean blobValues, boolean inMemory) throws Exception{
-    this(keyClass, valueClass, fileName, new BTreeBuilder().blobValues(blobValues).valuesInMemory(inMemory)
-        .valueBlockSize(valueBlockSize).indexBlockSize(keyBlockSize));
+      String fileName, int valueBlockSize, int keyBlockSize, boolean blobValues, boolean keysMemoryMapped, boolean valsMemoryMapped) throws Exception{
+    this(keyClass, valueClass, fileName, new BTreeBuilder().blobValues(blobValues).valuesInMemory(valsMemoryMapped)
+        .indexInMemory(keysMemoryMapped).valueBlockSize(valueBlockSize).indexBlockSize(keyBlockSize));
   }
   
   public DiscBasedMap(Class <B> keyClass, Class <D> valueClass, String fileName,

@@ -14,26 +14,35 @@ import java.util.Iterator;
  */
 public interface SplitRecordFile extends RecordFile {
   
-  public int sizeRegion();
-  public int getBlockSizeRegion();
-  public int getFreeBlocksRegion();
+  int sizeRegion();
+  int getBlockSizeRegion();
+  int getFreeBlocksRegion();
   
-  public int getFirstRecordRegion();
+  int getFirstRecordRegion();
 
-  public byte[] getRegion(int record) throws IOException;
-  public boolean getRegion(int record, byte[] buffer) throws IOException;
+  default byte[] getRegion(int record) throws IOException{
+    byte b[] = new byte[getBlockSizeRegion()];
+    return getRegion(record, b) ? b : null;
+  }
 
-  public boolean updateRegion(int record, byte[] bytes) throws IOException;
-  public boolean updateRegion(int record, byte[] bytes, int offset, int length) throws IOException;
+  boolean getRegion(int record, byte[] buffer) throws IOException;
 
-  public int insertRegion(byte[] bytes) throws IOException;
-  public int insertRegion(byte[] bytes, int offset, int length) throws IOException;
-  public void insertRegion(int record, byte[] bytes) throws IOException;
-  public boolean deleteRegion(int record) throws IOException;
+  default boolean updateRegion(int record, byte[] bytes) throws IOException{
+    return updateRegion(record, bytes, 0, bytes.length);
+  }
 
-  public boolean containsRegion(int record) throws IOException;
+  boolean updateRegion(int record, byte[] bytes, int offset, int length) throws IOException;
 
-  public Iterator<Record> iteratorRegion() throws UnsupportedOperationException;
-  public Iterator<Record> iteratorRegion(int record) throws UnsupportedOperationException;
+  default int insertRegion(byte[] bytes) throws IOException {
+    return insertRegion(bytes, 0, bytes != null ? bytes.length : 0);
+  }
+  int insertRegion(byte[] bytes, int offset, int length) throws IOException;
+  void insertRegion(int record, byte[] bytes) throws IOException;
+  boolean deleteRegion(int record) throws IOException;
+
+  boolean containsRegion(int record) throws IOException;
+
+  Iterator<Record> iteratorRegion() throws UnsupportedOperationException;
+  Iterator<Record> iteratorRegion(int record) throws UnsupportedOperationException;
   
 }

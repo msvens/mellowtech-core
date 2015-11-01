@@ -8,7 +8,6 @@ import java.util.Iterator;
 
 import org.mellowtech.core.bytestorable.BComparable;
 import org.mellowtech.core.bytestorable.BStorable;
-import org.mellowtech.core.collections.tree.TreePosition;
 
 /**
  * @author msvens
@@ -17,9 +16,9 @@ import org.mellowtech.core.collections.tree.TreePosition;
 public interface BMap <A,B extends BComparable<A,B>, C, D extends BStorable<C,D>> {
   
   //IO:
-  public void save() throws IOException;
-  public void close() throws IOException;
-  public void delete() throws IOException;
+  void save() throws IOException;
+  void close() throws IOException;
+  void delete() throws IOException;
 
   //size, etc
   /**
@@ -27,14 +26,14 @@ public interface BMap <A,B extends BComparable<A,B>, C, D extends BStorable<C,D>
    * @return number of key/value mappings
    * @throws IOException if an error occurs
    */
-  public int size() throws IOException;
+  int size() throws IOException;
 
   /**
    * Check if this map is empty
    * @return true if map is empty
    * @throws IOException if an error occurs
    */
-  public boolean isEmpty() throws IOException;
+  boolean isEmpty() throws IOException;
 
   /**
    * Check if the tree contains a mapping for key
@@ -42,7 +41,7 @@ public interface BMap <A,B extends BComparable<A,B>, C, D extends BStorable<C,D>
    * @return true if key exists
    * @throws IOException if an error occurs
    */
-  public boolean containsKey(B key) throws IOException;
+  boolean containsKey(B key) throws IOException;
 
   /**
    * Inserts a key into this the Btree. Any previous value will be
@@ -52,7 +51,7 @@ public interface BMap <A,B extends BComparable<A,B>, C, D extends BStorable<C,D>
    * @param value  the value to be inserted/updated
    * @throws IOException if an error occurs
    */
-  public void put(B key, D value) throws IOException;
+  void put(B key, D value) throws IOException;
 
   /**
    * Inserts a key into this the Btree if it did not previously
@@ -62,7 +61,7 @@ public interface BMap <A,B extends BComparable<A,B>, C, D extends BStorable<C,D>
    * @param value  the value to be inserted/updated
    * @throws IOException if an error occurs
    */
-  default public void putIfNotExists(B key, D value) throws IOException{
+  default void putIfNotExists(B key, D value) throws IOException{
     if(!containsKey(key))
       put(key,value);
   }
@@ -74,7 +73,7 @@ public interface BMap <A,B extends BComparable<A,B>, C, D extends BStorable<C,D>
    * @return the value corresponding to the key
    * @throws IOException if an error occurs
    */
-  public D remove(B key) throws IOException;
+  D remove(B key) throws IOException;
 
   /**
    * Returns the value for a given key. Returns null either if the key was not
@@ -85,7 +84,7 @@ public interface BMap <A,B extends BComparable<A,B>, C, D extends BStorable<C,D>
    * @return value mapped to key.
    * @throws java.io.IOException if an error occurs
    */
-  default public D get(B key) throws IOException{
+  default D get(B key) throws IOException{
     KeyValue <B,D> ret = getKeyValue(key);
     return ret != null ? ret.getValue() : null;
   }
@@ -97,7 +96,7 @@ public interface BMap <A,B extends BComparable<A,B>, C, D extends BStorable<C,D>
    * @return value/key pair mapped to key.
    * @throws java.io.IOException if an error occurs
    */
-  public KeyValue<B,D> getKeyValue(B key) throws IOException;
+  KeyValue<B,D> getKeyValue(B key) throws IOException;
 
   //Iterators:
   /**
@@ -107,7 +106,7 @@ public interface BMap <A,B extends BComparable<A,B>, C, D extends BStorable<C,D>
    * @return this tree's iterator
    * @see org.mellowtech.core.collections.KeyValue
    */
-  public Iterator<KeyValue <B, D>> iterator();
+  Iterator<KeyValue <B, D>> iterator();
 
 
   //Maintenance:
@@ -117,6 +116,6 @@ public interface BMap <A,B extends BComparable<A,B>, C, D extends BStorable<C,D>
    * disc representation
    * @throws IOException if an error occurs
    */
-  public void compact() throws IOException, UnsupportedOperationException;
+  void compact() throws IOException, UnsupportedOperationException;
 
 }

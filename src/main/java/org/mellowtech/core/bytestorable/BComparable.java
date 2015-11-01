@@ -10,6 +10,18 @@ import java.nio.ByteBuffer;
  *
  */
 public interface BComparable <A,B extends BComparable<A,B>> extends BStorable <A,B>, Comparable <B> {
+
+  /**
+   * Default implentation of compareTo casts the values and compares them
+   * @param other - object to compare to
+   * @return see Comparable
+   */
+  @Override
+  default int compareTo(B other){
+    @SuppressWarnings("unchecked")
+    Comparable <? super A> cmp = (Comparable <? super A>) this.get();
+    return cmp.compareTo(other.get());
+  }
   
   /**
    * Compares two objects that are represented as bytes in a ByteBuffer. Calls:
@@ -24,7 +36,7 @@ public interface BComparable <A,B extends BComparable<A,B>> extends BStorable <A
    * @return a negative integer, zero, or a positive integer as the first
    *         argument is less than, equal to, or greater than the second.
    */
-  public default int byteCompare(int offset1, int offset2, ByteBuffer bb) {
+  default int byteCompare(int offset1, int offset2, ByteBuffer bb) {
     return byteCompare(offset1, bb, offset2, bb);
   }
 
@@ -44,7 +56,7 @@ public interface BComparable <A,B extends BComparable<A,B>> extends BStorable <A
    * @return a negative integer, zero, or a positive integer as the first
    *         argument is less than, equal to, or greater than the second.
    */
-  public default int byteCompare(int offset1, ByteBuffer bb1, int offset2,
+  default int byteCompare(int offset1, ByteBuffer bb1, int offset2,
       ByteBuffer bb2){
     bb1.position(offset1);
     B b1 = this.from(bb1);
@@ -66,7 +78,7 @@ public interface BComparable <A,B extends BComparable<A,B>> extends BStorable <A
    * @return a negative integer, zero, or a positive integer as the first
    *         argument is less than, equal to, or greater than the second.
    */
-  public default int byteCompare(int offset1, int offset2, byte[] b) {
+  default int byteCompare(int offset1, int offset2, byte[] b) {
     return byteCompare(offset1, b, offset2, b);
   }
 
@@ -87,16 +99,16 @@ public interface BComparable <A,B extends BComparable<A,B>> extends BStorable <A
    * @return a negative integer, zero, or a positive integer as the first
    *         argument is less than, equal to, or greater than the second.
    */
-  public default int byteCompare(int offset1, byte[] b1, int offset2, byte[] b2) {
+  default int byteCompare(int offset1, byte[] b1, int offset2, byte[] b2) {
     return byteCompare(offset1, ByteBuffer.wrap(b1), offset2, ByteBuffer
         .wrap(b2));
   }
 
-  public default int byteCompare(int offset1, byte[] b1, int offset2, ByteBuffer bb2) {
+  default int byteCompare(int offset1, byte[] b1, int offset2, ByteBuffer bb2) {
     return byteCompare(offset1, ByteBuffer.wrap(b1), offset2, bb2);
   }
 
-  public default int byteCompare(int offset1, ByteBuffer bb1, int offset2, byte[] b2) {
+  default int byteCompare(int offset1, ByteBuffer bb1, int offset2, byte[] b2) {
     return byteCompare(offset1, bb1, offset2, ByteBuffer.wrap(b2));
   }
 

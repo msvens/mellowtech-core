@@ -29,6 +29,7 @@ package org.mellowtech.core.collections.tree;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -1153,19 +1154,19 @@ implements BTree <A, B, C, D> {
 
   private void openIndex(boolean newIndex, int blockSize, int maxBlocks) throws IOException {
     if (newIndex) {
-      indexFile = new BlockFile(indexName, blockSize, maxBlocks, 1024);
+      indexFile = new BlockFile(Paths.get(indexName), blockSize, maxBlocks, 1024);
       indexFile.clear();
     } else {
-      indexFile = new BlockFile(indexName);
+      indexFile = new BlockFile(Paths.get(indexName));
     }
   }
 
   private void openValues(boolean newIndex, int blockSize, int maxBlocks) throws IOException {
     if (newIndex) {
-      valueFile = new BlockFile(valueName, blockSize, maxBlocks, 0);
+      valueFile = new BlockFile(Paths.get(valueName), blockSize, maxBlocks, 0);
       valueFile.clear();
     } else {
-      valueFile = new BlockFile(valueName);
+      valueFile = new BlockFile(Paths.get(valueName));
     }
   }
 

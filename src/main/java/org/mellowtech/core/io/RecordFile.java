@@ -45,49 +45,67 @@ import java.util.function.Consumer;
 public interface RecordFile {
 
 
-  public Map<Integer, Integer> compact() throws IOException;
-  public boolean save() throws IOException;
-  public void close() throws IOException;
-  public void clear() throws IOException;
+  void clear() throws IOException;
 
+  void close() throws IOException;
 
-  /**
-   * Get the number of records currently stored
-   * @return records
-   */
-  public int size();
-  public int getBlockSize();
-  public int getFreeBlocks();
+  Map<Integer, Integer> compact() throws IOException;
 
-  public void setReserve(byte[] bytes) throws IOException, UnsupportedOperationException;
-  public byte[] getReserve() throws IOException, UnsupportedOperationException;
-  public MappedByteBuffer mapReserve() throws IOException, UnsupportedOperationException;
+  boolean contains(int record) throws IOException;
 
+  boolean delete(int record) throws IOException;
 
-  public int getFirstRecord();
-
-  public byte[] get(int record) throws IOException;
-  public boolean get(int record, byte[] buffer) throws IOException;
-
-  public boolean update(int record, byte[] bytes) throws IOException;
-  public boolean update(int record, byte[] bytes, int offset, int length) throws IOException;
-
-  public int insert(byte[] bytes) throws IOException;
-  public int insert(byte[] bytes, int offset, int length) throws IOException;
-  public void insert(int record, byte[] bytes) throws IOException;
-  public boolean delete(int record) throws IOException;
-
-  public boolean contains(int record) throws IOException;
-
-  public Iterator<Record> iterator() throws UnsupportedOperationException;
-  public Iterator<Record> iterator(int record) throws UnsupportedOperationException;
-  
-  default public void forEach(Consumer<Record> action){
+  default void forEach(Consumer<Record> action){
     Iterator <Record> iter = iterator();
     while(iter.hasNext()){
       action.accept(iter.next());
     }
   }
+
+  default byte[] get(int record) throws IOException{
+    byte[] bytes = new byte[getBlockSize()];
+    return get(record, bytes) ? bytes : null;
+  }
+
+  boolean get(int record, byte[] buffer) throws IOException;
+
+  int getBlockSize();
+
+  int getFirstRecord();
+
+  int getFreeBlocks();
+
+  byte[] getReserve() throws IOException, UnsupportedOperationException;
+
+  default int insert(byte[] bytes) throws IOException{
+    return insert(bytes, 0, bytes != null ? bytes.length : -1);
+  }
+
+  int insert(byte[] bytes, int offset, int length) throws IOException;
+
+  void insert(int record, byte[] bytes) throws IOException;
+
+  Iterator<Record> iterator() throws UnsupportedOperationException;
+
+  Iterator<Record> iterator(int record) throws UnsupportedOperationException;
+
+  MappedByteBuffer mapReserve() throws IOException, UnsupportedOperationException;
+
+  boolean save() throws IOException;
+
+  void setReserve(byte[] bytes) throws IOException, UnsupportedOperationException;
+
+  /**
+   * Get the number of records currently stored
+   * @return records
+   */
+  int size();
+
+  default boolean update(int record, byte[] bytes) throws IOException{
+    return update(record, bytes, 0, bytes.length);
+  }
+  
+  boolean update(int record, byte[] bytes, int offset, int length) throws IOException;
 
 
 
