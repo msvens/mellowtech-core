@@ -26,62 +26,29 @@
  */
 package org.mellowtech.core.collections.tree;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.mellowtech.core.TestUtils;
 import org.mellowtech.core.bytestorable.CBInt;
 import org.mellowtech.core.bytestorable.CBString;
-import org.mellowtech.core.collections.tree.MemMappedBPTreeImp;
 
 
 /**
  * @author Martin Svensson
  */
-public class MemMappedBPTreeImpTest {
+public class MemMappedBPTreeImpTest extends BTreeTemplate{
 
-  public MemMappedBPTreeImp<String, CBString, Integer, CBInt> dbMap;
-
-  public static final String dir = "dbmtest";
-  public static final String name = "memDiscBasedMap";
-  public TestTree tt;
-
-
-  @Before
-  public void before() throws Exception {
-    //TestUtils.deleteTempDir(dir);
-    TestUtils.createTempDir(dir);
-
-    String fileName = TestUtils.getAbsolutDir(dir+"/"+name);
-    this.dbMap = new MemMappedBPTreeImp <> (fileName,  CBString.class, CBInt.class, 1024, 1024, false, 1024*1024, 1024);
-    tt = new TestTree(dbMap);
+  @Override
+  String fName() {
+    return "memmappedbtreeimp";
   }
 
-  @Test
-  public void doTest() throws Exception {
-    tt.insert();
-	tt.print();
-    tt.testContains();
-    tt.testValues();
-    tt.testDeleteHalf();
-    tt.testSimpleDelete();
-    tt.testValues();
-    tt.testIterator();
-    dbMap.save();
-    String fileName = TestUtils.getAbsolutDir(dir+"/"+name);
-    dbMap = new MemMappedBPTreeImp <> (fileName,  CBString.class, CBInt.class, false);
-    tt.setDbMap(dbMap);
-    tt.testSize();
-    tt.testValues();
-    tt.testDeleteAll();
+  @Override
+  BTree<String, CBString, Integer, CBInt> init(String fileName, int valueBlockSize, int indexBlockSize,
+                                               int maxValueBlocks, int maxIndexBlocks) throws Exception{
+    return new MemMappedBPTreeImp<>(fileName, CBString.class, CBInt.class, indexBlockSize,
+        valueBlockSize,false,maxValueBlocks,maxIndexBlocks);
   }
-
-  @After
-  public void after() throws Exception {
-
-    this.dbMap.save();
-    this.dbMap.delete();
-    TestUtils.deleteTempDir(dir);
+  @Override
+  BTree<String, CBString, Integer, CBInt> reopen(String fileName) throws Exception{
+    return new MemMappedBPTreeImp<>(fileName, CBString.class, CBInt.class, false);
   }
 
 

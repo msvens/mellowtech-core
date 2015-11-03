@@ -85,8 +85,15 @@ abstract class AbstractSplitBlockFile implements SplitRecordFile {
 
   @Override
   public void close() throws IOException {
-    save();
-    fc.close();
+    if(fc.isOpen()) {
+      save();
+      fc.close();
+    }
+  }
+
+  @Override
+  public boolean isOpen() {
+    return fc.isOpen();
   }
 
   @Override

@@ -30,6 +30,12 @@ abstract class AbstractBlockFile implements RecordFile {
   protected FileChannel fc;
   protected int maxBlocks;
   protected BitSet bitSet;
+
+  @Override
+  public boolean isOpen() {
+    return fc.isOpen();
+  }
+
   protected MappedByteBuffer bitBuffer;
   private int blockSize;
   private int reserve;
@@ -63,8 +69,10 @@ abstract class AbstractBlockFile implements RecordFile {
 
   @Override
   public void close() throws IOException {
-    save();
-    fc.close();
+    if(isOpen()){
+      save();
+      fc.close();
+    }
   }
 
   @Override

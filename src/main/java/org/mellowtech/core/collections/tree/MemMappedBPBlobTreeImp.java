@@ -150,8 +150,9 @@ public class MemMappedBPBlobTreeImp<A,B extends BComparable<A,B>,C,D extends BSt
       KeyValue <B,D> kv = new KeyValue<>(tmp.getKey(), null);
       if(tmp.getValue() != null)
         kv.setValue(getValue(tmp.getValue()));
-    }
-    return null;
+      return kv;
+    } else
+      return null;
   }
 
   @Override

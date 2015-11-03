@@ -45,6 +45,7 @@ import java.util.Map;
  *
  * @author Martin Svensson
  */
+@Deprecated
 public class SpannedBlockFile implements RecordFile{
 
   protected RecordFile bf;
@@ -243,6 +244,11 @@ public class SpannedBlockFile implements RecordFile{
   @Override
   public void insert(int record, byte[] bytes) throws IOException {
     throw new IOException("cannot insert at specific record");
+  }
+
+  @Override
+  public boolean isOpen() {
+    return bf.isOpen();
   }
 
   @Override

@@ -183,6 +183,11 @@ public class CachedRecordFile implements RecordFile {
   }
 
   @Override
+  public boolean isOpen() {
+    return file.isOpen();
+  }
+
+  @Override
   public boolean delete(int record) throws IOException {
     cache.remove(record);
     return file.delete(record);

@@ -44,20 +44,20 @@ public interface BufferHeap {
    * @exception Exception
    *              if an error occurs
    */
-  public void insert(int c) throws Exception;
+  void insert(int c) throws Exception;
 
   /**
    * Detete and return the offset of the smallest object in this heap
    * 
    * @return offset
    */
-  public int delete();
+  int delete();
 
   /**
    * Return the offset of the smallest object in this heap.
    * 
    * @return offset
    */
-  public int get();
+  int get();
 
 }

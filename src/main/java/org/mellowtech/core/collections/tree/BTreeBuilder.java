@@ -12,9 +12,9 @@ import org.mellowtech.core.bytestorable.BStorable;
  */
 public class BTreeBuilder {
   
-  public static final int DEFAULT_INDEX_BLOCK = 1024 * 2;
-  public static final int DEFAULT_VALUE_BLOCK = 1024 * 4;
-  public static final int DEFAULT_MAX_BLOCKS = 1024*1014;
+  public static final int DEFAULT_INDEX_BLOCK = 1024 * 8;
+  public static final int DEFAULT_VALUE_BLOCK = 1024 * 8;
+  public static final int DEFAULT_MAX_BLOCKS = 1024*1024;
   public static final int DEFAULT_MAX_INDEX_BLOCKS = 1024*10;
   
   

@@ -148,8 +148,9 @@ public class BPBlobTreeImp <A,B extends BComparable<A,B>, C, D extends BStorable
       KeyValue <B,D> kv = new KeyValue<>(tmp.getKey(), null);
       if(tmp.getValue() != null)
         kv.setValue(getValue(tmp.getValue()));
-    }
-    return null;
+      return kv;
+    } else
+      return null;
   }
 
   @Override

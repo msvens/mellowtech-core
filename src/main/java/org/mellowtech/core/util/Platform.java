@@ -26,15 +26,13 @@
  */
 package org.mellowtech.core.util;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Properties;
+
 
 /**
  * @author martins
@@ -43,8 +41,8 @@ import java.util.Properties;
 public class Platform {
 
 	private static HashMap<String, String> env = null;
-	private static String libPath = null;
-	private static String exePath = null;
+	//private static String libPath = null;
+	//private static String exePath = null;
 
 	/**
 	 * 
@@ -203,9 +201,7 @@ public class Platform {
 	public static boolean containsExec(String name, boolean substring,
 			boolean ignoreCase) throws IOException {
 		String exec = findExec(name, substring, ignoreCase);
-		if (exec == null)
-			return false;
-		return true;
+		return exec != null;
 	}
 
 	public String[] getApplicationForFile(String fileName, boolean deepCheck) {
@@ -232,9 +228,7 @@ public class Platform {
 	}
 
 	public static boolean isNix() {
-		if (Platform.isWindows() || Platform.isMac())
-			return false;
-		return true;
+		return !(Platform.isWindows() || Platform.isMac());
 	}
 
 	/**
@@ -300,7 +294,7 @@ public class Platform {
 	private static String getE(String property) {
 		if (env == null) {
 			Map map = System.getenv();
-			env = new HashMap<String, String>();
+			env = new HashMap<>();
 			for (Iterator iter = map.entrySet().iterator(); iter.hasNext();) {
 				Map.Entry entry = (Map.Entry) iter.next();
 				env.put(((String) entry.getKey()).toUpperCase(), (String) entry

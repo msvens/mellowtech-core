@@ -50,27 +50,6 @@ public interface SortedDiscMap<K,V> extends DiscMap<K,V>, NavigableMap<K,V>{
     Iterator <Entry <K,V>> iterator(K key);
 
 
-    /*public Iterator <Entry<K,V>> iterator(K from, K to, boolean inclusive);
-
-    public K firstKey();
-
-    public Entry <K,V> firstEntry();
-
-    public Entry <K,V> lastEntry();
-
-    public K lastKey();
-
-    public K getLower(K key, boolean strict);
-
-    public Entry <K,V> getLowerEntry();
-
-    public Entry <K,V> getGreaterEntry(K key, boolean strict);
-
-    public K getGreater(K key, boolean strict);
-
-    public SortedMap <K,V> asMemoryMap(K from, K to);*/
-
-
 
 
 

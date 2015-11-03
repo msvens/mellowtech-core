@@ -43,6 +43,7 @@ public class SplitBlockFile extends AbstractSplitBlockFile {
   public SplitBlockFile(Path path, int blockSize, int maxBlocks,
                         int reserve, int mappedMaxBlocks, int mappedBlockSize) throws IOException {
     super(path, blockSize, maxBlocks, reserve, mappedMaxBlocks, mappedBlockSize);
+    //System.out.println(mappedMaxBlocks+" "+maxBlocks);
   }
 
   @Override
@@ -67,6 +68,8 @@ public class SplitBlockFile extends AbstractSplitBlockFile {
 
   @Override
   public int insert(byte[] bytes, int offset, int length) throws IOException {
+    //System.out.println(getFreeBlocks()+" "+size()+" "+maxBlocks);
+    if (getFreeBlocks() < 1) throw new IOException("no free blocks");
     int index = bitSet.nextClearBit(0);
     if (index >= maxBlocks)
       throw new IOException("no blocks left");

@@ -60,7 +60,7 @@ public class TestTree {
     this.dbMap = dbMap;
     this.inMemoryMap = new TreeMap<>();
     text = "";
-    Random r = new Random();
+    //Random r = new Random();
     for (int i = 0; i < numWords; i++) {
 
       String word = "" + i;

@@ -85,6 +85,8 @@ public interface RecordFile {
 
   void insert(int record, byte[] bytes) throws IOException;
 
+  boolean isOpen();
+
   Iterator<Record> iterator() throws UnsupportedOperationException;
 
   Iterator<Record> iterator(int record) throws UnsupportedOperationException;

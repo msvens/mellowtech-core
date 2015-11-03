@@ -26,69 +26,30 @@
  */
 package org.mellowtech.core.collections.tree;
 
-import junit.framework.Assert;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.mellowtech.core.TestUtils;
 import org.mellowtech.core.bytestorable.CBInt;
 import org.mellowtech.core.bytestorable.CBString;
-import org.mellowtech.core.collections.KeyValue;
-import org.mellowtech.core.collections.tree.BPBlobTreeImp;
-
-import java.io.IOException;
-import java.util.Iterator;
-import java.util.Random;
-import java.util.StringTokenizer;
-import java.util.TreeMap;
 
 
 /**
  * @author Martin Svensson
  */
-public class BPBlobTreeImpTest {
+public class BPBlobTreeImpTest extends BTreeTemplate{
 
-  public BPBlobTreeImp<String, CBString, Integer, CBInt> dbMap;
-  public static final String dir = "dbmtest";
-  public static final String name = "discBasedMap";
-  public TestTree tt;
-
-
-  @Before
-  public void before() throws Exception {
-    TestUtils.createTempDir(dir);
-
-    String fileName = TestUtils.getAbsolutDir(dir+"/"+name);
-    this.dbMap = new BPBlobTreeImp <> (fileName,  CBString.class, CBInt.class, 1024, 512, 1024*10, 1024);
-    tt = new TestTree(dbMap);
-
+  @Override
+  String fName() {
+    return "bpblobtreeimp";
   }
 
-  @Test
-  public void doTest() throws Exception {
-    tt.insert();
-    tt.testContains();
-    tt.testValues();
-    tt.testDeleteHalf();
-    tt.testSimpleDelete();
-    tt.testValues();
-    tt.testIterator();
-    dbMap.save();
-    String fileName = TestUtils.getAbsolutDir(dir+"/"+name);
-    dbMap = new BPBlobTreeImp <> (fileName,  CBString.class, CBInt.class);
-    tt.setDbMap(dbMap);
-    tt.testValues();
-    tt.testDeleteAll();
+  @Override
+  BTree<String, CBString, Integer, CBInt> init(String fileName, int valueBlockSize, int indexBlockSize,
+                                               int maxValueBlocks, int maxIndexBlocks) throws Exception{
+    return new BPBlobTreeImp<>(fileName, CBString.class, CBInt.class, valueBlockSize,
+        indexBlockSize, maxValueBlocks,maxIndexBlocks);
   }
 
-  @After
-  public void after() throws Exception {
-
-    this.dbMap.save();
-    //this.dbMap.deleteTree();
-    TestUtils.deleteTempDir(dir);
+  @Override
+  BTree<String, CBString, Integer, CBInt> reopen(String fileName) throws Exception{
+    return new BPBlobTreeImp<>(fileName, CBString.class, CBInt.class);
   }
-
 
 }

@@ -106,8 +106,11 @@ public class VariableRecordFile implements RecordFile {
 
   @Override
   public void close() throws IOException {
-    save();
-    mbb.force();
+    if(isOpen()) {
+      save();
+      mbb.force();
+      fc.close();
+    }
   }
 
   @Override
@@ -225,6 +228,11 @@ public class VariableRecordFile implements RecordFile {
       }
       updateIdx(record, idx);
     }
+  }
+
+  @Override
+  public boolean isOpen() {
+    return fc.isOpen();
   }
 
   @Override

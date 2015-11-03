@@ -197,7 +197,7 @@ implements BTree <A, B, C, D> {
     valueName = fName + ".val";
     this.keyType = keyType.newInstance();
     this.valueType = valueType.newInstance();
-
+    //System.out.println("btree blocks max: "+maxBlocks+" "+maxIndexBlocks);
     keyValues = new KeyValue <> (this.keyType, this.valueType);
     indexKeys = new BTreeKey <> (this.keyType, 0);
     leafLevel = -1;
@@ -322,7 +322,8 @@ implements BTree <A, B, C, D> {
       BPlusReturn<B,D> ret;
       if (leafLevel == -1) { // no index...delete directly to value file:
         ret = deleteKeyValue(kv, rootPage, -1, -1);
-        if (ret.returnKey != null) {
+        if(ret == null) return null;
+        else if (ret.returnKey != null) {
           size--;
           return ret.returnKey.getValue();
         } else
@@ -1194,7 +1195,11 @@ implements BTree <A, B, C, D> {
     }
 
     public BPIterator(B from) {
-      this();
+      try {
+        helper.buildPointers(rootPage, blocks, 0, leafLevel);
+      } catch (IOException e) {
+        CoreLog.L().log(Level.WARNING, "could not traverse blocks", e);
+      }
       int bNo = searchBlock(from);
       for (; currblock < blocks.size(); currblock++) {
         if (blocks.get(currblock) == bNo)

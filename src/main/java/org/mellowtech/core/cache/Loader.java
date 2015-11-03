@@ -45,5 +45,5 @@ public interface Loader<A, B> {
    * @throws NoSuchValueException if key is not found
    * @throws Exception if error
    */
-  public B get(A key) throws Exception, NoSuchValueException;
+  B get(A key) throws Exception, NoSuchValueException;
 }

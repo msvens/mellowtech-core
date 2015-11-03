@@ -46,5 +46,5 @@ public interface Remover<K, V> {
    * @param value
    *          the CacheValue object indicates wheater the value has changed
    */
-  public void remove(K key, CacheValue<V> value);
+  void remove(K key, CacheValue<V> value);
 }

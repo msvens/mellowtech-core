@@ -29,7 +29,9 @@ package org.mellowtech.core;
 
 import java.io.File;
 import java.net.URL;
+import java.util.*;
 
+import org.mellowtech.core.bytestorable.CBString;
 import org.mellowtech.core.util.DelDir;
 import org.mellowtech.core.util.Platform;
 
@@ -40,6 +42,36 @@ import org.mellowtech.core.util.Platform;
  * @author Martin Svensson
  */
 public class TestUtils {
+
+  /**
+   *
+   * @param chars
+   * @param maxWordLength
+   * @param maxBytes
+   * @return
+   */
+  public static CBString[] randomWords(String chars, int maxWordLength, int maxBytes){
+    Random r = new Random();
+    StringBuilder sb = new StringBuilder();
+    List<CBString> words = new ArrayList<>();
+    Set<CBString> dups = new TreeSet<CBString>();
+    int totalBytes = 0;
+    while(totalBytes < maxBytes){
+      sb.setLength(0);
+      int wlength = r.nextInt(maxWordLength) + 1;
+      for(int i = 0; i < wlength; i++){
+        sb.append(chars.charAt(r.nextInt(chars.length())));
+      }
+      CBString tmp = new CBString(sb.toString());
+      if(!dups.contains(tmp)) {
+        totalBytes += tmp.byteSize();
+        words.add(tmp);
+        dups.add(tmp);
+      }
+    }
+    //System.out.println(totalBytes);
+    return words.toArray(new CBString[]{});
+  }
 
   public static String getAbsolutDir(String dir){
      return new File(Platform.getTempDir()+"/"+dir).getAbsolutePath();

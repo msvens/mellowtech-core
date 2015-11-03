@@ -38,49 +38,22 @@ import org.mellowtech.core.collections.tree.MemMappedBPBlobTreeImp;
 /**
  * @author Martin Svensson
  */
-public class InMemoryMemMappedBPBlobTreeImpTest {
+public class InMemoryMemMappedBPBlobTreeImpTest extends BTreeTemplate{
 
-  public MemMappedBPBlobTreeImp<String, CBString, Integer, CBInt> dbMap;
-
-  public static final String dir = "dbmtest";
-  public static final String name = "memBlobDiscBasedMap";
-  public TestTree tt;
-
-
-  @Before
-  public void before() throws Exception {
-    TestUtils.createTempDir(dir);
-
-    String fileName = TestUtils.getAbsolutDir(dir+"/"+name);
-    this.dbMap = new MemMappedBPBlobTreeImp <> (fileName,  CBString.class, CBInt.class, 1024, 1024, true, 1024*1024, 1024);
-    tt = new TestTree(dbMap);
-
+  @Override
+  String fName() {
+    return "inmemorymemmappedblobbtreeimp";
   }
 
-  @Test
-  public void doTest() throws Exception {
-    tt.insert();
-    tt.testContains();
-    tt.testValues();
-    tt.testDeleteHalf();
-    tt.testSimpleDelete();
-    tt.testValues();
-    tt.testIterator();
-    dbMap.save();
-    String fileName = TestUtils.getAbsolutDir(dir+"/"+name);
-    dbMap = new MemMappedBPBlobTreeImp <> (fileName,  CBString.class, CBInt.class, true);
-    tt.setDbMap(dbMap);
-    tt.testValues();
-    tt.testDeleteAll();
+  @Override
+  BTree<String, CBString, Integer, CBInt> init(String fileName, int valueBlockSize, int indexBlockSize,
+                                               int maxValueBlocks, int maxIndexBlocks) throws Exception{
+    return new MemMappedBPBlobTreeImp<>(fileName, CBString.class, CBInt.class, indexBlockSize,
+        valueBlockSize,false,maxValueBlocks,maxIndexBlocks);
   }
-
-  @After
-  public void after() throws Exception {
-
-    this.dbMap.save();
-    //this.dbMap.deleteTree();
-    TestUtils.deleteTempDir(dir);
+  @Override
+  BTree<String, CBString, Integer, CBInt> reopen(String fileName) throws Exception{
+    return new MemMappedBPBlobTreeImp<>(fileName, CBString.class, CBInt.class, false);
   }
-
 
 }
