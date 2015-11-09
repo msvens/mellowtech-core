@@ -34,7 +34,7 @@ import java.util.Map;
  * function that is called everytime something is unloaded from cache. Also note
  * that the remover function should only be called if the value of the key has
  * been changed. A key that has been "put" into the cache more than one time
- * (i.e. the key/value pair is update) is considerd to be changed.
+ * (i.e. the key/value pair is update) is considered to be changed.
  * 
  * @author Martin Svensson
  * @version 1.0

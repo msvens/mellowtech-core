@@ -13,10 +13,10 @@ import java.nio.file.Paths;
  */
 public class RecordFileBuilder {
   
-  public enum Strategy {DISC, SPLIT, MEM_SPLIT, MEM}
+  public enum Strategy {DISC, SPLIT, MEM_SPLIT, DISC_MEM}
 
   private boolean spanned = false;
-  private Strategy strategy = Strategy.SPLIT;
+  private Strategy strategy = Strategy.DISC;
   private boolean iterate = true;
   private Integer maxBlocks = null;
   private int blockSize = 512;
@@ -36,7 +36,7 @@ public class RecordFileBuilder {
   }
   
   public RecordFileBuilder mem() {
-    strategy = Strategy.MEM;
+    strategy = Strategy.DISC_MEM;
     return this;
   }
   
@@ -105,7 +105,7 @@ public class RecordFileBuilder {
         return maxBlocks != null ? new SplitBlockFile(path, blockSize, maxBlocks, reserve, splitMaxBlocks, splitBlockSize) : new SplitBlockFile(path);
       case MEM_SPLIT :
         return maxBlocks != null ? new MemSplitBlockFile(path, blockSize, maxBlocks, reserve, splitMaxBlocks, splitBlockSize) : new MemSplitBlockFile(path);
-      case MEM :
+      case DISC_MEM :
         return maxBlocks != null ? new MemBlockFile(path, blockSize, maxBlocks, reserve) : new MemBlockFile(path);
     }
     return null;

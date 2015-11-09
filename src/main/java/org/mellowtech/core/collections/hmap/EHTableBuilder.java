@@ -6,6 +6,9 @@ import org.mellowtech.core.bytestorable.BComparable;
 import org.mellowtech.core.bytestorable.BStorable;
 import org.mellowtech.core.collections.BMap;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
 /**
  * @author msvens
  *
@@ -46,8 +49,13 @@ public class EHTableBuilder {
     return this;
   }
 
+  public final <A,B extends BComparable<A,B>, C, D extends BStorable<C,D>> BMap <A,B,C,D>
+  build(Class<B> keyType, Class<D> valueType, String fileName) throws Exception {
+    return build(keyType, valueType, Paths.get(fileName));
+  }
+
   public final <A,B extends BComparable<A,B>, C, D extends BStorable<C,D>> BMap <A,B,C,D> 
-  build(Class<B> keyType, Class<D> valueType, String fileName) throws Exception{
+  build(Class<B> keyType, Class<D> valueType, Path fileName) throws Exception{
     if(blobValues) return buildBlob(keyType, valueType, fileName);
     EHTableImp <A,B,C,D> toRet = null;
     //first try to open
@@ -64,7 +72,7 @@ public class EHTableBuilder {
   }
 
   private final <A,B extends BComparable<A,B>,C,D extends BStorable<C,D>> BMap <A,B,C,D> 
-  buildBlob(Class <B> keyType, Class<D> valueType, String fileName) throws Exception{
+  buildBlob(Class <B> keyType, Class<D> valueType, Path fileName) throws Exception{
     BMap <A,B,C,D> toRet = null;
     //first try to open
     try {

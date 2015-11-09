@@ -27,37 +27,26 @@
 
 package org.mellowtech.core.io;
 
+import java.nio.file.Paths;
+
 /**
  * Date: 2013-03-11
- * Time: 08:08
+ * Time: 14:43
  *
  * @author Martin Svensson
  */
-public class MIoException extends Exception {
+public class CachedRecordFileTest extends RecordFileTemplate {
 
+  @Override
+  public String fname() {return "cachedRecordFileTest.blf";}
 
-  /**
-   * 
-   */
-  private static final long serialVersionUID = 2679422301140278387L;
-
-  public MIoException() {
+  @Override
+  public RecordFile reopen(String fname) throws Exception {
+    return new CachedRecordFile(Paths.get(fname), maxBlocks);
   }
-
-  public MIoException(String message) {
-    super(message);
-  }
-
-  public MIoException(String message, Throwable cause) {
-    super(message, cause);
-  }
-
-  public MIoException(Throwable cause) {
-    super(cause);
-  }
-
-  public MIoException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
-    super(message, cause, enableSuppression, writableStackTrace);
+  @Override
+  public RecordFile init(int blockSize, int reserve, int maxBlocks, String fname) throws Exception {
+    return new CachedRecordFile(Paths.get(fname), blockSize, maxBlocks, reserve, maxBlocks);
   }
 
 

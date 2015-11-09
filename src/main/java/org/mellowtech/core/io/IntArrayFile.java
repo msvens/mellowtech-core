@@ -40,6 +40,7 @@ import java.util.Arrays;
  * 
  * @author rickard.coster@asimus.se
  */
+@Deprecated
 public class IntArrayFile {
   private boolean failSafe;
   private FileChannel fChannel;

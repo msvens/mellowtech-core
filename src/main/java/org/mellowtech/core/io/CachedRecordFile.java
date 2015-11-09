@@ -28,214 +28,124 @@
 package org.mellowtech.core.io;
 
 import java.io.IOException;
-import java.nio.MappedByteBuffer;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.logging.Level;
+import java.nio.ByteBuffer;
+import java.nio.file.Path;
 
-import org.mellowtech.core.CoreLog;
-import org.mellowtech.core.cache.*;
+import java.util.NoSuchElementException;
+import java.util.concurrent.ExecutionException;
+
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
+
 
 /**
+ * A Guava cache backed up block file.
  * Date: 2013-03-24
  * Time: 12:09
  *
  * @author Martin Svensson
  */
-@Deprecated
-public class CachedRecordFile implements RecordFile {
+public class CachedRecordFile extends AbstractBlockFile {
 
-  private final RecordFile file;
-  private AbstractCache<Integer, byte[]> cache;
-  //private int writeOps = 0, readOps = 0;
+  LoadingCache<Integer,byte[]> lru;
+  private int cacheSize;
 
-  public CachedRecordFile(RecordFile file, boolean readOnly, boolean mem, int size){
-    this.file = file;
-    setCache(readOnly, size, mem);
-  }
-
-  public void flush(){
-    if(cache != null && !cache.isReadOnly()){
-      CoreLog.L().finest("Closing Block File with "+cache.getCurrentSize()+" blocks in the cache");
-      cache.emptyCache();
-    }
-  }
-
-  @Override
-  public Map<Integer, Integer> compact() throws IOException {
-    flush();
-    return file.compact();
-  }
-
-  @Override
-  public boolean save() throws IOException {
-    flush();
-    return file.save();
-  }
-
-  @Override
-  public void close() throws IOException {
-    flush();
-    file.close();
-  }
-
-  @Override
-  public void clear() throws IOException {
-    //To change body of implemented methods use File | Settings | File Templates.
-  }
-
-  @Override
-  public int size() {
-    return file.size();
-  }
-
-  @Override
-  public int getBlockSize() {
-    return file.getBlockSize();
-  }
-
-  @Override
-  public int getFreeBlocks() {
-    return file.getFreeBlocks();
-  }
-
-  @Override
-  public void setReserve(byte[] bytes) throws IOException {
-    file.setReserve(bytes);
-  }
-  
-  @Override
-  public MappedByteBuffer mapReserve() throws IOException {
-    return file.mapReserve();
-  }
-
-  @Override
-  public byte[] getReserve() throws IOException {
-    return file.getReserve();
-  }
-
-  @Override
-  public int getFirstRecord() {
-    return 0;  //To change body of implemented methods use File | Settings | File Templates.
-  }
-
-  @Override
-  public byte[] get(int record) throws IOException {
-
-      try {
-        return cache.get(record);
-      } catch (NoSuchValueException e) {
-        CoreLog.L().log(Level.SEVERE, "could not read block", e);
-        throw new IOException(e.toString());
+  CacheLoader<Integer, byte[]> loader = new CacheLoader<Integer, byte[]>() {
+    @Override
+    public byte[] load(Integer key) throws Exception {
+      if (bitSet.get(key)) {
+        ByteBuffer bb = ByteBuffer.allocate(getBlockSize());
+        long offset = getOffset(key);
+        fc.read(bb, offset);
+        return bb.array();
       }
-
-  }
-
-  @Override
-  public boolean get(int record, byte[] buffer) throws IOException {
-
-      try {
-        byte b[] = cache.get(record);
-        if(b != null){
-          System.arraycopy(b, 0, buffer, 0, Math.min(b.length, buffer.length));
-          return true;
-        }
-        return false;
-      } catch (NoSuchValueException e) {
-        CoreLog.L().log(Level.SEVERE, "could not read block", e);
-        throw new IOException(e.toString());
-      }
-
-  }
-
-  @Override
-  public boolean update(int record, byte[] bytes) throws IOException {
-    return update(record, bytes, 0, bytes.length);
-  }
-
-  @Override
-  public boolean update(int record, byte[] bytes, int offset, int length) throws IOException {
-    if(cache.isReadOnly()){
-      cache.remove(record);
-      return file.update(record, bytes, offset, length);
+      else
+        throw new NoSuchElementException();
     }
-    else{
-      byte b[] = new byte[file.getBlockSize()];
-      System.arraycopy(bytes, offset, b, 0, Math.min(file.getBlockSize(), length));
-      cache.put(record, b);
-      return true;
-    }
+  };
+
+  private void initCache(){
+    lru = CacheBuilder.newBuilder().maximumSize(cacheSize).build(loader);
   }
 
-  @Override
-  public int insert(byte[] bytes) throws IOException {
-    return file.insert(bytes);
+  public CachedRecordFile(Path p, int cacheSize) throws IOException {
+    super(p);
+    this.cacheSize = cacheSize;
+    initCache();
   }
 
-  @Override
-  public int insert(byte[] bytes, int offset, int length) throws IOException {
-    return file.insert(bytes, offset, length);
-  }
-
-  @Override
-  public void insert(int record, byte[] bytes) throws IOException {
-    file.insert(record, bytes);
-  }
-
-  @Override
-  public boolean isOpen() {
-    return file.isOpen();
+  public CachedRecordFile(Path p, int blockSize, int maxBlocks, int reserve, int cacheSize) throws IOException {
+    super(p, blockSize, maxBlocks, reserve);
+    this.cacheSize = cacheSize;
+    initCache();
   }
 
   @Override
   public boolean delete(int record) throws IOException {
-    cache.remove(record);
-    return file.delete(record);
-  }
-
-  @Override
-  public boolean contains(int record) throws IOException {
-    return file.contains(record);
-  }
-
-  @Override
-  public Iterator<Record> iterator() {
-    return file.iterator();
-  }
-
-  @Override
-  public Iterator<Record> iterator(int record) {
-    return file.iterator(record);
-  }
-
-  public void setCache(boolean readOnly, int size, boolean mem){
-
-    int numCacheItems = mem ? size / file.getBlockSize() : size;
-
-    Remover<Integer, byte[]> remover = null;
-    if(!readOnly){
-      remover = new Remover<Integer, byte[]>() {
-        @Override
-        public void remove(Integer key, CacheValue<byte[]> value) {
-          if(value.isDirty())
-            try {
-              file.update(key, value.getValue());
-              //writeOps++;
-            } catch (IOException e) {
-              CoreLog.L().log(Level.SEVERE, "could not write block", e);
-            }
-        }
-      };
+    if(super.delete(record)){
+      lru.invalidate(record);
+      return true;
     }
-
-    Loader<Integer, byte[]> loader = new Loader<Integer, byte[]>() {
-      @Override
-      public byte[] get(Integer key) throws Exception, NoSuchValueException {
-        byte b[] = file.get(key);
-        //readOps++;
-        return b;
-      }
-    };
-    cache = new CacheLRU<Integer, byte[]> (remover, loader, numCacheItems);
+    return false;
   }
+
+  @Override
+  public boolean get(int record, byte[] buffer) throws IOException {
+    if(!contains(record)) return false;
+    try {
+      byte b[] = lru.get(record);
+      if(b != null){
+        int len = Math.min(b.length, buffer.length);
+        System.arraycopy(b, 0, buffer, 0, len);
+        return true;
+      }
+      return false;
+    }
+    catch(ExecutionException ee){
+      throw new IOException(ee);
+    }
+  }
+
+  @Override
+  public byte[] get(int record) throws IOException {
+    if(!contains(record)) return null;
+    try {
+      return lru.get(record);
+    } catch (ExecutionException e) {
+      throw new IOException(e);
+    }
+  }
+
+  @Override
+  public int insert(byte[] bytes, int offset, int length) throws IOException {
+    if (getFreeBlocks() < 1) throw new IOException("no free blocks");
+    int index = bitSet.nextClearBit(0);
+    bitSet.set(index, true);
+    update(index, bytes, offset, length);
+    saveBitSet();
+    return index;
+  }
+
+  @Override
+  public void insert(int record, byte[] bytes) throws IOException {
+    if (record >= maxBlocks) throw new IOException("record out of block range");
+    bitSet.set(record, true);
+    update(record, bytes);
+    saveBitSet();
+  }
+
+  @Override
+  public boolean update(int record, byte[] bytes, int offset, int length) throws IOException {
+    if (bitSet.get(record) && bytes != null && bytes.length > 0) {
+      long off = getOffset(record);
+      ByteBuffer bb = ByteBuffer.wrap(bytes, offset, length > getBlockSize() ? getBlockSize() : length);
+      fc.write(bb, off);
+      lru.invalidate(record);
+      return true;
+    }
+    return false;
+  }
+
+
 }

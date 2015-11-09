@@ -7,6 +7,8 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
@@ -30,7 +32,7 @@ import org.mellowtech.core.util.DataTypeUtils;
 public class EHTableImp <A, B extends BComparable <A,B>, C, D extends BStorable<C,D>>
   implements BMap <A,B,C,D>{
   
-  public static final int VERSION = 11;
+  public static final int VERSION = 12;
   public static final int DEFAULT_BUCKET_SIZE = 1024;
   public static final int DEFAULT_MAX_DIRECTORY = (int) Math.pow(2, 16);
   
@@ -45,42 +47,39 @@ public class EHTableImp <A, B extends BComparable <A,B>, C, D extends BStorable<
   private int bucketSize;
   private boolean inMemory;
   IntBuffer reserve;
-  private String fileName;
+  private Path p;
   
-  public EHTableImp(String fName, Class<B> keyType, Class<D> valueType, boolean inMemory) throws Exception{
+  public EHTableImp(Path path, Class<B> keyType, Class<D> valueType, boolean inMemory) throws Exception{
     this.keyType = keyType.newInstance();
     this.valueType = valueType.newInstance();
     kvType = new KeyValue <> (this.keyType,this.valueType);
     this.inMemory = inMemory;
-    this.fileName = fName;
-    openTable(fName, false, -1, -1);
-    this.bucketSize = bucketFile.getBlockSize();
+    this.p = path;
+    openFile();
+    //openTable(fName, false, -1, -1);
+    //this.bucketSize = bucketFile.getBlockSize();
   }
   
-  public EHTableImp(String fName, Class<B> keyType, Class<D> valueType, boolean inMemory, int bucketSize, int maxBuckets)
+  public EHTableImp(Path path, Class<B> keyType, Class<D> valueType, boolean inMemory, int bucketSize, int maxBuckets)
     throws Exception{
     
     this.keyType = keyType.newInstance();
     this.valueType = valueType.newInstance();
     kvType = new KeyValue <> (this.keyType,this.valueType);
     this.inMemory = inMemory;
+    this.p = path;
+    createFile(bucketSize, maxBuckets);
+    /*
     this.bucketSize = bucketSize;
-    this.maxDirectory = maxBuckets;
-    openTable(fName, true, bucketSize, maxBuckets);
-    this.fileName = fName;
+    this.maxDirectory = alignBlockSize(maxBuckets);
+    openTable(fName, true, bucketSize, maxDirectory);*/
+
   }
   
   public boolean containsKey(B key) throws IOException {
     KeyValue <B,D> kv = new KeyValue <> (key, null);
     return readBucket(find(key)).containsKey(kv);
   }
-  
-  /*public D get(B key) throws IOException {
-    KeyValue <B,D> kv = new KeyValue <> (key, null);
-    SortedBlock <KeyValue <B,D>> block = readBucket(find(key));
-    kv = block.getKey(kv);
-    return kv != null ? kv.getValue() : null;
-  }*/
   
   @Override
   public final KeyValue<B, D> getKeyValue(B key) throws IOException {
@@ -100,7 +99,7 @@ public class EHTableImp <A, B extends BComparable <A,B>, C, D extends BStorable<
     } catch (IOException e) {
       throw e;
     }
-    //delete any previous key (fix size)
+    //delete any previous key
     if(bucket.containsKey(kv)){
       bucket.deleteKey(kv);
       size--;
@@ -131,7 +130,7 @@ public class EHTableImp <A, B extends BComparable <A,B>, C, D extends BStorable<
       return null;
     size--;
     writeBucket(rrn, bucket);
-    //combine(bucket, rrn);
+    combineBucket(bucket, rrn);
     return deleted.getValue();
   }
   
@@ -148,6 +147,7 @@ public class EHTableImp <A, B extends BComparable <A,B>, C, D extends BStorable<
   }
   
   public void save() throws IOException {
+    writeDepth(dirDepth);
     writeDirectory(directory);
     writeNumItems(size);
     writeVersion(VERSION);
@@ -161,8 +161,7 @@ public class EHTableImp <A, B extends BComparable <A,B>, C, D extends BStorable<
   
   public void delete() throws IOException {
     this.bucketFile.close();
-    File f = new File(fileName);
-    f.delete();
+    Files.delete(p);
     size = 0;
   }
   
@@ -193,11 +192,25 @@ public class EHTableImp <A, B extends BComparable <A,B>, C, D extends BStorable<
   public void compact() throws IOException, UnsupportedOperationException {
     throw new UnsupportedOperationException();
   }
-  
-  /*public void rehash() throws IOException {
-    
-  }*/
-  
+
+  /**
+   * The directory size needs to be of power of 2 since it is contionously
+   * doubled, thus the number of blocks needs to be the same
+   * @param blockSize
+   * @return
+   */
+  private int alignBlockSize(int blockSize){
+    int current = 2;
+    while(true) {
+      int next = current * 2;
+      if (next >= blockSize) {
+        if ((blockSize - current) < (next - blockSize))
+          return current;
+        return next;
+      }
+      current = next;
+    }
+  }
 
   
   private final int find(KeyValue <B,D> kv){
@@ -207,29 +220,8 @@ public class EHTableImp <A, B extends BComparable <A,B>, C, D extends BStorable<
   private final int find(B key){
     return directory[makeAddress(dirDepth, key)];
   }
-  
-  /*private final void combineBucket(SortedBlock <KeyValue <K,V>> bucket, int rrn) throws IOException {
-    int bAdress = findBuddy(bucket);
-    if (bAdress == -1)
-      return;
-    int brrn = directory[bAdress];
-    SortedBlock <KeyValue <K,V>> bBucket = readBucket(brrn);
-    if(bucket.canMerge(bBucket)){
-      
-    }
-    if (bBucket. + bucket.size() <= bucketSize) {
-      for (Iterator <KeyValue <K,V>> it = bBucket.iterator(); it.hasNext();) {
-        bucket.addKey(it.next());
-      }
-      directory[bAdress] = rrn;
-      writeBucket(rrn, bucket);
-      deleteBucket(brrn);
-      if (collapseDir())
-        combine(bucket, rrn);
-    }
-  }
 
-  private int findBuddy(SortedBlock <KeyValue <K,V>> bucket) {
+  private int findBuddy(SortedBlock <KeyValue <B,D>> bucket) {
     int bucketDepth = readBucketDepth(bucket);
     if (dirDepth == 0)
       return -1;
@@ -237,6 +229,25 @@ public class EHTableImp <A, B extends BComparable <A,B>, C, D extends BStorable<
       return -1;
     int sharedAdress = makeAddress(bucketDepth, bucket.getFirstKey().getKey());
     return sharedAdress ^ 1;
+  }
+
+  private final void combineBucket(SortedBlock <KeyValue <B,D>> bucket, int rrn) throws IOException {
+    int bAdress = findBuddy(bucket);
+    if (bAdress == -1)
+      return;
+    int brrn = directory[bAdress];
+    SortedBlock <KeyValue <B,D>> bBucket = readBucket(brrn);
+    if(bucket.canMerge(bBucket)){
+      bucket.mergeBlock(bBucket);
+      directory[bAdress] = rrn;
+      int ndepth = readBucketDepth(bucket);
+      writeBucketDepth(bucket, ndepth-1);
+      writeBucket(rrn, bucket);
+      deleteBucket(brrn);
+      if(collapseDir()){
+        combineBucket(bucket, rrn);
+      }
+    }
   }
 
   private boolean collapseDir() {
@@ -254,7 +265,13 @@ public class EHTableImp <A, B extends BComparable <A,B>, C, D extends BStorable<
     directory = nDir;
     dirDepth--;
     return true;
-  }*/
+  }
+  
+  /*
+
+
+
+  */
   
   private final void splitBucket(SortedBlock <KeyValue<B,D>> bucket/*, KeyValue <K,V> tmp*/) throws IOException {
     int bucketAddr = find(bucket.getKey(0));
@@ -281,7 +298,7 @@ public class EHTableImp <A, B extends BComparable <A,B>, C, D extends BStorable<
     writeDirectory(directory);
 }
   
-  private final void redistribute(SortedBlock <KeyValue <B,D>> oldBucket, 
+  private void redistribute(SortedBlock <KeyValue <B,D>> oldBucket,
       SortedBlock <KeyValue <B,D>> newBucket, int oldAddr) {
     KeyValue <B,D> keyValue;
     for (Iterator <KeyValue <B,D>> it = oldBucket.iterator(); it.hasNext();) {
@@ -292,12 +309,16 @@ public class EHTableImp <A, B extends BComparable <A,B>, C, D extends BStorable<
       }
     }
   }
-  
-  private final void writeBucket(int record, SortedBlock <KeyValue <B,D>> bucket) throws IOException{
-    bucketFile.update(record, bucket.getBlock());
+
+  private void deleteBucket(int rrn) throws IOException {
+    bucketFile.delete(rrn);
   }
   
-  private final SortedBlock <KeyValue <B,D>> readBucket(int record) throws IOException{
+  private void writeBucket(int record, SortedBlock <KeyValue <B,D>> bucket) throws IOException{
+    bucketFile.update(record, bucket.getBlock());
+  }
+
+  private SortedBlock <KeyValue <B,D>> readBucket(int record) throws IOException{
     SortedBlock <KeyValue<B,D>> toRet = new SortedBlock <> ();
     try{
       toRet.setBlock(bucketFile.get(record), kvType, false, SortedBlock.PTR_NORMAL, (short)4); 
@@ -308,9 +329,12 @@ public class EHTableImp <A, B extends BComparable <A,B>, C, D extends BStorable<
     }
   }
   
-  private final void doubleDir() {
+  private void doubleDir() {
     int currentSize = (int) Math.pow(2, dirDepth);
     int newSize = currentSize * 2;
+    if(newSize > maxDirectory){
+      throw new Error("could not double directory...no more free blocks");
+    }
     int[] tmp = new int[newSize];
     for (int i = 0; i < currentSize; i++) {
       tmp[i * 2] = directory[i];
@@ -358,8 +382,8 @@ public class EHTableImp <A, B extends BComparable <A,B>, C, D extends BStorable<
   private final BlockRecord createNewBucket() throws IOException {
     SortedBlock <KeyValue <B,D>> toRet = new SortedBlock <> ();
     try{
-      writeBucketDepth(toRet, 0);
       toRet.setBlock(new byte[bucketSize], kvType, true, SortedBlock.PTR_NORMAL, (short) 4);
+      writeBucketDepth(toRet, 0);
       int rrn = bucketFile.insert(toRet.getBlock());
       return new BlockRecord(rrn, toRet);
     } catch(IOException e){
@@ -367,11 +391,47 @@ public class EHTableImp <A, B extends BComparable <A,B>, C, D extends BStorable<
       throw new IOException(e);
     }
   }
+
+  private void openFile() throws IOException {
+    RecordFileBuilder rfb = new RecordFileBuilder();
+    bucketFile = (inMemory ? rfb.mem() : rfb.disc()).maxBlocks(null).build(p);
+    reserve = bucketFile.mapReserve().asIntBuffer();
+    if(EHTableImp.VERSION != readVersion()) {
+      bucketFile = null;
+      reserve = null;
+      throw new IOException("wrong version of map file");
+    }
+    dirDepth = readDepth();
+    size = readNumItems();
+    directory = readDirectory();
+    this.bucketSize = bucketFile.getBlockSize();
+  }
+
+  private void createFile(int bucketSize, int maxBuckets) throws IOException {
+    RecordFileBuilder rfb = new RecordFileBuilder();
+    int maxBlocks = alignBlockSize(maxBuckets);
+    (inMemory ? rfb.mem() : rfb.disc()).maxBlocks(maxBlocks);
+    bucketFile = rfb.blockSize(bucketSize).reserve(16+(4*maxBlocks)).build(p);
+    bucketFile.clear();
+    directory = new int[1];
+    dirDepth = 0;
+    size = 0;
+    maxDirectory = maxBlocks;
+    this.bucketSize = bucketSize;
+    reserve = bucketFile.mapReserve().asIntBuffer();
+    writeVersion(EHTableImp.VERSION);
+    writeDepth(dirDepth);
+    writeNumItems(size);
+    //BlockRecord br = createNewBucket();
+    directory[0] = createNewBucket().record;
+  }
   
-  private final void openTable(String fName, boolean newTable, int bucketSize, int maxBuckets) throws IOException{
+  private void openTable(String fName, boolean newTable, int bucketSize, int maxBuckets) throws IOException{
     RecordFileBuilder rfb = new RecordFileBuilder();
     if(inMemory) 
       rfb = rfb.mem();
+    else
+      rfb = rfb.disc();
     if(newTable){
       bucketFile = rfb.blockSize(bucketSize).maxBlocks(maxBuckets).reserve(16+(4*maxBuckets)).build(fName);
       bucketFile.clear();
@@ -397,43 +457,43 @@ public class EHTableImp <A, B extends BComparable <A,B>, C, D extends BStorable<
     }
   }
   
-  private final void writeBucketDepth(SortedBlock <KeyValue <B,D>> bucket, int depth){
+  private void writeBucketDepth(SortedBlock <KeyValue <B,D>> bucket, int depth){
     ByteBuffer bb = ByteBuffer.wrap(bucket.getBlock());
     bb.position(bucket.getReservedSpaceStart());
     bb.putInt(depth);
   }
   
-  private final int readBucketDepth(SortedBlock <KeyValue <B,D>> bucket){
+  private int readBucketDepth(SortedBlock <KeyValue <B,D>> bucket){
     ByteBuffer bb = ByteBuffer.wrap(bucket.getBlock());
     bb.position(bucket.getReservedSpaceStart());
     return bb.getInt();
   }
   
-  private final int readVersion(){
+  private int readVersion(){
     return reserve.get(0);
   }
   
-  private final void writeVersion(int version){
+  private void writeVersion(int version){
     reserve.put(0, version);
   }
   
-  private final int readDepth(){
+  private int readDepth(){
     return reserve.get(1);
   }
   
-  private final void writeDepth(int depth){
+  private void writeDepth(int depth){
     reserve.put(1, depth);
   }
   
-  private final int readNumItems(){
+  private int readNumItems(){
     return reserve.get(2);
   }
   
-  private final void writeNumItems(int items){
+  private void writeNumItems(int items){
     reserve.put(2, items);
   }
   
-  private final int[] readDirectory(){
+  private int[] readDirectory(){
     int size = reserve.get(3);
     int dir[] = new int[size];
     reserve.position(4);
@@ -441,7 +501,7 @@ public class EHTableImp <A, B extends BComparable <A,B>, C, D extends BStorable<
     return dir;
   }
   
-  private final void writeDirectory(int dir[]){
+  private void writeDirectory(int dir[]){
     reserve.put(3, dir.length);
     reserve.position(4);
     reserve.put(dir);

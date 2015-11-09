@@ -7,6 +7,7 @@ import java.nio.channels.FileChannel;
 
 import static java.nio.file.StandardOpenOption.*;
 
+import java.nio.file.Path;
 import java.util.Iterator;
 import java.util.logging.Level;
 
@@ -23,9 +24,9 @@ implements BMap <A,B,C,D>{
   private final FileChannel blobs;
   EHTableImp <A,B, ?,BlobPointer> eht;
   D template;
-  private final String fName;
+  private Path fName;
 
-  public EHBlobTableImp(String fName, Class <B> keyType, Class <D> valueType, boolean inMemory) throws Exception{
+  public EHBlobTableImp(Path p, Class <B> keyType, Class <D> valueType, boolean inMemory) throws Exception{
     this.fName = fName;
     //@SuppressWarnings("resource")
     eht = new EHTableImp <> (fName, keyType, BlobPointer.class, inMemory);
@@ -34,7 +35,7 @@ implements BMap <A,B,C,D>{
     blobs = FileChannel.open(f.toPath(), WRITE, READ); 
   }
   
-  public EHBlobTableImp(String fName, Class <B> keyType, Class <D> valueType, 
+  public EHBlobTableImp(Path fName, Class <B> keyType, Class <D> valueType,
       boolean inMemory, int bucketSize, int maxBuckets) throws Exception{
     this.fName = fName;
     eht = new EHTableImp <> (fName, keyType, BlobPointer.class, inMemory, bucketSize, maxBuckets);
