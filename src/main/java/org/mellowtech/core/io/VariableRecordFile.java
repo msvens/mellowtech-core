@@ -82,14 +82,17 @@ public class VariableRecordFile implements RecordFile {
     //map the record buffer
     mbb = fc.map(FileChannel.MapMode.READ_WRITE, indexOffset(), indexSize());
     indexBuffer = mbb.asIntBuffer();
-    save();
-
   }
 
 
   @Override
   public Map<Integer, Integer> compact() throws IOException {
     return null;
+  }
+
+  @Override
+  public long fileSize() throws IOException{
+    return fc.size();
   }
 
   @Override
@@ -115,7 +118,10 @@ public class VariableRecordFile implements RecordFile {
 
   @Override
   public void clear() throws IOException {
-
+    for(int i = 0; i < numRecords; i++){
+      delete(i);
+    }
+    fc.truncate(indexOffset()+indexSize());
   }
 
   @Override
@@ -257,6 +263,10 @@ public class VariableRecordFile implements RecordFile {
   @Override
   public Iterator<Record> iterator(int record) throws UnsupportedOperationException {
     return new VRFIterator(record);
+  }
+
+  protected long blocksOffset(){
+    return indexOffset()+indexSize();
   }
 
   private int headerOffset(){return 0;}

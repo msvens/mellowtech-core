@@ -56,6 +56,15 @@ public class MemSplitBlockFile extends AbstractSplitBlockFile {
   }
 
   @Override
+  public void clear() throws IOException {
+    super.clear();
+    bmap = null;
+    truncate();
+    bmap = new BlockMapper(fc, blocksOffset(), getBlockSize(), maxBlocks);
+    bmap.map(fc.size());
+  }
+
+  @Override
   public boolean delete(int record) throws IOException {
     if (super.delete(record)) {
       bmap.shrink(getLastRecord());

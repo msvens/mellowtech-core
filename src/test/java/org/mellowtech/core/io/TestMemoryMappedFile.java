@@ -11,12 +11,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mellowtech.core.TestUtils;
-import org.mellowtech.core.bytestorable.CBInt;
-import org.mellowtech.core.bytestorable.CBString;
-import org.mellowtech.core.collections.tree.MemMappedBPTreeImp;
-import org.mellowtech.core.collections.tree.TestTree;
-import org.mellowtech.core.io.MemoryMappedFile;
-import org.mellowtech.core.util.Platform;
 
 /**
  * @author msvens
@@ -26,7 +20,6 @@ public class TestMemoryMappedFile {
   
   public static final String dir = "dbmtest";
   public static final String name = "memMappedFile.txt";
-  public TestTree tt;
 
 
   @Before

@@ -41,6 +41,11 @@ public class MemSplitBlockFileTest extends SplitRecordFileTemplate{
   public String fname() {return "memSplitBlockFileTest.blf";}
 
   @Override
+  public long blocksOffset() {
+    return ((MemSplitBlockFile) rf).blocksOffset();
+  }
+
+  @Override
   public SplitRecordFile init(int blockSize, int reserve, int maxBlocks, String fname) throws Exception {
     return new MemSplitBlockFile(Paths.get(fname), blockSize, maxBlocks, reserve, maxBlocks, blockSize);
   }

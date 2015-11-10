@@ -53,6 +53,15 @@ public class MemBlockFile extends AbstractBlockFile {
   }
 
   @Override
+  public void clear() throws IOException{
+    super.clear();
+    bmap = null;
+    truncate();
+    bmap = new BlockMapper(fc, blocksOffset(), getBlockSize(), maxBlocks);
+    bmap.map(fc.size());
+  }
+
+  @Override
   public boolean get(int record, byte[] buffer) throws IOException {
     if (bitSet.get(record)) {
       //ByteBuffer bb = findBuffer(record);

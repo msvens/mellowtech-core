@@ -11,28 +11,38 @@
  */
 package org.mellowtech.core.collections;
 
-import de.svenjacobs.loremipsum.LoremIpsum;
-import junit.framework.Assert;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.mellowtech.core.TestUtils;
 import org.mellowtech.core.bytestorable.CBInt;
 import org.mellowtech.core.bytestorable.CBString;
-import org.mellowtech.core.collections.DiscBasedHashMap;
-import org.mellowtech.core.util.Platform;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.*;
 
 /**
  * @author Martin Svensson
  *
  */
-public class DiscBasedHashMapTest {
-  
+public class DiscBasedHashMapTest extends DiscMapTemplate{
+
+
+  @Override
+  String fName() {
+    return "discBasedHashMap";
+  }
+
+  @Override
+  DiscMap<String, Integer> init(String fileName, int valueBlockSize, int indexBlockSize,
+                                int maxValueBlocks, int maxIndexBlocks) throws Exception {
+
+    return new DiscBasedHashMap(CBString.class, CBInt.class,
+        fileName, false, false, valueBlockSize, maxValueBlocks);
+
+  }
+
+  @Override
+  DiscMap<String, Integer> reopen(String fileName) throws Exception {
+    return new DiscBasedHashMap(CBString.class, CBInt.class, fileName, false, false);
+  }
+
+
+
+  /*
   public DiscBasedHashMap <String, CBString, Integer, CBInt> dbMap;
   public HashMap<String, Integer> inMemoryMap;
   public int numDifferentWords = 1000;
@@ -136,6 +146,6 @@ public class DiscBasedHashMapTest {
       Assert.assertEquals(inValue, dbValue);
     }
   }
-
+  */
 
 }

@@ -83,6 +83,10 @@ abstract class AbstractSplitBlockFile implements SplitRecordFile {
     mappedBitSet.clear();
   }
 
+  protected void truncate() throws IOException {
+    fc.truncate(blocksOffset());
+  }
+
   @Override
   public void close() throws IOException {
     if(fc.isOpen()) {
@@ -129,6 +133,11 @@ abstract class AbstractSplitBlockFile implements SplitRecordFile {
       return true;
     }
     return false;
+  }
+
+  @Override
+  public long fileSize() throws IOException{
+    return fc.size();
   }
 
   @Override

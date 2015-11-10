@@ -41,6 +41,11 @@ public class CachedRecordFileTest extends RecordFileTemplate {
   public String fname() {return "cachedRecordFileTest.blf";}
 
   @Override
+  public long blocksOffset() {
+    return ((CachedRecordFile)rf).blocksOffset();
+  }
+
+  @Override
   public RecordFile reopen(String fname) throws Exception {
     return new CachedRecordFile(Paths.get(fname), maxBlocks);
   }

@@ -30,6 +30,8 @@ public abstract class RecordFileTemplate {
     testBlock = stringBuilder.toString().getBytes();
   }
 
+  public abstract long blocksOffset();
+
   public abstract RecordFile init(int blockSize, int reserve, int maxBlocks, String fname) throws Exception;
 
   public abstract RecordFile reopen(String fname) throws Exception;
@@ -81,6 +83,14 @@ public abstract class RecordFileTemplate {
   @Test
   public void zeroIterator(){
     Assert.assertFalse(rf.iterator().hasNext());
+  }
+
+
+  @Test
+  public void zeroClear() throws IOException{
+    rf.clear();
+    Assert.assertTrue(rf.fileSize() <= blocksOffset());
+    Assert.assertEquals(0, rf.size());
   }
 
   @Test
@@ -141,6 +151,14 @@ public abstract class RecordFileTemplate {
   public void oneIterator() throws Exception{
     rf.insert(testBlock);
     Assert.assertTrue(rf.iterator().hasNext());
+  }
+
+  @Test
+  public void oneClear() throws IOException{
+    rf.insert(testBlock);
+    rf.clear();
+    Assert.assertTrue(rf.fileSize() <= blocksOffset());
+    Assert.assertEquals(0, rf.size());
   }
 
   @Test
@@ -209,6 +227,14 @@ public abstract class RecordFileTemplate {
   public void lastIterator() throws Exception{
     rf.insert(maxBlocks-1, testBlock);
     Assert.assertTrue(rf.iterator().hasNext());
+  }
+
+  @Test
+  public void lastClear() throws IOException{
+    rf.insert(maxBlocks-1, testBlock);
+    rf.clear();
+    Assert.assertTrue(rf.fileSize() <= blocksOffset());
+    Assert.assertEquals(0, rf.size());
   }
 
   @Test
@@ -288,6 +314,15 @@ public abstract class RecordFileTemplate {
     }
     Assert.assertEquals(maxBlocks, i);
   }
+
+  @Test
+  public void allClear() throws Exception{
+    fillFile();
+    rf.clear();
+    Assert.assertTrue(rf.fileSize() <= blocksOffset());
+    Assert.assertEquals(0, rf.size());
+  }
+
 
   @Test
   public void allContains() throws Exception{

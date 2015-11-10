@@ -48,7 +48,12 @@ public class BlockFile extends AbstractBlockFile {
 
   public BlockFile(Path p, int blockSize, int maxBlocks, int reserve) throws IOException {
     super(p, blockSize, maxBlocks, reserve);
-    //System.out.println(this.p.toString()+" "+this.getBlockSize()+" "+this.getFreeBlocks());
+  }
+
+  @Override
+  public void clear() throws IOException{
+    super.clear();
+    truncate();
   }
 
   @Override

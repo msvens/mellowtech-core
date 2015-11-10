@@ -27,6 +27,7 @@
 
 package org.mellowtech.core.io;
 
+import jdk.nashorn.internal.ir.Block;
 import junit.framework.Assert;
 
 import org.junit.Test;
@@ -48,8 +49,15 @@ import java.util.Iterator;
  */
 public class BlockFileTest extends RecordFileTemplate {
 
+
+
   @Override
   public String fname() {return "blockFileTest.blf";}
+
+  @Override
+  public long blocksOffset() {
+    return ((BlockFile) rf).blocksOffset();
+  }
 
   @Override
   public RecordFile reopen(String fname) throws Exception {

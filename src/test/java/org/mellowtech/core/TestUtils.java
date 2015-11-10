@@ -73,6 +73,15 @@ public class TestUtils {
     return words.toArray(new CBString[]{});
   }
 
+  public static String[] randomStrings(String chars, int maxWordLength, int maxBytes){
+    CBString[] cbstrings = randomWords(chars, maxWordLength, maxBytes);
+    String[] toRet = new String[cbstrings.length];
+    for(int i = 0; i < cbstrings.length; i++){
+      toRet[i] = cbstrings[i].get();
+    }
+    return toRet;
+  }
+
   public static String getAbsolutDir(String dir){
      return new File(Platform.getTempDir()+"/"+dir).getAbsolutePath();
   }

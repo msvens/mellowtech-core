@@ -42,6 +42,11 @@ public class MemBlockFileTest extends RecordFileTemplate {
   public String fname() {return "memBlockFileTest.blf";}
 
   @Override
+  public long blocksOffset() {
+    return ((MemBlockFile)rf).blocksOffset();
+  }
+
+  @Override
   public RecordFile init(int blockSize, int reserve, int maxBlocks, String fname) throws Exception {
     return new MemBlockFile(Paths.get(fname), blockSize, maxBlocks, reserve);
   }

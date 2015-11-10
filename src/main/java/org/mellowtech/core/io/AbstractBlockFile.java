@@ -59,7 +59,10 @@ abstract class AbstractBlockFile implements RecordFile {
 
     createFile(p);
     openFile(p);
+  }
 
+  protected void truncate() throws IOException {
+    fc.truncate(blocksOffset());
   }
 
   @Override
@@ -120,6 +123,11 @@ abstract class AbstractBlockFile implements RecordFile {
   }
 
   @Override
+  public long fileSize() throws IOException{
+    return fc.size();
+  }
+
+  @Override
   public Iterator<Record> iterator() {
     return new BlockFileIterator(null);
   }
@@ -171,7 +179,7 @@ abstract class AbstractBlockFile implements RecordFile {
   }
 
   protected long align(long offset) {
-    return offset + (offset % blockSize);
+    return offset + (blockSize - (offset % blockSize));
   }
 
   protected long bitSetOffset() {

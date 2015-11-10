@@ -82,6 +82,13 @@ public class CachedRecordFile extends AbstractBlockFile {
   }
 
   @Override
+  public void clear() throws IOException {
+    super.clear();
+    lru.invalidateAll();
+    truncate();
+  }
+
+  @Override
   public boolean delete(int record) throws IOException {
     if(super.delete(record)){
       lru.invalidate(record);

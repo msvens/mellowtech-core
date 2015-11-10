@@ -50,29 +50,29 @@ public class DiscBasedHashMap <A,B extends BComparable<A,B>,
   private final B keyMapping;
   private final D valueMapping;
   private BMap <A,B,C,D> eht;
-  private final String fName;
+  //private String fName;
 
-  public static final int DEFAULT_BUCKET_SIZE = 1024;
+  public static final int DEFAULT_BUCKET_SIZE = 1024*8;
   public static final int MAX_BUCKETS = 1024*1024*2;
 
 
   public DiscBasedHashMap(Class <B> keyType, Class <D> valueType,
                             String fileName, boolean blobValues, boolean inMemory) throws Exception{
-    this(keyType, valueType, fileName, new EHTableBuilder());
+    this(keyType, valueType, fileName, blobValues, inMemory, DEFAULT_BUCKET_SIZE, MAX_BUCKETS);
   }
 
   public DiscBasedHashMap(Class <B> keyType, Class <D> valueType,
                           String fileName, boolean blobValues, boolean inMemory, int bucketSize,
                           int maxBuckets) throws Exception{
     
-    this(keyType, valueType, fileName, new EHTableBuilder().inMemory(inMemory).bucketSize(bucketSize).maxBuckets(maxBuckets));
+    this(keyType, valueType, fileName, new EHTableBuilder().inMemory(inMemory).blobValues(blobValues).bucketSize(bucketSize).maxBuckets(maxBuckets));
   }
   
   public DiscBasedHashMap(Class <B> keyType, Class <D> valueType, String fileName,
       EHTableBuilder builder) throws Exception{
     this.keyMapping = keyType.newInstance();
     this.valueMapping = valueType.newInstance();
-    this.fName = fileName;
+    //this.fName = fileName;
     this.eht = builder.build(keyType, valueType, fileName);
   }
 
@@ -127,6 +127,7 @@ public class DiscBasedHashMap <A,B extends BComparable<A,B>,
 
 
   @Override
+  @SuppressWarnings("unchecked")
   public boolean containsKey(Object key){
     try{
       return eht.containsKey(keyMapping.create((A) key));
@@ -138,6 +139,7 @@ public class DiscBasedHashMap <A,B extends BComparable<A,B>,
   }
 
   @Override
+  @SuppressWarnings("unchecked")
   public boolean containsValue(Object value) {
     Iterator <KeyValue <B,D>> iter = eht.iterator();
     D find = valueMapping.create((C)value);
@@ -151,6 +153,7 @@ public class DiscBasedHashMap <A,B extends BComparable<A,B>,
   }
 
   @Override
+  @SuppressWarnings("unchecked")
   public C get(Object key) {
     try{
       D ret = eht.get(keyMapping.create((A)key));
@@ -176,6 +179,7 @@ public class DiscBasedHashMap <A,B extends BComparable<A,B>,
   }
 
   @Override
+  @SuppressWarnings("unchecked")
   public C remove(Object key) {
     B bs = keyMapping.create((A) key);
     try{

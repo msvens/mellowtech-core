@@ -287,6 +287,11 @@ public class SpannedBlockFile implements RecordFile{
   }
 
   @Override
+  public long fileSize() throws IOException {
+    return 0;
+  }
+
+  @Override
   public boolean update(int record, byte[] block) throws IOException{
     return update(record, block, 0, block.length);
   }

@@ -47,6 +47,12 @@ public class SplitBlockFile extends AbstractSplitBlockFile {
   }
 
   @Override
+  public void clear() throws IOException {
+    super.clear();
+    truncate();
+  }
+
+  @Override
   public boolean get(int record, byte[] buffer) throws IOException {
     if (bitSet.get(record)) {
       ByteBuffer bb = ByteBuffer.wrap(buffer);

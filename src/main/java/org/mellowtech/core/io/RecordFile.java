@@ -103,6 +103,8 @@ public interface RecordFile {
    */
   int size();
 
+  long fileSize() throws IOException;
+
   default boolean update(int record, byte[] bytes) throws IOException{
     return update(record, bytes, 0, bytes.length);
   }

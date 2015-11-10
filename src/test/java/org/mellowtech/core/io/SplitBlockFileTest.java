@@ -52,6 +52,11 @@ public class SplitBlockFileTest extends SplitRecordFileTemplate{
   public String fname() {return "splitBlockFileTest.blf";}
 
   @Override
+  public long blocksOffset() {
+    return ((SplitBlockFile)rf).blocksOffset();
+  }
+
+  @Override
   public SplitRecordFile init(int blockSize, int reserve, int maxBlocks, String fname) throws Exception {
     return new SplitBlockFile(Paths.get(fname), blockSize, maxBlocks, reserve, maxBlocks, blockSize);
   }

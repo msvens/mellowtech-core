@@ -64,8 +64,8 @@ public class DiscBasedMap <A,B extends BComparable<A,B>,
   private B keyMapping;
   private D valueMapping;
   
-  public static int DEFAULT_KEY_BLOCK = 2048*1;
-  public static int DEFAULT_VALUE_BLOCK = 2048*2;
+  public static int DEFAULT_KEY_BLOCK = 1024*8;
+  public static int DEFAULT_VALUE_BLOCK = 1024*8;
   
   
 
@@ -407,20 +407,18 @@ public class DiscBasedMap <A,B extends BComparable<A,B>,
 
   @Override
   public boolean isEmpty() {
-    return this.size()< 1 ? true : false;
+    return this.size() < 1;
   }
 
   @Override
   public C put(A key, C value) {
-    //ByteComparable <K> bc = keyMapping.toByteComparable(key);
-    //ByteStorableOld <V> bs = valueMapping.toByteStorable(value);
-    C toRet = null;
+    //C toRet = null;
     try {
       this.btree.put(keyMapping.create(key), valueMapping.create(value));
     } catch (IOException e) {
       CoreLog.L().log(Level.WARNING, "", e);
     }
-    return toRet;
+    return null;
   }
 
   @Override
@@ -483,10 +481,6 @@ public class DiscBasedMap <A,B extends BComparable<A,B>,
       return entry;
     }
 
-    @Override
-    public void remove() {
-      throw new UnsupportedOperationException();
-    }
   }
 
 

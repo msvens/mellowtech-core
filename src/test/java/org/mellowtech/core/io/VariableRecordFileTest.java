@@ -14,6 +14,11 @@ public class VariableRecordFileTest extends RecordFileTemplate {
   public String fname() {return "variableRecordFileTest.blf";}
 
   @Override
+  public long blocksOffset() {
+    return ((VariableRecordFile) rf).blocksOffset();
+  }
+
+  @Override
   public RecordFile init(int blockSize, int reserve, int maxBlocks, String fname) throws Exception {
     //return new BlockFile(Paths.get(fname), blockSize, maxBlocks, reserve);
     return new VariableRecordFile(Paths.get(fname),maxBlocks,reserve);
