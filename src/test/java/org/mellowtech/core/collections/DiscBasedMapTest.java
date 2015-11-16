@@ -23,15 +23,39 @@ import org.mellowtech.core.TestUtils;
 import org.mellowtech.core.bytestorable.CBInt;
 import org.mellowtech.core.bytestorable.CBString;
 import org.mellowtech.core.collections.DiscBasedMap;
+import org.mellowtech.core.collections.tree.BTreeBuilder;
 import org.mellowtech.core.util.Platform;
 
 
 /**
  * @author Martin Svensson
  */
-public class DiscBasedMapTest {
+public class DiscBasedMapTest extends SortedDiscMapTemplate {
 
-  public DiscBasedMap<String, CBString, Integer, CBInt> dbMap;
+  @Override
+  String fName() {
+    return "discBasedMap";
+  }
+
+  @Override
+  SortedDiscMap<String, Integer> initMap(String fileName, int valueBlockSize, int indexBlockSize,
+                                int maxValueBlocks, int maxIndexBlocks) throws Exception {
+
+    BTreeBuilder builder = new BTreeBuilder();
+    builder.maxBlocks(maxValueBlocks).maxIndexBlocks(maxIndexBlocks).valueBlockSize(valueBlockSize).indexBlockSize(indexBlockSize);
+    builder.blobValues(false).indexInMemory(true).valuesInMemory(false);
+
+    return new DiscBasedMap(CBString.class, CBInt.class,
+        fileName, builder);
+
+  }
+
+  @Override
+  SortedDiscMap<String, Integer> reopenMap(String fileName) throws Exception {
+    return new DiscBasedMap(CBString.class, CBInt.class, fileName, false, false);
+  }
+
+  /*public DiscBasedMap<String, CBString, Integer, CBInt> dbMap;
   public TreeMap<String, Integer> inMemoryMap;
   public int numDifferentWords = 1000;
   public int numWords = numDifferentWords * 2;
@@ -142,6 +166,6 @@ public class DiscBasedMapTest {
       Assert.assertEquals(inValue, dbValue);
     }
   }
-
+  */
 
 }

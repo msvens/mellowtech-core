@@ -55,7 +55,7 @@ public abstract class BTreeTemplate {
 
   @Before
   public void setup() throws Exception{
-    tree = init(TestUtils.getAbsolutDir(dir+"/"+fName()), 1024, 1024, 15, 5);
+    tree = init(TestUtils.getAbsolutDir(dir+"/"+fName()), 1024, 1024, 20, 5);
   }
 
   @After

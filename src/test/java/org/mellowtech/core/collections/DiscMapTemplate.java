@@ -1,20 +1,18 @@
 package org.mellowtech.core.collections;
 
 import org.junit.*;
-import org.mellowtech.core.CoreLog;
+import org.junit.Assert;
+
 import org.mellowtech.core.TestUtils;
-import org.mellowtech.core.bytestorable.ByteStorableException;
-import org.mellowtech.core.bytestorable.CBInt;
+
 import org.mellowtech.core.bytestorable.CBString;
-import org.mellowtech.core.collections.DiscMap;
-import org.mellowtech.core.collections.KeyValue;
+
 import org.mellowtech.core.util.MapEntry;
 
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.logging.Level;
+import java.util.Map.Entry;
 
 /**
  * Created by msvens on 09/11/15.
@@ -220,14 +218,6 @@ public abstract class DiscMapTemplate {
     Assert.assertEquals((Integer)firstWord.length(), map.remove(firstWord));
   }
 
-  /*
-  @Override
-  public void putAll(Map<? extends A,? extends C> m) {
-    for (Map.Entry<? extends A, ? extends C> e : m.entrySet()) {
-      this.put(e.getKey(), e.getValue());
-    }
-  }
-  */
   @Test
   public void oneClear(){
     onePut();
@@ -258,5 +248,243 @@ public abstract class DiscMapTemplate {
     Assert.assertEquals(firstWord, list.get(0).getKey());
     Assert.assertEquals((Integer)firstWord.length(), list.get(0).getValue());
   }
+
+  /*****test 10 item map**************************/
+  protected void tenPut(){
+    for(String w : words) {
+      map.put(w, w.length());
+    }
+  }
+
+  @Test
+  public void tenIterator() {
+    tenPut();
+    int tot = 0;
+    Iterator<Map.Entry<String,Integer>>  iter = map.iterator();
+    while(iter.hasNext()){
+      tot++;
+      iter.next();
+    }
+    Assert.assertEquals(10, tot);
+  }
+
+  @Test
+  public void tenSize() {
+    tenPut();
+    Assert.assertEquals(10, map.size());
+  }
+
+  @Test
+  public void tenIsEmpty() {
+    tenPut();
+    Assert.assertFalse(map.isEmpty());
+  }
+
+  @Test
+  public void tenContainsKey() {
+    tenPut();
+    for(String w : words) {
+      Assert.assertTrue(map.containsKey(w));
+    }
+  }
+
+  @Test
+  public void tenContainsValue() {
+    tenPut();
+    for(String w : words) {
+      Assert.assertTrue(map.containsValue(w.length()));
+    }
+
+  }
+
+  @Test
+  public void tenGet() {
+    tenPut();
+    for(String w : words){
+      Assert.assertEquals((Integer)w.length(), map.get(w));
+    }
+  }
+
+  @Test
+  public void tenReopen() throws Exception{
+    tenPut();
+    map.close();
+    map = reopen(TestUtils.getAbsolutDir(dir+"/"+fName()));
+    for(String w : words){
+      Assert.assertEquals((Integer)w.length(), map.get(w));
+    }
+  }
+
+  @Test
+  public void tenRemove(){
+    tenPut();
+    for(String w : words){
+      Assert.assertEquals((Integer)w.length(), map.remove(w));
+    }
+    Assert.assertTrue(map.isEmpty());
+  }
+
+  @Test
+  public void tenClear(){
+    tenPut();
+    map.clear();
+    Assert.assertTrue(map.isEmpty());
+  }
+
+  @Test
+  public void tenKeySet(){
+    tenPut();
+    Set <String> keySet = map.keySet();
+    for(String w : words){
+      Assert.assertTrue(keySet.contains(w));
+    }
+    Assert.assertEquals(10, keySet.size());
+  }
+
+  @Test
+  public void tenValues(){
+    tenPut();
+    Collection<Integer> values = map.values();
+    for(String w : words){
+      Assert.assertTrue(values.contains(w.length()));
+    }
+    Assert.assertEquals(10, values.size());
+  }
+
+  @Test
+  public void tenEntrySet(){
+    tenPut();
+    Set <Map.Entry<String,Integer>> entrySet = map.entrySet();
+    for(String w : words) {
+      Map.Entry<String, Integer> e = new MapEntry<>(w, w.length());
+      Assert.assertTrue(entrySet.contains(e));
+    }
+    Assert.assertEquals(10, entrySet.size());
+  }
+
+  protected void manyPut(){
+    for(String w : manyWords){
+      map.put(w, w.length());
+    }
+  }
+
+  protected TreeMap <String, Integer> getManyTree(){
+    TreeMap <String, Integer> m = new TreeMap<>();
+    for(String w : manyWords){
+      m.put(w, w.length());
+    }
+    return m;
+  }
+
+  /*****test 10 item map**************************/
+  @Test
+  public void manyIterator() {
+    manyPut();
+    TreeMap <String, Integer> m = getManyTree();
+    Iterator <Entry<String, Integer>> iter = map.iterator();
+    int items = 0;
+    while(iter.hasNext()){
+      items++;
+      String w = iter.next().getKey();
+      Assert.assertTrue(m.containsKey(w));
+    }
+    Assert.assertEquals(m.size(), items);
+  }
+
+  @Test
+  public void manySize() {
+    manyPut();
+    Assert.assertEquals(manyWords.length, map.size());
+  }
+
+  @Test
+  public void manyIsEmpty() {
+    manyPut();
+    Assert.assertFalse(map.isEmpty());
+  }
+
+  @Test
+  public void manyContainsKey() {
+    manyPut();
+    for(String w : manyWords) {
+      Assert.assertTrue(map.containsKey(w));
+    }
+  }
+
+  @Test
+  public void manyContainsValue() {
+    manyPut();
+    for(String w : manyWords) {
+      Assert.assertTrue(map.containsValue(w.length()));
+    }
+
+  }
+
+  @Test
+  public void manyGet() {
+    manyPut();
+    for(String w : manyWords){
+      Assert.assertEquals((Integer)w.length(), map.get(w));
+    }
+  }
+
+  @Test
+  public void manyReopen() throws Exception{
+    manyPut();
+    map.close();
+    map = reopen(TestUtils.getAbsolutDir(dir+"/"+fName()));
+    for(String w : manyWords){
+      Assert.assertEquals((Integer)w.length(), map.get(w));
+    }
+  }
+
+  @Test
+  public void manyRemove(){
+    manyPut();
+    for(String w : manyWords){
+      Assert.assertEquals((Integer)w.length(), map.remove(w));
+    }
+    Assert.assertTrue(map.isEmpty());
+  }
+
+  @Test
+  public void manyClear(){
+    manyPut();
+    map.clear();
+    Assert.assertTrue(map.isEmpty());
+  }
+
+  @Test
+  public void manyKeySet(){
+    manyPut();
+    Set <String> keySet = map.keySet();
+    for(String w : manyWords){
+      Assert.assertTrue(keySet.contains(w));
+    }
+    Assert.assertEquals(manyWords.length, keySet.size());
+  }
+
+  @Test
+  public void manyValues(){
+    manyPut();
+    Collection<Integer> values = map.values();
+    for(String w : manyWords){
+      Assert.assertTrue(values.contains(w.length()));
+    }
+    Assert.assertEquals(manyWords.length, values.size());
+  }
+
+  @Test
+  public void manyEntrySet(){
+    manyPut();
+    Set <Map.Entry<String,Integer>> entrySet = map.entrySet();
+    for(String w : manyWords) {
+      Map.Entry<String, Integer> e = new MapEntry<>(w, w.length());
+      Assert.assertTrue(entrySet.contains(e));
+    }
+    Assert.assertEquals(manyWords.length, entrySet.size());
+  }
+
+
 
 }

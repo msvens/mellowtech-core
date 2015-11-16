@@ -201,43 +201,26 @@ public class DiscBasedHashMap <A,B extends BComparable<A,B>,
 
   @Override
   public void clear() {
-    //To change body of implemented methods use File | Settings | File Templates.
+    try {
+      eht.truncate();
+    } catch (IOException e) {
+      throw new Error(e);
+    }
   }
 
   @Override
   public Set <A> keySet() {
-    HashSet <A> toRet = new HashSet<> ();
-    Iterator<KeyValue <B,D>> iter = eht.iterator();
-    while(iter.hasNext()){
-      toRet.add(iter.next().getKey().get());
-    }
-    return toRet;
+    return new DBKeySet<A,C> (this);
   }
 
   @Override
   public Collection <C> values() {
-    ArrayList <C> toRet = new ArrayList <> ();
-    Iterator<KeyValue<B,D>> iter = eht.iterator();
-    while(iter.hasNext()){
-      KeyValue <B,D> next = iter.next();
-      if(next.getValue() != null)
-        toRet.add(next.getValue().get());
-    }
-    return toRet;
+    return new DBValueCollection<>(this);
   }
 
   @Override
   public  Set<Map.Entry<A,C>> entrySet() {
-    HashSet <Map.Entry<A,C>> toRet = new HashSet<>();
-    Iterator<KeyValue <B,D>> iter = eht.iterator();
-    while(iter.hasNext()){
-      KeyValue <B,D> kv = iter.next();
-      A key = kv.getKey().get();
-      C value = kv.getValue() != null ? kv.getValue().get() : null;
-      Map.Entry <A, C> entry = new MapEntry<>(key, value);
-      toRet.add(entry);
-    }
-    return toRet;
+    return new DBEntrySet<>(this);
   }
 
   class DiscBasedHashIterator implements Iterator<Entry<A,C>>{

@@ -27,10 +27,7 @@
 package org.mellowtech.core.bytestorable.io;
 
 import java.nio.ByteBuffer;
-import java.util.Arrays;
-import java.util.ConcurrentModificationException;
-import java.util.Iterator;
-import java.util.NoSuchElementException;
+import java.util.*;
 
 import org.mellowtech.core.bytestorable.BComparable;
 import org.mellowtech.core.bytestorable.BStorable;
@@ -164,18 +161,51 @@ public class SortedBlock <T extends BComparable<?,T>> {
    * @return an <code>Iterator</code> value
    */
   public Iterator <T> iterator() {
-    return new SBIterator();
+    return new SBIter();
   }
 
   /**
    * Returns an iterator starting at the given key or the following one.
    * 
-   * @param key
-   *          a given key to start from
+   * @param start
+   *          a given key to start from - can be null
+   * @param inclusive
+   *          include the key itself in the iterator
+   * @param end
+   *          a given key to stop at - can be null
+   * @param endInclusive
+   *          include the end key as well
    * @return an <code>Iterator</code> value
    */
-  public Iterator <T> iterator(T key) {
-    return new SBIterator(key);
+  public Iterator <T> iterator(T start, boolean inclusive, T end, boolean endInclusive) {
+    return new SBIter(start, inclusive, end, endInclusive);
+  }
+
+  /**
+   * Returns an iterator in descending order, from large to small
+   *
+   * @return an <code>Iterator</code> value
+   */
+  public Iterator <T> reverseIterator() {
+    return new SBReverseIter();
+  }
+
+  /**
+   * Returns an iterator in descending order starting at the given key or the following one.
+   * Observe that the it goes from high to low so the start item should be greater than the end item
+   *
+   * @param start
+   *          a given key to start from - can be null
+   * @param inclusive
+   *          include the key itself in the iterator
+   * @param end
+   *          a given key to stop at - can be null
+   * @param endInclusive
+   *          include the end key as well
+   * @return an <code>Iterator</code> value
+   */
+  public Iterator <T> reverseIterator(T start, boolean inclusive, T end, boolean endInclusive) {
+    return new SBReverseIter(start, inclusive, end, endInclusive);
   }
 
   /**
@@ -868,51 +898,130 @@ public class SortedBlock <T extends BComparable<?,T>> {
     buffer.put(tmpArr, 0, length);
   }
 
+  private int getLowerBound(T key, boolean inclusive){
+    int pos = 0;
+    if(key == null) return pos;
+    pos = binarySearch(key);
+    if(pos >= 0){ //item is present
+      return inclusive ? pos : ++pos;
+    } else { //item is not present
+      pos++;
+      return Math.abs(pos);
+    }
+  }
+
+  private int getUpperBound(T key, boolean inclusive){
+    int pos = high - 1;
+    if(key == null) return pos;
+    pos = binarySearch(key);
+    if(pos >= 0){//item present
+      return inclusive ? pos : --pos;
+    } else {
+      pos += 2;
+      return Math.abs(pos);
+    }
+
+  }
   /** *******************************INNER CLASSES************************* */
-  class SBIterator implements Iterator <T> {
+  class SBReverseIter implements Iterator <T> {
+    int cursor;
+    int lastRet = -1;
+    int stop = 0;
+    T nextItem = null;
+
+    public SBReverseIter(){
+      cursor = getUpperBound(null, true);
+      stop = getLowerBound(null, true);
+    }
+
+    public SBReverseIter(T start, boolean inclusive, T end, boolean endInclusive){
+      cursor = getUpperBound(start, inclusive);
+      stop = getLowerBound(end, endInclusive);
+    }
+
+    @Override
+    public boolean hasNext() {
+      return cursor >= stop;
+    }
+
+    @Override
+    public T next() {
+      if(cursor < stop) return null;
+      T ret = getKey(cursor);
+      lastRet = cursor;
+      cursor--;
+      return ret;
+    }
+
+    @Override
+    public void remove() {
+      if(lastRet < 0)
+        throw new IllegalStateException();
+      deleteKey(lastRet);
+      lastRet = -1;
+    }
+  }
+
+  class SBIter implements Iterator <T> {
     int count = high;
     int cursor = 0;
+    int stop = 0;
     int lastRet = -1;
 
-    public SBIterator(T start) {
-      cursor = binarySearch(start);
-      if (cursor >= 0)
+
+    public SBIter() {
+      cursor = getLowerBound(null, false);
+      stop = getUpperBound(null, false);
+    }
+
+    public SBIter(T start, boolean inclusive, T end, boolean endInclusive) {
+      cursor = getLowerBound(start, inclusive);
+      stop = getUpperBound(end, endInclusive);
+    }
+
+    /*private void getNext() {
+      if(cursor > count) nextItem = null;
+      T key = getKey(cursor);
+      if(end.isPresent()) {
+        int cmp = end.get().compareTo(key);
+        if (cmp > 0 || (!endInclusive && cmp == 0))
+          nextItem = null;
         return;
+      }
+      lastRet = cursor;
       cursor++;
-      cursor = Math.abs(cursor);
-    }
+      nextItem = key;
+    }*/
 
-    public SBIterator() {
-    }
 
-    public boolean hasNext() {
-      return (cursor < count);
-    }
+    public boolean hasNext() {return cursor <= stop;}
 
     public T next() {
-      check();
-      if (cursor > count)
-        throw new NoSuchElementException();
+      if(cursor > stop) return null;
       T key = getKey(cursor);
-      lastRet = cursor++;
+      lastRet = cursor;
+      cursor++;
       return key;
     }
 
     public void remove() {
       if (lastRet == -1)
         throw new IllegalStateException();
-      check();
+      //check();
       deleteKey(lastRet);
-      if (lastRet < cursor)
+      stop--;
+      cursor--;
+      lastRet = -1;
+      /*if (lastRet < cursor)
         cursor--;
       lastRet = -1;
-      count = high;
+      count = high;*/
     }
 
-    private void check() {
+    /*private void check() {
       if (count != high)
         throw new ConcurrentModificationException();
-    }
+    }*/
   }
 
   

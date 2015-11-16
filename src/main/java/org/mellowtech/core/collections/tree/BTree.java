@@ -85,7 +85,6 @@ public interface BTree <A,B extends BComparable<A,B>, C, D extends BStorable<C,D
    */
   TreePosition getPositionWithMissing(B key) throws IOException;
 
-
   /**
    * Returns an iterator over the key/value pairs in this btree starting at a
    * given position.
@@ -95,6 +94,25 @@ public interface BTree <A,B extends BComparable<A,B>, C, D extends BStorable<C,D
    * @return this tree's iterator
    * @see org.mellowtech.core.collections.KeyValue
    */
-  Iterator<KeyValue <B, D>> iterator(B from);
+  Iterator<KeyValue <B, D>> iterator(boolean descending, B from, boolean inclusive, B to, boolean toInclusive);
+
+
+  default Iterator<KeyValue<B,D>> iterator() {
+    return iterator(false, null, false, null, false);
+  }
+
+  default Iterator <KeyValue<B,D>> iterator(B from){
+    return iterator(false, from, true, null, false);
+  }
+
+  default Iterator <KeyValue<B,D>> iterator(boolean descending){
+    return iterator(descending, null, false, null, false);
+  }
+
+  default Iterator <KeyValue<B,D>> iterator(boolean descending, B from){
+    return iterator(descending, from, true, null, false);
+  }
+
+
 
 }

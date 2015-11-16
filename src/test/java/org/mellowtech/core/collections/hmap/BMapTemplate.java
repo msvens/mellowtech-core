@@ -57,7 +57,7 @@ public abstract class BMapTemplate {
 
   @Before
   public void setup() throws Exception{
-    tree = init(TestUtils.getAbsolutDir(dir+"/"+fName()), 1024, 12);
+    tree = init(TestUtils.getAbsolutDir(dir+"/"+fName()), 1024, 16);
   }
 
   @After
@@ -256,7 +256,6 @@ public abstract class BMapTemplate {
   protected void fillManyTree() throws IOException{
     for(CBString w : manyWords){
       tree.put(w, val(w));
-
     }
   }
   protected TreeMap <CBString,CBInt> getManyTree(){
@@ -331,7 +330,8 @@ public abstract class BMapTemplate {
     int items = 0;
     while(iter.hasNext()){
       items++;
-      Assert.assertTrue(m.containsKey(iter.next().getKey()));
+      CBString w = iter.next().getKey();
+      Assert.assertTrue(m.containsKey(w));
     }
     Assert.assertEquals(m.size(), items);
   }

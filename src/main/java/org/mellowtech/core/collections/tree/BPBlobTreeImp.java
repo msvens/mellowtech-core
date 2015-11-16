@@ -94,6 +94,12 @@ public class BPBlobTreeImp <A,B extends BComparable<A,B>, C, D extends BStorable
   }
 
   @Override
+  public void truncate() throws IOException {
+    tree.truncate();
+    blobs.truncate(0);
+  }
+
+  @Override
   public int size() throws IOException {
     return tree.size();
   }
@@ -163,14 +169,15 @@ public class BPBlobTreeImp <A,B extends BComparable<A,B>, C, D extends BStorable
     return tree.getPositionWithMissing(key);
   }
 
-  @Override
+  /*@Override
   public Iterator<KeyValue<B,D>> iterator() {
     return new BPBlobIterator();
   }
+  */
 
   @Override
-  public Iterator<KeyValue<B,D>> iterator(B from) {
-    return new BPBlobIterator(from);
+  public Iterator<KeyValue<B,D>> iterator(boolean descending, B from, boolean inclusive, B to, boolean toInclusive) {
+    return new BPBlobIterator(descending, from, inclusive, to, toInclusive);
   }
 
   @Override
@@ -193,8 +200,8 @@ public class BPBlobTreeImp <A,B extends BComparable<A,B>, C, D extends BStorable
       iter = tree.iterator();
     }
 
-    public BPBlobIterator(B from){
-      iter = tree.iterator(from);
+    public BPBlobIterator(boolean descending, B from, boolean inclusive, B to, boolean toInclusive){
+      iter = tree.iterator(descending, from, inclusive, to, toInclusive);
     }
 
     @Override

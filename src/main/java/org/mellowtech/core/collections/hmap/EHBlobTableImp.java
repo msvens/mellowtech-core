@@ -64,6 +64,12 @@ implements BMap <A,B,C,D>{
   }
 
   @Override
+  public void truncate() throws IOException {
+    eht.truncate();
+    blobs.truncate(0);
+  }
+
+  @Override
   public int size() throws IOException {
     return eht.size();
   }

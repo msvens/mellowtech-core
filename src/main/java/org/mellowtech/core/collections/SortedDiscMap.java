@@ -44,13 +44,29 @@ public interface SortedDiscMap<K,V> extends DiscMap<K,V>, NavigableMap<K,V>{
     /**
      * Iterate over the entries in this map starting from
      * position pos
-     * @param key start key
+     * @param descending - iterate in reverse order
+     * @param from - start from or null if no start
+     * @param fromInclusive - include the from key in the iterator (if it exists)
+     * @param to - iterate until to
+     * @param toInclusive - include to in the iterator (if it exists)
      * @return iterator
      */
-    Iterator <Entry <K,V>> iterator(K key);
 
+    Iterator <Entry <K,V>> iterator(boolean descending, K from,
+                                    boolean fromInclusive, K to, boolean toInclusive);
 
+    default Iterator <Entry<K,V>> iterator() {
+      return iterator(false, null, false, null, false);
+    }
+    default Iterator <Entry<K,V>> iterator(K from){
+        return iterator(false, from, true, null, false);
+    }
 
+    default Iterator <Entry<K,V>> iterator(boolean descending){
+        return iterator(descending, null, false, null, false);
+    }
 
-
+    default Iterator <Entry<K,V>> iterator(boolean descending, K from) {
+        return iterator(descending, from, true, null, false);
+    }
 }

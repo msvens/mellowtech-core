@@ -29,10 +29,7 @@ package org.mellowtech.core.collections.tree;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.logging.Level;
 
 import org.mellowtech.core.CoreLog;
@@ -226,6 +223,20 @@ public class MemMappedBPTreeImp<A,B extends BComparable<A,B>,C,D extends BStorab
     size = 0;
   }
 
+  @Override
+  public void truncate() throws IOException {
+    splitFile.clear();
+    leafLevel = -1;
+    size = 0;
+
+    SortedBlock <KeyValue <B,D>> sb = new SortedBlock <> ();
+    sb.setBlock(new byte[splitFile.getBlockSize()], keyValues, true,
+        SortedBlock.PTR_NORMAL);
+
+    rootPage = splitFile.insert(sb.getBlock());
+
+  }
+
   /**
    * Save the tree. After a call to this method the tree has to be
    * reopened. Either saveTree or save has to be called before "closing" the
@@ -376,15 +387,25 @@ public class MemMappedBPTreeImp<A,B extends BComparable<A,B>,C,D extends BStorab
   }
 
   // ITERATORS:
-  @Override
+  /*@Override
   public Iterator<KeyValue<B,D>> iterator() {
-    return new BPIterator();
-  }
+    return new BPIter(false);
+  }*/
 
   @Override
-  public Iterator<KeyValue<B,D>> iterator(B from) {
-    return new BPIterator(from);
+  public Iterator<KeyValue<B,D>> iterator(boolean descending, B from, boolean inclusive, B to, boolean toInclusive) {
+    return new BPIter(descending, from, inclusive, to, toInclusive);
   }
+
+  /*@Override
+  public Iterator<KeyValue<B, D>> reverseIterator() {
+    return new BPIter(true);
+  }*/
+
+  /*@Override
+  public Iterator<KeyValue<B, D>> reverseIterator(B from, boolean inclusive, B to, boolean toInclusive) {
+    return new BPIter(true, from, true, to, toInclusive);
+  }*/
 
   @Override
   public void compact() throws IOException {
@@ -1162,9 +1183,130 @@ public class MemMappedBPTreeImp<A,B extends BComparable<A,B>,C,D extends BStorab
    */
   static class SBBNo <B extends BComparable <?,B>> {
     SortedBlock <BTreeKey <B>> sb;
+
     int bNo;
   }
 
+  class BPIter implements Iterator<KeyValue<B,D>> {
+    Iterator <KeyValue <B,D>> sbIterator;
+    ArrayList <Integer> blocks = new ArrayList <> ();
+    boolean inclusive = true;
+    boolean reverse = false;
+    boolean endInclusive = true;
+    KeyValue <B,D> end = null;
+    int currblock = 0;
+    KeyValue <B,D> next = null;
+
+    public BPIter(boolean reverse) {
+      this.reverse = reverse;
+      initPtrs();
+      nextIter(null);
+      getNext();
+    }
+
+    public BPIter(boolean reverse, B from, boolean inclusive, B to, boolean endInclusive){
+      this.inclusive = inclusive;
+      this.reverse = reverse;
+      this.end = to == null ? null : new KeyValue<> (to, null);
+      this.endInclusive = endInclusive;
+      initPtrs();
+      nextIter(from);
+      getNext();
+    }
+
+    @Override
+    public boolean hasNext() {
+      return next != null;
+    }
+
+    @Override
+    public KeyValue<B, D> next() {
+      KeyValue<B,D> toRet = next;
+      getNext();
+      return toRet;
+    }
+
+    private void getNext(){
+      if(sbIterator == null){
+        next = null;
+        return;
+      }
+      KeyValue <B,D> toRet = sbIterator.next();
+      if(toRet == null){
+        sbIterator = null;
+        next = null;
+      }
+      else {
+        if(!checkEnd(toRet)){
+          sbIterator = null;
+          next = null;
+        } else {
+          next = toRet;
+          if (!sbIterator.hasNext()) {
+            nextIter(null);
+          }
+        }
+      }
+
+    }
+
+    private boolean checkEnd(KeyValue <B,D> toCheck){
+      if(end == null) return true;
+      int cmp = reverse ? end.compareTo(toCheck) : toCheck.compareTo(end);
+      return cmp < 0 || (endInclusive && cmp == 0);
+    }
+
+    private void initPtrs() {
+      try{
+        helper.buildPointers(rootPage, blocks, 0, leafLevel);
+      } catch(IOException e){
+        CoreLog.L().log(Level.WARNING, "could not traverse blocks", e);
+        throw new Error(e);
+      }
+    }
+
+    private void nextIter(B from) {
+      if(reverse)
+        prevBlock(from);
+      else
+        nextBlock(from);
+    }
+
+    private void prevBlock(B from) {
+      if(currblock <= 0)
+        sbIterator = null;
+      else {
+        try{
+          sbIterator = from == null ?
+              helper.getValueBlock(blocks.get(currblock)).reverseIterator() :
+              helper.getValueBlock(blocks.get(currblock)).reverseIterator(new KeyValue<>(from, null), inclusive, null, false);
+          currblock--;
+        }catch(IOException e){
+          CoreLog.L().log(Level.WARNING, "Could not retrieve block", e);
+          throw new Error(e);
+        }
+      }
+
+    }
+
+    private void nextBlock(B from) {
+      if(currblock >= blocks.size())
+        sbIterator = null;
+      else {
+        try {
+          sbIterator = from == null?
+              helper.getValueBlock(blocks.get(currblock)).iterator() :
+              helper.getValueBlock(blocks.get(currblock)).iterator(new KeyValue<>(from, null), inclusive, null, false);
+          currblock++;
+        } catch(IOException e){
+          CoreLog.L().log(Level.WARNING, "Could not retrieve block", e);
+          throw new Error(e);
+        }
+      }
+    }
+  }
+
+  /*
   class BPIterator implements Iterator<KeyValue<B, D>> {
 
     ArrayList<Integer> blocks = new ArrayList<>();
@@ -1229,7 +1371,7 @@ public class MemMappedBPTreeImp<A,B extends BComparable<A,B>,C,D extends BStorab
       }
       try {
         sb = helper.getValueBlock(blocks.get(currblock));
-        sbIterator = sb.iterator(search);
+        sbIterator = sb.iterator(search, true, null, false);
         currblock++;
         if (sbIterator.hasNext())
           return;
@@ -1253,5 +1395,5 @@ public class MemMappedBPTreeImp<A,B extends BComparable<A,B>,C,D extends BStorab
       }
     }
   }
-
+  */
 }

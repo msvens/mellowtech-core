@@ -59,13 +59,15 @@ public class DiscBasedMap <A,B extends BComparable<A,B>,
   C, D extends BStorable<C,D>> implements SortedDiscMap<A, C> {
   
   
-  private BTree <A,B,C,D> btree;
+  protected BTree <A,B,C,D> btree;
   
-  private B keyMapping;
-  private D valueMapping;
+  protected B keyMapping;
+  protected D valueMapping;
   
   public static int DEFAULT_KEY_BLOCK = 1024*8;
   public static int DEFAULT_VALUE_BLOCK = 1024*8;
+
+
   
   
 
@@ -111,13 +113,9 @@ public class DiscBasedMap <A,B extends BComparable<A,B>,
   }
 
   @Override
-  public Iterator<Entry<A, C>> iterator() {
-    return new DiscBasedMapIterator();
-  }
-
-  @Override
-  public Iterator<Entry<A, C>> iterator(A key) {
-    return new DiscBasedMapIterator(key);
+  public Iterator<Entry<A, C>> iterator(boolean descending, A from,
+                                        boolean fromInclusive, A to, boolean toInclusive) {
+    return new DiscBasedMapIterator(descending, from, fromInclusive, to, toInclusive);
   }
 
 
@@ -163,12 +161,12 @@ public class DiscBasedMap <A,B extends BComparable<A,B>,
 
   @Override
   public NavigableSet<A> descendingKeySet() {
-    return null;
+    return new DiscBasedRangeKeySet<>(this, true, null, false, null, false);
   }
 
   @Override
   public NavigableMap<A, C> descendingMap() {
-    return null;
+    return new DiscBasedRangeMap<>(this, true, null, false, null, false);
   }
 
   @Override
@@ -202,12 +200,12 @@ public class DiscBasedMap <A,B extends BComparable<A,B>,
 
   @Override
   public SortedMap<A, C> headMap(A toKey) {
-    throw new Error("views not supported");
+    return headMap(toKey, false);
   }
 
   @Override
   public NavigableMap<A, C> headMap(A toKey, boolean inclusive) {
-    throw new Error("views not supported");
+    return subMap(null, false, toKey, inclusive);
   }
 
   @Override
@@ -250,8 +248,9 @@ public class DiscBasedMap <A,B extends BComparable<A,B>,
   public A lowerKey(A key) {
     try {
       TreePosition tp = btree.getPositionWithMissing(keyMapping.create(key));
-      if(tp.getSmaller() > 0)
+      if(tp.getSmaller() > 0) {
         return btree.getKey(tp.getSmaller() - 1).get();
+      }
       return null;
       
     }
@@ -263,48 +262,42 @@ public class DiscBasedMap <A,B extends BComparable<A,B>,
 
   @Override
   public NavigableSet<A> navigableKeySet() {
-    return (TreeSet <A>) this.keySet();
+    return new DiscBasedRangeKeySet<>(this, false, null, false, null, false);
   }
 
   @Override
   public java.util.Map.Entry<A,C> pollFirstEntry() {
     A key = this.firstKey();
-    C value = this.get(key);
-    MapEntry <A,C> me = new MapEntry <> (key, value);
-    this.remove(key);
-    return me;
+    if(key == null) return null;
+    return new MapEntry<A,C>(key, remove(key));
   }
 
   @Override
   public java.util.Map.Entry<A,C> pollLastEntry() {
     A key = this.lastKey();
-    C value = this.get(key);
-    MapEntry <A,C> me = new MapEntry <> (key, value);
-    this.remove(key);
-    return me;
+    if(key == null) return null;
+    return new MapEntry<A,C>(key, remove(key));
   }
 
   @Override
   public SortedMap<A,C> subMap(A fromKey, A toKey) {
-    throw new Error("views not supported");
+    return subMap(fromKey, true, toKey, false);
   }
 
   @Override
   public NavigableMap<A,C> subMap(A fromKey, boolean fromInclusive, A toKey,
       boolean toInclusive) {
-    throw new Error("views not supported");
+    return new DiscBasedRangeMap<>(this, false, fromKey, fromInclusive, toKey, toInclusive);
   }
 
   @Override
   public SortedMap<A,C> tailMap(A fromKey) {
-    throw new Error("views not supported");
+    return tailMap(fromKey, true);
   }
 
   @Override
   public NavigableMap<A, C> tailMap(A fromKey, boolean inclusive) {
-    //Iterator <Map.Entry<K, V>> iter = this.iterator(fromKey);
-    throw new Error("views not supported");
-    //return null;
+    return subMap(fromKey, inclusive, null, false);
   }
 
   /**
@@ -317,14 +310,7 @@ public class DiscBasedMap <A,B extends BComparable<A,B>,
 
   @Override
   public Set<java.util.Map.Entry<A, C>> entrySet() {
-    Set <Map.Entry<A, C>> toRet = new TreeSet <> ();
-    for(Iterator <KeyValue <B,D>> iter = this.btree.iterator(); iter.hasNext();){
-      KeyValue <B, D> keyValue = iter.next();
-      A key = keyValue.getKey().get();
-      C value = keyValue.getValue().get();
-      toRet.add(new MapEntry <> (key, value));
-    }
-    return toRet;
+    return new DBEntrySet<>(this);
   }
 
   @Override
@@ -340,11 +326,7 @@ public class DiscBasedMap <A,B extends BComparable<A,B>,
 
   @Override
   public Set<A> keySet() {
-    TreeSet <A> ts = new TreeSet <> ();
-    for(Iterator <KeyValue <B, D>> iter = this.btree.iterator(); iter.hasNext();){
-      ts.add(iter.next().getKey().get());
-    }
-    return ts;
+    return new DBKeySet<>(this);
   }
 
   @Override
@@ -360,16 +342,16 @@ public class DiscBasedMap <A,B extends BComparable<A,B>,
 
   @Override
   public Collection <C> values() {
-    ArrayList <C> al = new ArrayList <> ();
-    for(Iterator <KeyValue <B,D>>iter = this.btree.iterator(); iter.hasNext();){
-      al.add(iter.next().getValue().get());
-    }
-    return al; 
+    return new DBValueCollection<>(this);
   }
 
   @Override
   public void clear() {
-    
+    try {
+      btree.truncate();
+    } catch (IOException e) {
+      throw new Error(e);
+    }
   }
 
   @SuppressWarnings("unchecked")
@@ -460,8 +442,13 @@ public class DiscBasedMap <A,B extends BComparable<A,B>,
       iter = btree.iterator();
     }
 
-    public DiscBasedMapIterator(A key){
-      iter = btree.iterator(keyMapping.create(key));
+    public DiscBasedMapIterator(boolean descending,
+                                A from, boolean fromInclusive,
+                                A to, boolean toInclusive){
+      B fKey = from != null ? keyMapping.create(from) : null;
+      B tKey = to != null ? keyMapping.create(to) : null;
+      iter = btree.iterator(descending, fKey, fromInclusive,
+          tKey, toInclusive);
     }
 
 

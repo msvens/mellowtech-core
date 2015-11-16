@@ -152,7 +152,12 @@ public class EHTableImp <A, B extends BComparable <A,B>, C, D extends BStorable<
     Files.delete(p);
     size = 0;
   }
-  
+
+  @Override
+  public void truncate() throws IOException {
+    clearFile();
+  }
+
   public double density() throws IOException {
     final AtomicInteger total = new AtomicInteger(0);
     final AtomicInteger used = new AtomicInteger(0);
@@ -394,12 +399,28 @@ public class EHTableImp <A, B extends BComparable <A,B>, C, D extends BStorable<
     int maxBlocks = alignMaxBlocks(maxBuckets);
     (inMemory ? rfb.mem() : rfb.disc()).maxBlocks(maxBlocks);
     bucketFile = rfb.blockSize(bucketSize).reserve(16+(4*maxBlocks)).build(p);
-    bucketFile.clear();
+    clearFile();
+    /*bucketFile.clear();
     directory = new int[1];
     dirDepth = 0;
     size = 0;
     maxDirectory = maxBlocks;
     this.bucketSize = bucketSize;
+    reserve = bucketFile.mapReserve().asIntBuffer();
+    writeVersion(EHTableImp.VERSION);
+    writeDepth(dirDepth);
+    writeNumItems(size);
+    //BlockRecord br = createNewBucket();
+    directory[0] = createNewBucket().record;*/
+  }
+
+  private void clearFile() throws IOException{
+    bucketFile.clear();
+    directory = new int[1];
+    dirDepth = 0;
+    size = 0;
+    maxDirectory = bucketFile.getFreeBlocks();
+    bucketSize = bucketFile.getBlockSize();
     reserve = bucketFile.mapReserve().asIntBuffer();
     writeVersion(EHTableImp.VERSION);
     writeDepth(dirDepth);

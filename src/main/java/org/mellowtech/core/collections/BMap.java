@@ -19,6 +19,7 @@ public interface BMap <A,B extends BComparable<A,B>, C, D extends BStorable<C,D>
   void save() throws IOException;
   void close() throws IOException;
   void delete() throws IOException;
+  void truncate() throws IOException;
 
   //size, etc
   /**
