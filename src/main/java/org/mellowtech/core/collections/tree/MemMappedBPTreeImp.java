@@ -1273,7 +1273,7 @@ public class MemMappedBPTreeImp<A,B extends BComparable<A,B>,C,D extends BStorab
     }
 
     private void prevBlock(B from) {
-      if(currblock <= 0)
+      if(currblock < 0)
         sbIterator = null;
       else {
         try{

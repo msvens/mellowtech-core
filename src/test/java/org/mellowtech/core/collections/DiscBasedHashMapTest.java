@@ -11,8 +11,11 @@
  */
 package org.mellowtech.core.collections;
 
+import org.mellowtech.core.TestUtils;
 import org.mellowtech.core.bytestorable.CBInt;
 import org.mellowtech.core.bytestorable.CBString;
+
+import java.util.Map;
 
 /**
  * @author Martin Svensson
@@ -21,23 +24,18 @@ import org.mellowtech.core.bytestorable.CBString;
 public class DiscBasedHashMapTest extends DiscMapTemplate{
 
 
-  @Override
-  String fName() {
-    return "discBasedHashMap";
-  }
+  private String fName = "discBasedHashMap";
+
 
   @Override
-  DiscMap<String, Integer> init(String fileName, int valueBlockSize, int indexBlockSize,
-                                int maxValueBlocks, int maxIndexBlocks) throws Exception {
-
+  Map<String, Integer> init() throws Exception {
     return new DiscBasedHashMap(CBString.class, CBInt.class,
-        fileName, false, false, valueBlockSize, maxValueBlocks);
-
+        absPath(fName), false, false, VAL_BLK_SIZE, VAL_BLKS);
   }
 
   @Override
-  DiscMap<String, Integer> reopen(String fileName) throws Exception {
-    return new DiscBasedHashMap(CBString.class, CBInt.class, fileName, false, false);
+  DiscMap<String, Integer> reopen() throws Exception {
+    return new DiscBasedHashMap(CBString.class, CBInt.class, absPath(fName), false, false);
   }
 
 

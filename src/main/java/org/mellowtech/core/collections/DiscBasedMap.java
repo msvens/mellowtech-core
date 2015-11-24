@@ -141,11 +141,11 @@ public class DiscBasedMap <A,B extends BComparable<A,B>,
       CoreLog.L().log(Level.WARNING, "", e);
       return null;
     }
-    int pos;
-    if(tp.exists())
+    int pos = tp.getSmaller();
+    /*if(tp.exists())
       pos = tp.getSmaller();
     else
-      pos = tp.getSmaller() + 1;
+      pos = tp.getSmaller() + 1;*/
     int higher = this.size() - tp.getSmaller();
     if(higher > 0){
       try {
@@ -161,12 +161,12 @@ public class DiscBasedMap <A,B extends BComparable<A,B>,
 
   @Override
   public NavigableSet<A> descendingKeySet() {
-    return new DiscBasedRangeKeySet<>(this, true, null, false, null, false);
+    return new DescendingKeySet<>(this, null, false, null, false);
   }
 
   @Override
   public NavigableMap<A, C> descendingMap() {
-    return new DiscBasedRangeMap<>(this, true, null, false, null, false);
+    return new DescendingMap<>(this, null, false, null, false);
   }
 
   @Override
@@ -221,9 +221,11 @@ public class DiscBasedMap <A,B extends BComparable<A,B>,
       if(tp == null) return null;
       // tp.getSmaller() is the total number of smaller elements than "key", so the number of elements 
       // higher than "key" is size() - (tp.getSmaller() + 1)
-      int higher = this.size() - (tp.getSmaller()+1); 
+      //int higher = this.size() - (tp.getSmaller()+1);
+      int pos = tp.exists() ? tp.getSmaller() + 1 : tp.getSmaller();
+      int higher = this.size() - pos;
       if (higher > 0) {
-        return btree.getKey(tp.getSmaller()+1).get();
+        return btree.getKey(pos).get();
       }
       return null;
     } catch (IOException e) {
@@ -262,7 +264,7 @@ public class DiscBasedMap <A,B extends BComparable<A,B>,
 
   @Override
   public NavigableSet<A> navigableKeySet() {
-    return new DiscBasedRangeKeySet<>(this, false, null, false, null, false);
+    return new RangeKeySet<>(this, null, false, null, false);
   }
 
   @Override
@@ -287,7 +289,7 @@ public class DiscBasedMap <A,B extends BComparable<A,B>,
   @Override
   public NavigableMap<A,C> subMap(A fromKey, boolean fromInclusive, A toKey,
       boolean toInclusive) {
-    return new DiscBasedRangeMap<>(this, false, fromKey, fromInclusive, toKey, toInclusive);
+    return new RangeMap<>(this, fromKey, fromInclusive, toKey, toInclusive);
   }
 
   @Override

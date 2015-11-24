@@ -59,6 +59,8 @@ public class TestUtils {
     while(totalBytes < maxBytes){
       sb.setLength(0);
       int wlength = r.nextInt(maxWordLength) + 1;
+      if(wlength == 1)
+        wlength++;
       for(int i = 0; i < wlength; i++){
         sb.append(chars.charAt(r.nextInt(chars.length())));
       }
