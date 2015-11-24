@@ -14,7 +14,7 @@ import java.util.Map.Entry;
  */
 public abstract class MapTemplate {
 
-  Map<String, Integer> map;
+  public Map<String, Integer> map;
 
   public static String dir = "discmaptests";
   public static String absPath(String fName){
@@ -57,7 +57,7 @@ public abstract class MapTemplate {
 
   //abstract DiscMap<String,Integer>
   //init(String fileName, int valueBlockSize, int indexBlockSize, int maxValueBlocks, int maxIndexBlocks) throws Exception;
-  abstract Map <String, Integer> init() throws Exception;
+  public abstract Map <String, Integer> init() throws Exception;
 
   //abstract DiscMap<String,Integer> reopen(String fileName) throws Exception;
 

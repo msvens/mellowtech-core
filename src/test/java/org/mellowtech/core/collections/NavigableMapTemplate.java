@@ -12,7 +12,7 @@ import java.util.*;
  */
 public abstract class NavigableMapTemplate extends MapTemplate {
   
-  NavigableMap<String, Integer> nm(){
+  public NavigableMap<String, Integer> nm(){
     return (NavigableMap<String, Integer>) map;
   }
 

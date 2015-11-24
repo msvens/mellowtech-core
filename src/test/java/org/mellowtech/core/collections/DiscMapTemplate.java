@@ -12,16 +12,16 @@ import java.util.Map.Entry;
  */
 public abstract class DiscMapTemplate extends MapTemplate {
 
-  static int IDX_BLK_SIZE = 1024;
-  static int VAL_BLK_SIZE = 1024;
-  static int IDX_BLKS = 5;
-  static int VAL_BLKS = 15;
+  public static int IDX_BLK_SIZE = 1024;
+  public static int VAL_BLK_SIZE = 1024;
+  public static int IDX_BLKS = 5;
+  public static int VAL_BLKS = 15;
 
-  DiscMap <String, Integer> dm() {
+  public DiscMap <String, Integer> dm() {
     return (DiscMap <String, Integer>) map;
   };
 
-  abstract DiscMap <String, Integer> reopen() throws Exception;
+  public abstract DiscMap <String, Integer> reopen() throws Exception;
 
   @After
   public void after() throws Exception{

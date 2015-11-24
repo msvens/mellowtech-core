@@ -34,17 +34,16 @@ import org.junit.Test;
 import org.mellowtech.core.TestUtils;
 import org.mellowtech.core.bytestorable.CBByteArray;
 import org.mellowtech.core.bytestorable.CBString;
-import org.mellowtech.core.collections.DiscBasedMap;
+import org.mellowtech.core.collections.impl.DiscBasedMap;
 
-import java.util.Map;
 import java.util.Random;
-import java.util.StringTokenizer;
 import java.util.TreeMap;
 
 
 /**
  * @author Martin Svensson
  */
+//TODO: Change to use template tests
 public class BlobMapTest {
 
   public DiscBasedMap<String, CBString, byte[], CBByteArray> dbMap;

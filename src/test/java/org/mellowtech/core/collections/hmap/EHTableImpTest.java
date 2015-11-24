@@ -3,7 +3,7 @@ package org.mellowtech.core.collections.hmap;
 import org.mellowtech.core.bytestorable.CBInt;
 import org.mellowtech.core.bytestorable.CBString;
 import org.mellowtech.core.collections.BMap;
-import org.mellowtech.core.collections.tree.BPTreeImp;
+import org.mellowtech.core.collections.impl.EHTableImp;
 
 import java.nio.file.Paths;
 

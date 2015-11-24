@@ -151,7 +151,11 @@ public class KeyValue<K extends BComparable<?,K>, V extends BStorable<?,V>>
 
   @Override
   public boolean equals(Object obj) {
-    return value.key.equals(obj);
+    if(obj instanceof KeyValue && obj != null) {
+      KeyValue other = (KeyValue) obj;
+      return value.key.equals(other.getKey());
+    }
+    return false;
   }
   
   

@@ -1,4 +1,4 @@
-package org.mellowtech.core.collections.hmap;
+package org.mellowtech.core.collections.impl;
 
 import junit.framework.Assert;
 import org.junit.After;
@@ -8,19 +8,20 @@ import org.junit.Test;
 import org.mellowtech.core.TestUtils;
 import org.mellowtech.core.bytestorable.CBInt;
 import org.mellowtech.core.bytestorable.CBString;
-import org.mellowtech.core.collections.BMap;
+import org.mellowtech.core.collections.BTree;
 import org.mellowtech.core.collections.KeyValue;
 
 import java.io.IOException;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.TreeMap;
 
 /**
  * Created by msvens on 01/11/15.
  */
-public abstract class BMapTemplate {
+public abstract class BTreeTemplate {
 
-  BMap<String, CBString, Integer, CBInt> tree;
+  BTree <String, CBString, Integer, CBInt> tree;
   public static String dir = "rftests";
   public static String chars = "abcdefghijklmn0123456789";
   public static int MAX_WORD_LENGTH = 20;
@@ -41,10 +42,10 @@ public abstract class BMapTemplate {
 
   abstract String fName();
 
-  abstract BMap<String,CBString,Integer,CBInt>
-    init(String fileName, int bucketSize, int maxBuckets) throws Exception;
+  abstract BTree<String,CBString,Integer,CBInt>
+    init(String fileName, int valueBlockSize, int indexBlockSize, int maxValueBlocks, int maxIndexBlocks) throws Exception;
 
-  abstract BMap<String,CBString,Integer,CBInt> reopen(String fileName) throws Exception;
+  abstract BTree<String,CBString,Integer,CBInt> reopen(String fileName) throws Exception;
 
   @BeforeClass
   public static void createDir(){
@@ -54,7 +55,7 @@ public abstract class BMapTemplate {
 
   @Before
   public void setup() throws Exception{
-    tree = init(TestUtils.getAbsolutDir(dir+"/"+fName()), 1024, 16);
+    tree = init(TestUtils.getAbsolutDir(dir+"/"+fName()), 1024, 1024, 20, 5);
   }
 
   @After
@@ -94,6 +95,13 @@ public abstract class BMapTemplate {
     Assert.assertFalse(tree.containsKey(firstWord));
   }
 
+  //void put(B key, D value) throws IOException;
+
+  /*default void putIfNotExists(B key, D value) throws IOException{
+    if(!containsKey(key))
+      put(key,value);
+  }*/
+
   @Test
   public void emptyRemove() throws IOException{
     Assert.assertNull(tree.remove(firstWord));
@@ -121,6 +129,26 @@ public abstract class BMapTemplate {
     Assert.assertFalse(tree.iterator().hasNext());
   }
 
+  @Test
+  public void emptyIteratorFrom() throws IOException{
+    Assert.assertFalse(tree.iterator(firstWord).hasNext());
+  }
+
+  @Test(expected = IOException.class)
+  public void emptyGetKey() throws IOException{
+    tree.getKey(0);
+  }
+
+  @Test
+  public void emptyGetPosition() throws IOException{
+    Assert.assertNull(tree.getPosition(firstWord));
+  }
+
+  @Test
+  public void emptyGetPositionWithMissing() throws IOException{
+    Assert.assertEquals(0,tree.getPositionWithMissing(firstWord).getSmaller());
+  }
+
   /***********one item tree tests*****************************/
   protected CBInt val(CBString key){
     return new CBInt(key.get().length());
@@ -143,6 +171,13 @@ public abstract class BMapTemplate {
     tree.put(firstWord, val(firstWord));
     Assert.assertTrue(tree.containsKey(firstWord));
   }
+
+  //void put(B key, D value) throws IOException;
+
+  /*default void putIfNotExists(B key, D value) throws IOException{
+    if(!containsKey(key))
+      put(key,value);
+  }*/
 
   @Test
   public void oneRemove() throws IOException{
@@ -178,6 +213,30 @@ public abstract class BMapTemplate {
     Assert.assertTrue(tree.iterator().hasNext());
   }
 
+  @Test
+  public void oneIteratorFrom() throws IOException{
+    tree.put(firstWord, val(firstWord));
+    Assert.assertTrue(tree.iterator(firstWord).hasNext());
+  }
+
+  @Test
+  public void oneGetKey() throws IOException{
+    tree.put(firstWord, val(firstWord));
+    Assert.assertEquals(firstWord, tree.getKey(0));
+  }
+
+  @Test
+  public void oneGetPosition() throws IOException{
+    tree.put(firstWord, val(firstWord));
+    Assert.assertNotNull(tree.getPosition(firstWord));
+  }
+
+  @Test
+  public void oneGetPositionWithMissing() throws IOException{
+    tree.put(firstWord, val(firstWord));
+    Assert.assertEquals(0,tree.getPositionWithMissing(firstWord).getSmaller());
+  }
+
   /***********ten item tree tests*****************************/
   protected void fillTree() throws IOException{
     for(CBString w : words){
@@ -203,6 +262,13 @@ public abstract class BMapTemplate {
       Assert.assertTrue(tree.containsKey(w));
     }
   }
+
+  //void put(B key, D value) throws IOException;
+
+  /*default void putIfNotExists(B key, D value) throws IOException{
+    if(!containsKey(key))
+      put(key,value);
+  }*/
 
   @Test
   public void tenRemove() throws IOException{
@@ -249,10 +315,41 @@ public abstract class BMapTemplate {
     Assert.assertEquals(10, tot);
   }
 
+  @Test
+  public void tenIteratorFrom() throws IOException{
+    fillTree();
+    Iterator iter = tree.iterator(forthWord);
+    int tot = 0;
+    while(iter.hasNext()){
+      tot++;
+      iter.next();
+    }
+    Assert.assertEquals(7, tot);
+  }
+
+  @Test
+  public void tenGetKey() throws IOException{
+    fillTree();
+    Assert.assertEquals(firstWord, tree.getKey(0));
+  }
+
+  @Test
+  public void tenGetPosition() throws IOException{
+    fillTree();
+    Assert.assertNotNull(tree.getPosition(firstWord));
+  }
+
+  @Test
+  public void tenGetPositionWithMissing() throws IOException{
+    fillTree();
+    Assert.assertEquals(3,tree.getPositionWithMissing(forthWord).getSmaller());
+  }
+
   /**********many item tree tests*****************************/
   protected void fillManyTree() throws IOException{
     for(CBString w : manyWords){
       tree.put(w, val(w));
+
     }
   }
   protected TreeMap <CBString,CBInt> getManyTree(){
@@ -283,13 +380,18 @@ public abstract class BMapTemplate {
     }
   }
 
+  //void put(B key, D value) throws IOException;
+
+  /*default void putIfNotExists(B key, D value) throws IOException{
+    if(!containsKey(key))
+      put(key,value);
+  }*/
+
   @Test
   public void manyRemove() throws IOException{
     fillManyTree();
-    int i = 0;
-    for(CBString w : manyWords) {
+    for(CBString w : manyWords)
       Assert.assertEquals(val(w), tree.remove(w));
-    }
   }
 
   @Test
@@ -304,9 +406,8 @@ public abstract class BMapTemplate {
     fillManyTree();
     tree.close();
     tree = reopen(TestUtils.getAbsolutDir(dir+"/"+fName()));
-    for(CBString w : manyWords) {
+    for(CBString w : manyWords)
       Assert.assertEquals(val(w), tree.get(w));
-    }
   }
 
   @Test
@@ -324,14 +425,44 @@ public abstract class BMapTemplate {
     fillManyTree();
     TreeMap <CBString, CBInt> m = getManyTree();
     Iterator <KeyValue<CBString,CBInt>> iter = tree.iterator();
-    int items = 0;
-    while(iter.hasNext()){
-      items++;
-      CBString w = iter.next().getKey();
-      Assert.assertTrue(m.containsKey(w));
+    Iterator <Map.Entry<CBString,CBInt>> iter1 = m.entrySet().iterator();
+    while(iter1.hasNext()){
+      Assert.assertEquals(iter1.next().getKey(), iter.next().getKey());
     }
-    Assert.assertEquals(m.size(), items);
+    Assert.assertFalse(iter.hasNext());
   }
+
+  /*@Test
+  public void tenIteratorFrom() throws IOException{
+    fillTree();
+    Iterator iter = tree.iterator(forthWord);
+    int tot = 0;
+    while(iter.hasNext()){
+      tot++;
+      iter.next();
+    }
+    Assert.assertEquals(7, tot);
+  }*/
+
+  @Test
+  public void manyGetKey() throws IOException{
+    fillManyTree();
+    TreeMap <CBString, CBInt> m = getManyTree();
+    Assert.assertEquals(m.firstKey(), tree.getKey(0));
+  }
+
+  @Test
+  public void manyGetPosition() throws IOException{
+    fillManyTree();
+    TreeMap <CBString, CBInt> m = getManyTree();
+    Assert.assertEquals(0, tree.getPosition(m.firstKey()).getSmaller());
+  }
+
+  /*@Test
+  public void tenGetPositionWithMissing() throws IOException{
+    fillTree();
+    Assert.assertEquals(3,tree.getPositionWithMissing(forthWord).smaller);
+  }*/
 
 
 

@@ -14,7 +14,7 @@ and secondly you can use the *java.util.collections.Map* abstraction.
 
 ##BTree
 
-There are two main implementations of *org.mellowtech.core.collections.tree.BTree*.
+There are two main implementations of *org.mellowtech.core.collections.BTree*.
 
 **BTreeImp** - implements a btree using two files - one to store the index and one to store the key/values. *BTreeImp* does not use any in-memory buffer and all write
 operations are always directly written to file. This implementation is suitable when you
@@ -28,7 +28,7 @@ The MemMappedBPTreeImp is suitable when you
 * know that the index will not grow beyond a certain point
 * when you need a fast btree
 
-The simplest way of creating a BTree is to use *org.mellowtech.core.collections.tree.BTreeBuilder*
+The simplest way of creating a BTree is to use *org.mellowtech.core.collections.BTreeBuilder*
 
 ```java
 BTree bt = new BTreeBuilder().valuesInMemory(true).build("someFileName",new CBString(), new CBString())

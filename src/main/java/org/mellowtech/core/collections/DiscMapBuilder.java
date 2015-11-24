@@ -1,6 +1,8 @@
 package org.mellowtech.core.collections;
 
 import org.mellowtech.core.bytestorable.*;
+import org.mellowtech.core.collections.impl.DiscBasedHashMap;
+import org.mellowtech.core.collections.impl.DiscBasedMap;
 
 import java.util.Date;
 import java.util.Optional;
