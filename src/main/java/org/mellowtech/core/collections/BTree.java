@@ -87,12 +87,16 @@ public interface BTree <A,B extends BComparable<A,B>, C, D extends BStorable<C,D
    * Returns an iterator over the key/value pairs in this btree starting at a
    * given position.
    *
+   * @param descending iterator going from the largest to smallest element
    * @param from where to start iterating. If the key does not exist start at
    *            position just greater than key
+   * @param fromInclusive if from exists include it in the iterator
+   * @param to where to stop the iteration
+   * @param toInclusive if to exists include it in the iterator
    * @return this tree's iterator
    * @see org.mellowtech.core.collections.KeyValue
    */
-  Iterator<KeyValue <B, D>> iterator(boolean descending, B from, boolean inclusive, B to, boolean toInclusive);
+  Iterator<KeyValue <B, D>> iterator(boolean descending, B from, boolean fromInclusive, B to, boolean toInclusive);
 
 
   default Iterator<KeyValue<B,D>> iterator() {

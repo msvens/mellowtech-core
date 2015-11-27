@@ -91,16 +91,15 @@ public abstract class BTreeTemplate {
   }
 
   @Test
+  public void emptyTruncate() throws IOException {
+    tree.truncate();
+    Assert.assertEquals(0, tree.size());
+  }
+
+  @Test
   public void emptyContainsKey() throws IOException {
     Assert.assertFalse(tree.containsKey(firstWord));
   }
-
-  //void put(B key, D value) throws IOException;
-
-  /*default void putIfNotExists(B key, D value) throws IOException{
-    if(!containsKey(key))
-      put(key,value);
-  }*/
 
   @Test
   public void emptyRemove() throws IOException{
@@ -161,6 +160,12 @@ public abstract class BTreeTemplate {
   }
 
   @Test
+  public void oneTruncate() throws IOException {
+    tree.truncate();
+    Assert.assertEquals(0, tree.size());
+  }
+
+  @Test
   public void oneIsEmpty() throws IOException {
     tree.put(firstWord, val(firstWord));
     Assert.assertFalse(tree.isEmpty());
@@ -171,13 +176,6 @@ public abstract class BTreeTemplate {
     tree.put(firstWord, val(firstWord));
     Assert.assertTrue(tree.containsKey(firstWord));
   }
-
-  //void put(B key, D value) throws IOException;
-
-  /*default void putIfNotExists(B key, D value) throws IOException{
-    if(!containsKey(key))
-      put(key,value);
-  }*/
 
   @Test
   public void oneRemove() throws IOException{
@@ -250,6 +248,12 @@ public abstract class BTreeTemplate {
   }
 
   @Test
+  public void tenTruncate() throws IOException {
+    tree.truncate();
+    Assert.assertEquals(0, tree.size());
+  }
+
+  @Test
   public void tenIsEmpty() throws IOException {
     fillTree();
     Assert.assertFalse(tree.isEmpty());
@@ -262,13 +266,6 @@ public abstract class BTreeTemplate {
       Assert.assertTrue(tree.containsKey(w));
     }
   }
-
-  //void put(B key, D value) throws IOException;
-
-  /*default void putIfNotExists(B key, D value) throws IOException{
-    if(!containsKey(key))
-      put(key,value);
-  }*/
 
   @Test
   public void tenRemove() throws IOException{
@@ -364,6 +361,12 @@ public abstract class BTreeTemplate {
   public void manySize() throws IOException{
     fillManyTree();
     Assert.assertEquals(manyWords.length, tree.size());
+  }
+
+  @Test
+  public void manyTruncate() throws IOException {
+    tree.truncate();
+    Assert.assertEquals(0, tree.size());
   }
 
   @Test

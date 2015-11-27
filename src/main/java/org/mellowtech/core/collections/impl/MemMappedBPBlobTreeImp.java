@@ -99,7 +99,7 @@ public class MemMappedBPBlobTreeImp<A,B extends BComparable<A,B>,C,D extends BSt
 
   @Override
   public void truncate() throws IOException {
-    tree.delete();
+    tree.truncate();
     blobs.truncate(0);
   }
 
