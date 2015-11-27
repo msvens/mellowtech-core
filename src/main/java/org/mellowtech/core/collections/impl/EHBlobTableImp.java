@@ -25,7 +25,7 @@ implements BMap <A,B,C,D>{
   D template;
   private Path fName;
 
-  public EHBlobTableImp(Path p, Class <B> keyType, Class <D> valueType, boolean inMemory) throws Exception{
+  public EHBlobTableImp(Path fName, Class <B> keyType, Class <D> valueType, boolean inMemory) throws Exception{
     this.fName = fName;
     //@SuppressWarnings("resource")
     eht = new EHTableImp <> (fName, keyType, BlobPointer.class, inMemory);
@@ -38,6 +38,7 @@ implements BMap <A,B,C,D>{
       boolean inMemory, int bucketSize, int maxBuckets) throws Exception{
     this.fName = fName;
     eht = new EHTableImp <> (fName, keyType, BlobPointer.class, inMemory, bucketSize, maxBuckets);
+    template = valueType.newInstance();
     File f = new File(fName+".blb");
     blobs = FileChannel.open(f.toPath(), WRITE, READ, TRUNCATE_EXISTING, CREATE); 
   }
@@ -88,8 +89,8 @@ implements BMap <A,B,C,D>{
     int size = value.byteSize();
     long fpos = blobs.size();
     BlobPointer bp = new BlobPointer(fpos, size);
-    eht.put(key, bp);
     ByteBuffer bb = value.to(); bb.flip();
+    eht.put(key, bp);
     blobs.write(bb, fpos);
     
   }
@@ -105,8 +106,10 @@ implements BMap <A,B,C,D>{
     KeyValue <B, BlobPointer> tmp = eht.getKeyValue(key);
     if(tmp != null){
       KeyValue <B, D> kv = new KeyValue<>(tmp.getKey(), null);
-      if(tmp.getValue() != null)
+      if(tmp.getValue() != null) {
         kv.setValue(getValue(tmp.getValue()));
+      }
+      return kv;
     }
     return null;
   }

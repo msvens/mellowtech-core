@@ -1,4 +1,4 @@
-package org.mellowtech.core.collections.hmap;
+package org.mellowtech.core.collections;
 
 import junit.framework.Assert;
 import org.junit.After;
@@ -39,12 +39,12 @@ public abstract class BMapTemplate {
   public static CBString forthWord = new CBString("delta");
 
 
-  abstract String fName();
+  public abstract String fName();
 
-  abstract BMap<String,CBString,Integer,CBInt>
+  public abstract BMap<String,CBString,Integer,CBInt>
     init(String fileName, int bucketSize, int maxBuckets) throws Exception;
 
-  abstract BMap<String,CBString,Integer,CBInt> reopen(String fileName) throws Exception;
+  public abstract BMap<String,CBString,Integer,CBInt> reopen(String fileName) throws Exception;
 
   @BeforeClass
   public static void createDir(){
