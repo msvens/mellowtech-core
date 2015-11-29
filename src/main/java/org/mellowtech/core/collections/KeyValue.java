@@ -66,6 +66,8 @@ public class KeyValue<K extends BComparable<?,K>, V extends BStorable<?,V>>
     super(new KV <K,V> (key,value));
   }
 
+  public KeyValue(K key){this(key, null);}
+
   /**
    * Does nothing. Used when reading and writing KeyValues using the implemented
    * ByteStorable methods.

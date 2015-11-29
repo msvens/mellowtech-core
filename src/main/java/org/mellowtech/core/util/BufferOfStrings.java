@@ -33,6 +33,7 @@ package org.mellowtech.core.util;
  * 
  * BufferOfStrings can use an existing StringBuffer as backing buffer.
  */
+@Deprecated
 public class BufferOfStrings {
 
   // Holds the number of strings (character sequences) in the buffer.

@@ -36,7 +36,7 @@ import org.mellowtech.core.CoreLog;
 import org.mellowtech.core.bytestorable.BComparable;
 import org.mellowtech.core.bytestorable.BStorable;
 import org.mellowtech.core.bytestorable.CBBoolean;
-import org.mellowtech.core.bytestorable.io.SortedBlock;
+import org.mellowtech.core.bytestorable.io.BCBlock;
 import org.mellowtech.core.collections.BTree;
 import org.mellowtech.core.collections.KeyValue;
 import org.mellowtech.core.collections.TreePosition;
@@ -203,12 +203,8 @@ public class MemMappedBPTreeImp<A,B extends BComparable<A,B>,C,D extends BStorab
     this.helper = new MemMappedBPlusHelper <> (this);
 
 
-    SortedBlock <KeyValue <B,D>> sb = new SortedBlock <> ();
-    sb.setBlock(new byte[splitFile.getBlockSize()], keyValues, true,
-            SortedBlock.PTR_NORMAL);
 
-    rootPage = splitFile.insert(sb.getBlock());
-    //helper.putValueBlock(0, sb);
+    rootPage = splitFile.insert(helper.newVBlock().getBlock());
     this.fName = fName;
 
   }
@@ -230,12 +226,7 @@ public class MemMappedBPTreeImp<A,B extends BComparable<A,B>,C,D extends BStorab
     splitFile.clear();
     leafLevel = -1;
     size = 0;
-
-    SortedBlock <KeyValue <B,D>> sb = new SortedBlock <> ();
-    sb.setBlock(new byte[splitFile.getBlockSize()], keyValues, true,
-        SortedBlock.PTR_NORMAL);
-
-    rootPage = splitFile.insert(sb.getBlock());
+    rootPage = splitFile.insert(helper.newVBlock().getBlock());
 
   }
 
@@ -354,9 +345,9 @@ public class MemMappedBPTreeImp<A,B extends BComparable<A,B>,C,D extends BStorab
     int curr = 0;
     for (; curr < blocks.size(); curr++) {
       int bNo = blocks.get(curr);
-      SortedBlock <KeyValue <B,D>> sb = helper.getValueBlock(bNo);
+      BCBlock <KeyValue.KV<B,D>, KeyValue <B,D>> sb = helper.getValueBlock(bNo);
       if (pos < sb.getNumberOfElements()) {
-        return sb.getKey(pos).getKey();
+        return sb.get(pos).getKey();
       }
       pos -= sb.getNumberOfElements();
     }
@@ -389,25 +380,10 @@ public class MemMappedBPTreeImp<A,B extends BComparable<A,B>,C,D extends BStorab
   }
 
   // ITERATORS:
-  /*@Override
-  public Iterator<KeyValue<B,D>> iterator() {
-    return new BPIter(false);
-  }*/
-
   @Override
   public Iterator<KeyValue<B,D>> iterator(boolean descending, B from, boolean inclusive, B to, boolean toInclusive) {
     return new BPIter(descending, from, inclusive, to, toInclusive);
   }
-
-  /*@Override
-  public Iterator<KeyValue<B, D>> reverseIterator() {
-    return new BPIter(true);
-  }*/
-
-  /*@Override
-  public Iterator<KeyValue<B, D>> reverseIterator(B from, boolean inclusive, B to, boolean toInclusive) {
-    return new BPIter(true, from, true, to, toInclusive);
-  }*/
 
   @Override
   public void compact() throws IOException {
@@ -471,11 +447,11 @@ public class MemMappedBPTreeImp<A,B extends BComparable<A,B>,C,D extends BStorab
   }
 
   private int searchBlock(int pNo, BTreeKey <B> key, int level) throws IOException {
-    SortedBlock <BTreeKey <B>> sb = helper.getIndexBlock(pNo);
+    BCBlock <BTreeKey.Entry<B>, BTreeKey <B>> sb = helper.getIndexBlock(pNo);
     if (level == leafLevel) {
-      return helper.getNode(sb.binarySearch(key), sb);
+      return helper.getNode(sb.search(key), sb);
     }
-    return searchBlock(helper.getNode(sb.binarySearch(key), sb), key, level + 1);
+    return searchBlock(helper.getNode(sb.search(key), sb), key, level + 1);
   }
 
   private void insertUpdate(B key, D value, boolean update)
@@ -500,11 +476,11 @@ public class MemMappedBPTreeImp<A,B extends BComparable<A,B>,C,D extends BStorab
 
   private BTreeKey <B> insert(int pNo, BTreeKey <B> key, KeyValue <B,D> kv, int level,
                           boolean update) throws IOException {
-    SortedBlock <BTreeKey <B>> sb = helper.getIndexBlock(pNo);
+    BCBlock <BTreeKey.Entry<B>, BTreeKey <B>> sb = helper.getIndexBlock(pNo);
     BTreeKey <B> keyIndex = null;
     if (level == leafLevel) {
       try {
-        BPlusReturn <B,D> ret = insertKeyValue(kv, helper.getNode(sb.binarySearch(key), sb),
+        BPlusReturn <B,D> ret = insertKeyValue(kv, helper.getNode(sb.search(key), sb),
                 update);
         if (ret != null) { // this forced a split...
           keyIndex = ret.promo;
@@ -515,7 +491,7 @@ public class MemMappedBPTreeImp<A,B extends BComparable<A,B>,C,D extends BStorab
         throw new IOException(e);
       }
     } else
-      keyIndex = insert(helper.getNode(sb.binarySearch(key), sb), key, kv, level + 1,
+      keyIndex = insert(helper.getNode(sb.search(key), sb), key, kv, level + 1,
               update);
     // insert the key into the index and split if necessary:
     if (keyIndex == null)
@@ -524,22 +500,22 @@ public class MemMappedBPTreeImp<A,B extends BComparable<A,B>,C,D extends BStorab
       return insertKey(sb, pNo, keyIndex);
   }
 
-  private BTreeKey <B> insertKey(SortedBlock <BTreeKey <B>> sb, int pNo, BTreeKey <B> keyIndex)
+  private BTreeKey <B> insertKey(BCBlock <BTreeKey.Entry<B>, BTreeKey <B>> sb, int pNo, BTreeKey <B> keyIndex)
           throws IOException {
-    if (sb.fitsKey(keyIndex)) {
+    if (sb.fits(keyIndex)) {
       helper.insertAndReplace(keyIndex, sb);
       helper.putIndexBlock(pNo, sb);
       return null;
     }
-    SortedBlock <BTreeKey <B>> sb1 = sb.splitBlock();
-    BTreeKey <B> first = sb1.getFirstKey();
+    BCBlock <BTreeKey.Entry<B>, BTreeKey <B>> sb1 = sb.split();
+    BTreeKey <B> first = sb1.getFirst();
     helper.setLastPointer(sb, first.get().leftNode);
-    if (keyIndex.compareTo(sb.getLastKey()) < 0) {
+    if (keyIndex.compareTo(sb.getLast()) < 0) {
       helper.insertAndReplace(keyIndex, sb);
     } else
       helper.insertAndReplace(keyIndex, sb1);
     // find the shortest separator:
-    BTreeKey <B> promo = sb1.getFirstKey();
+    BTreeKey <B> promo = sb1.getFirst();
     helper.deleteAndReplace(promo, sb1);
     helper.putIndexBlock(pNo, sb);
     promo.get().leftNode = splitFile.insertRegion(sb1.getBlock());
@@ -548,9 +524,9 @@ public class MemMappedBPTreeImp<A,B extends BComparable<A,B>,C,D extends BStorab
 
   private BPlusReturn <B,D> delete(int pNo, int pBlock, int pSearch, BTreeKey <B> key,
                              KeyValue<B,D> kv, int level) throws IOException {
-    SortedBlock <BTreeKey <B>> sb = helper.getIndexBlock(pNo);
+    BCBlock <BTreeKey.Entry<B>, BTreeKey <B>> sb = helper.getIndexBlock(pNo);
     BPlusReturn <B,D> ret;
-    int search = sb.binarySearch(key);
+    int search = sb.search(key);
     int node = helper.getNode(search, sb);
     if (level == leafLevel) {
       int left = helper.getPreviousNeighbor(search, sb);
@@ -611,25 +587,25 @@ public class MemMappedBPTreeImp<A,B extends BComparable<A,B>,C,D extends BStorab
    *               deleted.
    * @throws java.io.IOException if an error occurs
    */
-  protected void handleRedistribute(SortedBlock <BTreeKey <B>> sb, int cBlock, BPlusReturn <B,D> ret)
+  protected void handleRedistribute(BCBlock <BTreeKey.Entry<B>, BTreeKey <B>> sb, int cBlock, BPlusReturn <B,D> ret)
           throws IOException {
     int pos = ret.keyPos;
     BTreeKey <B> changed, next;
     int tmp;
-    changed = sb.deleteKey(pos);
+    changed = sb.delete(pos);
     // no need to do some more work?
     if (changed.get().key.byteSize() >= ret.promo.get().key.byteSize()) {
       changed.get().key = ret.promo.get().key;
-      sb.insertKey(changed);
+      sb.insert(changed);
       helper.putIndexBlock(cBlock, sb);
     } else { // treat as normal insert...tweak pointers to fit insertKey scheme
       changed.get().key = ret.promo.get().key;
       if (pos < sb.getNumberOfElements()) {
-        next = sb.getKey(pos);
+        next = sb.get(pos);
         tmp = next.get().leftNode;
         next.get().leftNode = changed.get().leftNode;
         changed.get().leftNode = tmp;
-        sb.updateKey(next, pos);
+        sb.update(next, pos);
       } else {
         tmp = changed.get().leftNode;
         changed.get().leftNode = helper.getLastPointer(sb);
@@ -658,16 +634,16 @@ public class MemMappedBPTreeImp<A,B extends BComparable<A,B>,C,D extends BStorab
    * @param pBlock  the block number for the parent block.
    * @throws java.io.IOException if an error occurs
    */
-  protected void handleMerge(SortedBlock <BTreeKey <B>> sb, BPlusReturn <B,D> ret, int cBlock,
+  protected void handleMerge(BCBlock <BTreeKey.Entry<B>, BTreeKey <B>> sb, BPlusReturn <B,D> ret, int cBlock,
                              int pSearch, int pBlock) throws IOException {
     // get position to remove:
     int pos = ret.keyPos;
     if (pos == sb.getNumberOfElements()) {
       pos--;
-      helper.setLastPointer(sb, sb.getKey(pos).get().leftNode);
-      sb.deleteKey(pos);
+      helper.setLastPointer(sb, sb.get(pos).get().leftNode);
+      sb.delete(pos);
     } else
-      sb.deleteKey(pos);
+      sb.delete(pos);
     // no underflow?:
     if (helper.checkUnderflow(sb)) {
       helper.putIndexBlock(cBlock, sb);
@@ -675,15 +651,15 @@ public class MemMappedBPTreeImp<A,B extends BComparable<A,B>,C,D extends BStorab
       return;
     }
     // reblance blocks...start with redistribute:
-    SortedBlock <BTreeKey <B>> parent = helper.getIndexBlock(pBlock);
+    BCBlock <BTreeKey.Entry<B>, BTreeKey <B>> parent = helper.getIndexBlock(pBlock);
     int leftSib, rightSib;
-    SortedBlock <BTreeKey <B>> sib;
+    BCBlock <BTreeKey.Entry<B>, BTreeKey <B>> sib;
     // redistribute:
     leftSib = helper.getPreviousNeighbor(pSearch, parent);
     if (leftSib != -1) {
       sib = helper.getIndexBlock(leftSib);
       if (helper.checkUnderflow(sib)) {
-        BTreeKey <B> pKey = parent.getKey(helper.getPreviousPos(pSearch));
+        BTreeKey <B> pKey = parent.get(helper.getPreviousPos(pSearch));
         //BTreeKey pKey = (BTreeKey) parent.getKey(helper.getPos(pSearch));
         if (helper.shiftRight(sib, sb, pKey)) {
           helper.putIndexBlock(leftSib, sib);
@@ -702,7 +678,7 @@ public class MemMappedBPTreeImp<A,B extends BComparable<A,B>,C,D extends BStorab
       sib = helper.getIndexBlock(rightSib);
       if (helper.checkUnderflow(sib)) {
 
-        BTreeKey <B> pKey = parent.getKey(helper.getPos(pSearch));
+        BTreeKey <B> pKey = parent.get(helper.getPos(pSearch));
 
 
         if (helper.shiftLeft(sb, sib, pKey)) {
@@ -720,11 +696,11 @@ public class MemMappedBPTreeImp<A,B extends BComparable<A,B>,C,D extends BStorab
     BTreeKey <B> pKey;
     if (leftSib != -1) {
       sib = helper.getIndexBlock(leftSib);
-      pKey = parent.getKey(helper.getPreviousPos(pSearch));
+      pKey = parent.get(helper.getPreviousPos(pSearch));
       pKey.get().leftNode = helper.getLastPointer(sib);
-      if (sb.canMerge(sib, pKey)) {
-        sb.mergeBlock(sib);
-        sb.insertKey(pKey);
+      if (sb.fits(sib, pKey)) {
+        sb.merge(sib);
+        sb.insert(pKey);
         splitFile.deleteRegion(leftSib);
         helper.putIndexBlock(cBlock, sb);
         ret.action = BPlusReturn.MERGE;
@@ -734,11 +710,11 @@ public class MemMappedBPTreeImp<A,B extends BComparable<A,B>,C,D extends BStorab
     }
     if (rightSib != -1) {
       sib = helper.getIndexBlock(rightSib);
-      pKey = parent.getKey(helper.getPos(pSearch));
+      pKey = parent.get(helper.getPos(pSearch));
       pKey.get().leftNode = helper.getLastPointer(sb);
-      if (sib.canMerge(sb, pKey)) {
-        sib.mergeBlock(sb);
-        sib.insertKey(pKey);
+      if (sib.fits(sb, pKey)) {
+        sib.merge(sb);
+        sib.insert(pKey);
         splitFile.deleteRegion(cBlock);
         helper.putIndexBlock(rightSib, sib);
         ret.action = BPlusReturn.MERGE;
@@ -763,9 +739,8 @@ public class MemMappedBPTreeImp<A,B extends BComparable<A,B>,C,D extends BStorab
    */
   public void createIndex(KeyValue <B,D>[] keysAndValues) throws IOException {
     splitFile.clear();
-    SortedBlock <KeyValue <B,D>> sb = new SortedBlock <> ();
     byte b[] = new byte[splitFile.getBlockSize()];
-    sb.setBlock(b, keyValues, true, SortedBlock.PTR_NORMAL);
+    BCBlock<KeyValue.KV<B,D>, KeyValue<B,D>> sb = helper.newVBlock(b);
     KeyValue <B,D> tmpKV = new KeyValue <> ();
     @SuppressWarnings("unchecked")
     SBBNo <B> [] levels = (SBBNo <B>[]) new SBBNo <?> [20];
@@ -774,15 +749,15 @@ public class MemMappedBPTreeImp<A,B extends BComparable<A,B>,C,D extends BStorab
     int bNo = 0 ;
     for (int i = 0; i < keysAndValues.length; i++) {
       tmpKV = keysAndValues[i];
-      if (!sb.fitsKey(tmpKV)) {
+      if (!sb.fits(tmpKV)) {
         splitFile.insert(bNo, sb.getBlock());
         bNo++;
         BTreeKey <B> sep = helper.generateSeparator(sb, tmpKV);
         sep.get().leftNode = bNo - 1;
         insertSeparator(sep, levels, 0, bNo);
-        sb.setBlock(b, keyValues, true, SortedBlock.PTR_NORMAL);
+        sb = helper.newVBlock(b);
       }
-      sb.insertKeyUnsorted(tmpKV);
+      sb.insertUnsorted(tmpKV);
     }
     //write last block
     splitFile.insert(bNo, sb.getBlock());
@@ -801,9 +776,8 @@ public class MemMappedBPTreeImp<A,B extends BComparable<A,B>,C,D extends BStorab
    */
   public void createIndex(Iterator<KeyValue <B,D>> iterator) throws IOException {
     splitFile.clear();
-    SortedBlock <KeyValue <B,D>> sb = new SortedBlock <>();
     byte b[] = new byte[splitFile.getBlockSize()];
-    sb.setBlock(b, keyValues, true, SortedBlock.PTR_NORMAL);
+    BCBlock<KeyValue.KV<B,D>, KeyValue<B,D>> sb = helper.newVBlock(b);
     KeyValue <B,D> tmpKV;
     @SuppressWarnings("unchecked")
     SBBNo <B>[] levels = (SBBNo <B> []) new SBBNo <?> [20];
@@ -811,15 +785,15 @@ public class MemMappedBPTreeImp<A,B extends BComparable<A,B>,C,D extends BStorab
     int bNo = 0;
     while (iterator.hasNext()) {
       tmpKV = iterator.next();
-      if (!sb.fitsKey(tmpKV)) {
+      if (!sb.fits(tmpKV)) {
         splitFile.insert(bNo, sb.getBlock());
         bNo++;
         BTreeKey <B> sep = helper.generateSeparator(sb, tmpKV);
         sep.get().leftNode = bNo - 1;
         insertSeparator(sep, levels, 0, bNo);
-        sb.setBlock(b, keyValues, true, SortedBlock.PTR_NORMAL);
+        sb = helper.newVBlock(b);
       }
-      sb.insertKeyUnsorted(tmpKV);
+      sb.insertUnsorted(tmpKV);
     }
     splitFile.insert(bNo, sb.getBlock());
     if (levels[0] != null) // we have to write the index levels
@@ -851,24 +825,21 @@ public class MemMappedBPTreeImp<A,B extends BComparable<A,B>,C,D extends BStorab
    */
   private void insertSeparator(BTreeKey <B> sep, SBBNo <B> [] levels, int current,
                                int rightNode) throws IOException {
-    SortedBlock <BTreeKey <B>> sb;
+    BCBlock <BTreeKey.Entry<B>, BTreeKey <B>> sb;
     if (levels[current] == null) { // we have to create a new level
       levels[current] = new SBBNo <>();
-      levels[current].sb = new SortedBlock <>();
-      levels[current].sb.setBlock(new byte[splitFile.getBlockSizeRegion()],
-              indexKeys, true, SortedBlock.PTR_NORMAL, (short) 4);
+      levels[current].sb = helper.newIBlock();
       levels[current].bNo = splitFile.insertRegion(null);
     }
     sb = levels[current].sb;
-    if (!sb.fitsKey(sep)) { // save and promote the last key up...
-      BTreeKey <B> promo = sb.deleteKey(sb.getNumberOfElements() - 1);
+    if (!sb.fits(sep)) { // save and promote the last key up...
+      BTreeKey <B> promo = sb.delete(sb.getNumberOfElements() - 1);
       helper.setLastPointer(sb, promo.get().leftNode);
       promo.get().leftNode = levels[current].bNo;
       helper.putIndexBlock(levels[current].bNo, sb);
 
       // create the new block:
-      sb.setBlock(new byte[splitFile.getBlockSizeRegion()], indexKeys, true,
-              SortedBlock.PTR_NORMAL, (short) 4);
+      sb = helper.newIBlock();
       levels[current].sb = sb;
       levels[current].bNo = splitFile.insertRegion(null);
       // promote the last key in the previous block:
@@ -876,7 +847,7 @@ public class MemMappedBPTreeImp<A,B extends BComparable<A,B>,C,D extends BStorab
     }
     // finally insert the separator:
     helper.setLastPointer(sb, rightNode);
-    sb.insertKeyUnsorted(sep);
+    sb.insertUnsorted(sep);
   }
 
   // PROTECTED METHODS:
@@ -894,8 +865,8 @@ public class MemMappedBPTreeImp<A,B extends BComparable<A,B>,C,D extends BStorab
           throws IOException {
     if (splitFile.size() == 0)
       return null;
-    SortedBlock <KeyValue <B,D>> sb = helper.getValueBlock(bNo);
-    return sb.getKey(new KeyValue <>(key, null));
+    BCBlock <KeyValue.KV<B,D>, KeyValue <B,D>> sb = helper.getValueBlock(bNo);
+    return sb.get(new KeyValue <>(key, null));
   }
 
   /**
@@ -913,8 +884,8 @@ public class MemMappedBPTreeImp<A,B extends BComparable<A,B>,C,D extends BStorab
           throws IOException {
     if (splitFile.size() == 0)
       return null;
-    SortedBlock <KeyValue <B,D>> sb = helper.getValueBlock(bNo);
-    int smallerInBlock = sb.binarySearch(new KeyValue <B,D>(key, null));
+    BCBlock <KeyValue.KV<B,D>, KeyValue <B,D>> sb = helper.getValueBlock(bNo);
+    int smallerInBlock = sb.search(new KeyValue <B,D>(key, null));
     if (smallerInBlock < 0) return null;
     int elements = size;
     int elementsInBlock = sb.getNumberOfElements();
@@ -938,8 +909,8 @@ public class MemMappedBPTreeImp<A,B extends BComparable<A,B>,C,D extends BStorab
           throws IOException {
     if (splitFile.size() == 0)
       return null;
-    SortedBlock <KeyValue <B,D>> sb = helper.getValueBlock(bNo);
-    int smallerInBlock = sb.binarySearch(new KeyValue <B,D>(key, null));
+    BCBlock <KeyValue.KV<B,D>, KeyValue <B,D>> sb = helper.getValueBlock(bNo);
+    int smallerInBlock = sb.search(new KeyValue <B,D>(key, null));
     boolean exists = true;
     if (smallerInBlock < 0) { //not found
       exists = false;
@@ -969,37 +940,33 @@ public class MemMappedBPTreeImp<A,B extends BComparable<A,B>,C,D extends BStorab
    */
   protected BPlusReturn <B,D> insertKeyValue(KeyValue<B,D> keyValue, int bNo,
                                        boolean update) throws IOException {
-    SortedBlock <KeyValue <B,D>> sb, sb1;
-    //SortedBlock <KeyValue <B,D>> sb1 = null;
+    BCBlock <KeyValue.KV<B,D>, KeyValue <B,D>> sb, sb1;
     try {
       sb = helper.getValueBlock(bNo);
-      if (sb.containsKey(keyValue)) {
+      if (sb.contains(keyValue)) {
         if (!update)
           return null;
         else {
-          sb.deleteKey(keyValue);
+          sb.delete(keyValue);
           size--;
         }
       }
 
       size++;
 
-      if (sb.fitsKey(keyValue)) {
-        sb.insertKey(keyValue);
+      if (sb.fits(keyValue)) {
+        sb.insert(keyValue);
         helper.putValueBlock(bNo, sb);
         return null;
       }
 
-      //sb1 = new SortedBlock <> ();
-      sb1 = sb.splitBlock();
-      if (keyValue.compareTo(sb.getLastKey()) <= 0)
-        sb.insertKey(keyValue);
+      sb1 = sb.split();
+      if (keyValue.compareTo(sb.getLast()) <= 0)
+        sb.insert(keyValue);
       else
-        sb1.insertKey(keyValue);
+        sb1.insert(keyValue);
       helper.putValueBlock(bNo, sb);
       int newBlockNo = splitFile.insert(sb1.getBlock());
-      //writeVBlock(logicalNo, sb);
-      //writeVBlock(logicalNo + 1, sb1);
       return new BPlusReturn <> (BPlusReturn.SPLIT, keyValue, helper.generateSeparator(sb,
               sb1), newBlockNo);
     } catch (Exception e) {
@@ -1029,8 +996,8 @@ public class MemMappedBPTreeImp<A,B extends BComparable<A,B>,C,D extends BStorab
    */
   protected BPlusReturn <B,D> deleteKeyValue(KeyValue<B,D> key, int bNo, int leftNo,
                                        int rightNo) throws IOException {
-    SortedBlock <KeyValue <B,D>> sb = helper.getValueBlock(bNo);
-    KeyValue <B,D> deletedKey = sb.deleteKey(key);
+    BCBlock <KeyValue.KV<B,D>, KeyValue <B,D>> sb = helper.getValueBlock(bNo);
+    KeyValue <B,D> deletedKey = sb.delete(key);
     if (deletedKey == null) {
       return null;
     }
@@ -1039,7 +1006,7 @@ public class MemMappedBPTreeImp<A,B extends BComparable<A,B>,C,D extends BStorab
       return new BPlusReturn <> (BPlusReturn.NONE, deletedKey, null, -1);
     }
     // reblance...first redistribute:
-    SortedBlock <KeyValue <B,D>> sib;
+    BCBlock <KeyValue.KV<B,D>, KeyValue <B,D>> sib;
     if (leftNo != -1) {
       sib = helper.getValueBlock(leftNo);
       if (helper.checkUnderflow(sib)) {
@@ -1061,8 +1028,8 @@ public class MemMappedBPTreeImp<A,B extends BComparable<A,B>,C,D extends BStorab
     // try left:
     if (leftNo != -1) {
       sib = helper.getValueBlock(leftNo);
-      if (sb.canMerge(sib)) {
-        sb.mergeBlock(sib);
+      if (sb.fits(sib)) {
+        sb.merge(sib);
         splitFile.delete(leftNo);
         helper.putValueBlock(bNo, sb);
         return new BPlusReturn <> (BPlusReturn.MERGE, deletedKey, null, leftNo);
@@ -1070,8 +1037,8 @@ public class MemMappedBPTreeImp<A,B extends BComparable<A,B>,C,D extends BStorab
     }
     if (rightNo != -1) {
       sib = helper.getValueBlock(rightNo);
-      if (sib.canMerge(sb)) {
-        sib.mergeBlock(sb);
+      if (sib.fits(sb)) {
+        sib.merge(sb);
         splitFile.delete(bNo);
         helper.putValueBlock(rightNo, sib);
         return new BPlusReturn <> (BPlusReturn.MERGE, deletedKey, null, rightNo);
@@ -1096,16 +1063,16 @@ public class MemMappedBPTreeImp<A,B extends BComparable<A,B>,C,D extends BStorab
     if (leafLevel == -1) {
       return null;
     }
-    SortedBlock <BTreeKey <B>> sb = helper.getIndexBlock(rootPage);
+    BCBlock <BTreeKey.Entry<B>, BTreeKey <B>> sb = helper.getIndexBlock(rootPage);
     if (sb.getNumberOfElements() > 1) {
       int pos = ret.keyPos;
       // this case should not happen...but keep it just in case:
       if (pos == sb.getNumberOfElements()) {
         pos--;
-        helper.setLastPointer(sb, sb.getKey(pos).get().leftNode);
-        sb.deleteKey(pos);
+        helper.setLastPointer(sb, sb.get(pos).get().leftNode);
+        sb.delete(pos);
       } else
-        sb.deleteKey(pos);
+        sb.delete(pos);
       helper.putIndexBlock(rootPage, sb);
       ret.action = BPlusReturn.NONE;
       return ret;
@@ -1132,12 +1099,10 @@ public class MemMappedBPTreeImp<A,B extends BComparable<A,B>,C,D extends BStorab
    */
   protected void createRoot(BTreeKey <B> rootKey) throws IOException {
     int blockNo = splitFile.insertRegion(null);
-    SortedBlock <BTreeKey <B>> sb = new SortedBlock <> ();
-    sb.setBlock(new byte[splitFile.getBlockSizeRegion()], indexKeys, true,
-            SortedBlock.PTR_NORMAL, (short) 4);
+    BCBlock<BTreeKey.Entry<B>, BTreeKey<B>> sb = helper.newIBlock();
     helper.setLastPointer(sb, rootKey.get().leftNode);
     rootKey.get().leftNode = rootPage;
-    sb.insertKey(rootKey);
+    sb.insert(rootKey);
     rootPage = blockNo;
     helper.putIndexBlock(rootPage, sb);
     leafLevel++;
@@ -1184,7 +1149,7 @@ public class MemMappedBPTreeImp<A,B extends BComparable<A,B>,C,D extends BStorab
    * *****************INNER CLASSES****************************************
    */
   static class SBBNo <B extends BComparable <?,B>> {
-    SortedBlock <BTreeKey <B>> sb;
+    BCBlock <BTreeKey.Entry<B>, BTreeKey <B>> sb;
 
     int bNo;
   }
@@ -1280,8 +1245,8 @@ public class MemMappedBPTreeImp<A,B extends BComparable<A,B>,C,D extends BStorab
       else {
         try{
           sbIterator = from == null ?
-              helper.getValueBlock(blocks.get(currblock)).reverseIterator() :
-              helper.getValueBlock(blocks.get(currblock)).reverseIterator(new KeyValue<>(from, null), inclusive, null, false);
+              helper.getValueBlock(blocks.get(currblock)).iterator(true) :
+              helper.getValueBlock(blocks.get(currblock)).iterator(true, new KeyValue<>(from, null), inclusive, null, false);
           currblock--;
         }catch(IOException e){
           CoreLog.L().log(Level.WARNING, "Could not retrieve block", e);
@@ -1298,7 +1263,7 @@ public class MemMappedBPTreeImp<A,B extends BComparable<A,B>,C,D extends BStorab
         try {
           sbIterator = from == null?
               helper.getValueBlock(blocks.get(currblock)).iterator() :
-              helper.getValueBlock(blocks.get(currblock)).iterator(new KeyValue<>(from, null), inclusive, null, false);
+              helper.getValueBlock(blocks.get(currblock)).iterator(false, new KeyValue<>(from, null), inclusive, null, false);
           currblock++;
         } catch(IOException e){
           CoreLog.L().log(Level.WARNING, "Could not retrieve block", e);
@@ -1307,95 +1272,4 @@ public class MemMappedBPTreeImp<A,B extends BComparable<A,B>,C,D extends BStorab
       }
     }
   }
-
-  /*
-  class BPIterator implements Iterator<KeyValue<B, D>> {
-
-    ArrayList<Integer> blocks = new ArrayList<>();
-    Iterator <KeyValue <B,D>> sbIterator;
-    int currblock = 0;
-
-    public BPIterator() {
-      try {
-        helper.buildPointers(rootPage, blocks, 0, leafLevel);
-      } catch (IOException e) {
-        CoreLog.L().log(Level.WARNING, "could not traverse blocks", e);
-      }
-      nextIter();
-    }
-
-    public BPIterator(B from) {
-      try {
-        helper.buildPointers(rootPage, blocks, 0, leafLevel);
-      } catch (IOException e) {
-        CoreLog.L().log(Level.WARNING, "could not traverse blocks", e);
-      }
-      int bNo = searchBlock(from);
-      for (; currblock < blocks.size(); currblock++) {
-        if (blocks.get(currblock) == bNo)
-          break;
-      }
-      //now we should have found the block we are looking
-      nextIter(from);
-    }
-
-    @Override
-    public boolean hasNext() {
-      return sbIterator != null && sbIterator.hasNext();
-    }
-
-    @Override
-    public KeyValue <B,D> next() {
-      KeyValue<B,D> toRet;
-      if (sbIterator == null) return null;
-
-      toRet = sbIterator.next();
-
-      if (!sbIterator.hasNext()) {
-        nextIter();
-      }
-
-      return toRet;
-    }
-
-    @Override
-    public void remove() throws UnsupportedOperationException {
-      throw new UnsupportedOperationException();
-
-    }
-
-    private void nextIter(B from) {
-      KeyValue <B,D> search = new KeyValue <>(from, null);
-      SortedBlock <KeyValue <B,D>> sb;
-      if (currblock >= blocks.size()) {
-        sbIterator = null;
-        return;
-      }
-      try {
-        sb = helper.getValueBlock(blocks.get(currblock));
-        sbIterator = sb.iterator(search, true, null, false);
-        currblock++;
-        if (sbIterator.hasNext())
-          return;
-        //advance
-        nextIter();
-      } catch (IOException e) {
-        CoreLog.L().log(Level.WARNING, "Could not retrieve block", e);
-      }
-    }
-
-    private void nextIter() {
-      if (currblock >= blocks.size()) {
-        sbIterator = null;
-        return;
-      }
-      try {
-        sbIterator = helper.getValueBlock(blocks.get(currblock)).iterator();
-        currblock++;
-      } catch (IOException e) {
-        CoreLog.L().log(Level.WARNING, "Could not retrieve block", e);
-      }
-    }
-  }
-  */
 }

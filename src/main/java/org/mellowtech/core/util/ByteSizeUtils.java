@@ -32,6 +32,7 @@ package org.mellowtech.core.util;
  * @author rickard.coster@asimus.se
  *
  */
+@Deprecated
 public class ByteSizeUtils {
   
   public static final String getSizeString(long bytes) {

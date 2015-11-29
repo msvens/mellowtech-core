@@ -30,6 +30,7 @@ package org.mellowtech.core.util;
  * Class that pre-calculates upper-case translation for chars. Useful for most
  * western languages.
  */
+@Deprecated
 public class UpperCaseArray {
   /**
    * Holds character to UpperCase translation precalculated to fasten tjings a

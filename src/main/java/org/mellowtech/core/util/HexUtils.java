@@ -29,6 +29,7 @@ package org.mellowtech.core.util;
 
 import java.math.BigInteger;
 
+@Deprecated
 public class HexUtils {
   
   public static final synchronized String byteArrayToHexString(byte buf[]) {

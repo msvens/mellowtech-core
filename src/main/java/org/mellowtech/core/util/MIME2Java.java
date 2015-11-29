@@ -30,6 +30,7 @@ package org.mellowtech.core.util;
 import java.util.HashMap;
 import java.util.Map;
 
+@Deprecated
 public class MIME2Java {
 
   static private Map <String, String> s_enchash;

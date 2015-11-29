@@ -33,13 +33,12 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
 
 import org.mellowtech.core.CoreLog;
 import org.mellowtech.core.bytestorable.BComparable;
 import org.mellowtech.core.bytestorable.BStorable;
 import org.mellowtech.core.bytestorable.CBUtil;
-import org.mellowtech.core.bytestorable.io.SortedBlock;
+import org.mellowtech.core.bytestorable.io.BCBlock;
 import org.mellowtech.core.collections.KeyValue;
 import org.mellowtech.core.io.Record;
 import org.mellowtech.core.util.MapEntry;
@@ -50,60 +49,50 @@ import org.mellowtech.core.util.MapEntry;
  *
  * @author Martin Svensson
  */
-public class MemMappedBPlusHelper<A,K extends BComparable<A,K>,B,V extends BStorable<B,V>> {
-  private final MemMappedBPTreeImp<A,K,B,V> tree;
+public class MemMappedBPlusHelper<A, B extends BComparable<A, B>, C, D extends BStorable<C, D>> {
+  private final MemMappedBPTreeImp<A, B, C, D> tree;
 
-  public MemMappedBPlusHelper(MemMappedBPTreeImp<A,K,B,V> tree){
+  public MemMappedBPlusHelper(MemMappedBPTreeImp<A, B, C, D> tree){
     this.tree = tree;
   }
 
-  public void putValueBlock(int blockNo, SortedBlock <KeyValue <K,V>> sb)
+  public void putValueBlock(int blockNo, BCBlock <KeyValue.KV<B, D>,KeyValue <B, D>> sb)
     throws IOException{
     tree.splitFile.update(blockNo, sb.getBlock());
   }
 
-  public void putIndexBlock(int blockNo, SortedBlock <BTreeKey <K>> sb) throws IOException{
+  public void putIndexBlock(int blockNo, BCBlock <BTreeKey.Entry<B>, BTreeKey <B>> sb) throws IOException{
     tree.splitFile.updateRegion(blockNo, sb.getBlock());
   }
 
-  public SortedBlock <KeyValue <K,V>> toValueBlock(byte[] data){
-    SortedBlock <KeyValue <K,V>> sb = new SortedBlock <> ();
-    sb.setBlock(data, tree.keyValues, false, SortedBlock.PTR_NORMAL, (short) 0);
-    return sb;
+  public BCBlock<BTreeKey.Entry<B>, BTreeKey<B>> newIBlock(){
+    return new BCBlock<>(tree.splitFile.getBlockSizeRegion(), tree.indexKeys, BCBlock.PtrType.NORMAL, (short) 4);
   }
 
-  public SortedBlock <BTreeKey <K>> toIndexBlock(byte[] data){
-    SortedBlock <BTreeKey <K>> sb = new SortedBlock <> ();
-    sb.setBlock(data, tree.indexKeys, false, SortedBlock.PTR_NORMAL, (short) 0);
-    return sb;
+  public BCBlock<KeyValue.KV<B, D>,KeyValue<B, D>> newVBlock(){
+    return new BCBlock<>(tree.splitFile.getBlockSize(), tree.keyValues, BCBlock.PtrType.NORMAL);
   }
 
-  public SortedBlock <KeyValue <K,V>> getValueBlock(int blockNo)
+  public BCBlock<KeyValue.KV<B, D>,KeyValue<B, D>> newVBlock(byte[] b){
+    return new BCBlock<>(b, tree.keyValues, BCBlock.PtrType.NORMAL);
+  }
+
+  public BCBlock <KeyValue.KV<B, D>, KeyValue <B, D>> toValueBlock(byte[] data){
+    return new BCBlock<>(data, tree.keyValues);
+  }
+
+  public BCBlock <BTreeKey.Entry<B>, BTreeKey <B>> toIndexBlock(byte[] data){
+    return new BCBlock<>(data, tree.indexKeys);
+  }
+
+  public BCBlock <KeyValue.KV<B, D>, KeyValue <B, D>> getValueBlock(int blockNo)
     throws IOException{
-    SortedBlock <KeyValue <K,V>> sb = new SortedBlock <>();
-    try {
-      sb.setBlock(tree.splitFile.get(blockNo), tree.keyValues, false,
-              SortedBlock.PTR_NORMAL, (short) 0);
-      return sb;
-    }
-    catch (IOException e) {
-      CoreLog.L().log(Level.WARNING, "could not read block", e);
-      return null;
-    }
+    return toValueBlock(tree.splitFile.get(blockNo));
   }
 
-  public SortedBlock <BTreeKey <K>> getIndexBlock(int blockNo)
+  public BCBlock <BTreeKey.Entry<B>, BTreeKey <B>> getIndexBlock(int blockNo)
           throws IOException{
-    SortedBlock <BTreeKey <K>> sb = new SortedBlock <>();
-    try {
-      sb.setBlock(tree.splitFile.getRegion(blockNo), tree.indexKeys, false,
-              SortedBlock.PTR_NORMAL, (short) 0);
-      return sb;
-    }
-    catch (IOException e) {
-      CoreLog.L().log(Level.WARNING, "could not read block", e);
-      return null;
-    }
+    return toIndexBlock(tree.splitFile.getRegion(blockNo));
   }
 
   // MANIPULATING THE INDEX:
@@ -127,27 +116,28 @@ public class MemMappedBPlusHelper<A,K extends BComparable<A,K>,B,V extends BStor
    *          the parent node in the index.
    * @return true if at least one key was shifted
    */
-  public boolean shiftLeft(SortedBlock <BTreeKey <K>> left, SortedBlock <BTreeKey <K>> right,
-                              BTreeKey <K> parent) {
+  public boolean shiftLeft(BCBlock <BTreeKey.Entry<B>, BTreeKey <B>> left,
+                           BCBlock <BTreeKey.Entry<B>, BTreeKey <B>> right,
+                           BTreeKey <B> parent) {
     // check if we gain anything from a shift, i.e. the minimum shift:
     if (parent.byteSize() + left.getDataBytes() >= right.getDataBytes()
-            - right.getFirstKey().byteSize()) {
+            - right.getFirst().byteSize()) {
       return false;
     }
     // first set parent lefkey to first left key in right and save the old left:
-    //BTreeKey <K> oldParent = parent;
+    //BTreeKey <B> oldParent = parent;
     int parentLeft = parent.get().leftNode;
     //int tmp;
     for (;;) {
       parent.get().leftNode = getLastPointer(left);
-      left.insertKeyUnsorted(parent);
-      BTreeKey <K> newParent = right.deleteKey(0);
+      left.insertUnsorted(parent);
+      BTreeKey <B> newParent = right.delete(0);
       parent.get().leftNode = newParent.get().leftNode;
       parent.get().key = newParent.get().key;
       setLastPointer(left, parent.get().leftNode);
       // now check if to continue:
       if (parent.byteSize() + left.getDataBytes() >= right.getDataBytes()
-              - right.getFirstKey().byteSize())
+              - right.getFirst().byteSize())
         break;
     }
     parent.get().leftNode = parentLeft;
@@ -166,25 +156,26 @@ public class MemMappedBPlusHelper<A,K extends BComparable<A,K>,B,V extends BStor
    * @return true if at least one key was shifted
    * @see #shiftLeft
    */
-  public boolean shiftRight(SortedBlock <BTreeKey <K>> left, SortedBlock <BTreeKey <K>> right,
-                               BTreeKey <K> parent) {
+  public boolean shiftRight(BCBlock <BTreeKey.Entry<B>, BTreeKey <B>> left,
+                            BCBlock <BTreeKey.Entry<B>, BTreeKey <B>> right,
+                            BTreeKey <B> parent) {
     // check if we gain anything from a shift, i.e. the minimum shift:
     if (parent.byteSize() + right.getDataBytes() >= left.getDataBytes()
-            - left.getLastKey().byteSize()) {
+            - left.getLast().byteSize()) {
       return false;
     }
     // first set parent lefkey to first left key in right and save the old left:
     int parentLeft = parent.get().leftNode;
     for (;;) {
       parent.get().leftNode = getLastPointer(left);
-      right.insertKey(parent);
-      BTreeKey <K> newParent = left.deleteKey(left.getNumberOfElements() - 1);
+      right.insert(parent);
+      BTreeKey <B> newParent = left.delete(left.getNumberOfElements() - 1);
       parent.get().leftNode = newParent.get().leftNode;
       parent.get().key = newParent.get().key;
       setLastPointer(left, parent.get().leftNode);
       // now check if to continue:
       if (parent.byteSize() + right.getDataBytes() >= left.getDataBytes()
-              - left.getLastKey().byteSize())
+              - left.getLast().byteSize())
         break;
     }
     parent.get().leftNode = parentLeft;
@@ -198,7 +189,7 @@ public class MemMappedBPlusHelper<A,K extends BComparable<A,K>,B,V extends BStor
    *          sorted block of BTree keys.
    * @return the last pointer.
    */
-  public int getLastPointer(SortedBlock <BTreeKey <K>> sb) {
+  public int getLastPointer(BCBlock <BTreeKey.Entry<B>, BTreeKey <B>> sb) {
     ByteBuffer buffer = sb.getByteBuffer();
     return buffer.getInt(sb.getReservedSpaceStart());
   }
@@ -211,7 +202,7 @@ public class MemMappedBPlusHelper<A,K extends BComparable<A,K>,B,V extends BStor
    * @param pointer
    *          a pointer (i.e block number).
    */
-  public void setLastPointer(SortedBlock <BTreeKey <K>> sb, int pointer) {
+  public void setLastPointer(BCBlock <BTreeKey.Entry<B>, BTreeKey <B>> sb, int pointer) {
     ByteBuffer buffer = sb.getByteBuffer();
     buffer.putInt(sb.getReservedSpaceStart(), pointer);
   }
@@ -225,10 +216,10 @@ public class MemMappedBPlusHelper<A,K extends BComparable<A,K>,B,V extends BStor
    * @param sb
    *          a block of sotred BTree keys.
    */
-  public void deleteAndReplace(BTreeKey <K> keyIndex, SortedBlock <BTreeKey<K>> sb) {
-    if (keyIndex.compareTo(sb.getLastKey()) == 0)
+  public void deleteAndReplace(BTreeKey <B> keyIndex, BCBlock <BTreeKey.Entry<B>, BTreeKey <B>> sb) {
+    if (keyIndex.compareTo(sb.getLast()) == 0)
       setLastPointer(sb, keyIndex.get().leftNode);
-    sb.deleteKey(keyIndex);
+    sb.delete(keyIndex);
   }
 
   /**
@@ -240,30 +231,31 @@ public class MemMappedBPlusHelper<A,K extends BComparable<A,K>,B,V extends BStor
    * @param sb
    *          a block of sorted BTree keys
    */
-  public void insertAndReplace(BTreeKey <K> keyIndex, SortedBlock <BTreeKey <K>> sb) {
-    int index = sb.insertKey(keyIndex);
+  public void insertAndReplace(BTreeKey <B> keyIndex, BCBlock <BTreeKey.Entry<B>, BTreeKey <B>> sb) {
+    int index = sb.insert(keyIndex);
     int tmp = keyIndex.get().leftNode;
     if (index == sb.getNumberOfElements() - 1) { // last key
       keyIndex.get().leftNode = getLastPointer(sb);
       setLastPointer(sb, tmp);
-      sb.updateKey(keyIndex, index);
+      sb.update(keyIndex, index);
       return;
     }
-    BTreeKey <K> nextKey = sb.getKey(index + 1);
+    BTreeKey <B> nextKey = sb.get(index + 1);
     keyIndex.get().leftNode = nextKey.get().leftNode;
     nextKey.get().leftNode = tmp;
-    sb.updateKey(keyIndex, index);
-    sb.updateKey(nextKey, index + 1);
+    sb.update(keyIndex, index);
+    sb.update(nextKey, index + 1);
   }
 
 
 
-  public void redistributeValueBlocks(SortedBlock <KeyValue <K,V>> small, SortedBlock <KeyValue <K,V>> large, 
+  public void redistributeValueBlocks(BCBlock <KeyValue.KV<B, D>, KeyValue <B, D>> small,
+                                      BCBlock <KeyValue.KV<B, D>, KeyValue <B, D>> large,
       int bSmall, int bLarge) throws IOException {
-    SortedBlock <KeyValue <K,V>> blocks[] = (SortedBlock <KeyValue <K,V>>[]) new SortedBlock[2];
+    BCBlock <KeyValue.KV<B, D>, KeyValue <B, D>> blocks[] = (BCBlock <KeyValue.KV<B, D>, KeyValue <B, D>>[]) new BCBlock[2];
     blocks[0] = small;
     blocks[1] = large;
-    SortedBlock.redistribute(blocks);
+    BCBlock.redistribute(blocks);
     putValueBlock(bSmall, small);
     putValueBlock(bLarge, large);
 
@@ -283,14 +275,11 @@ public class MemMappedBPlusHelper<A,K extends BComparable<A,K>,B,V extends BStor
    *          a block with larger keys
    * @return a separator
    */
-  public BTreeKey <K> generateSeparator(SortedBlock <KeyValue <K,V>> small, 
-      SortedBlock <KeyValue <K,V>> large) {
-    BTreeKey <K> nKey = new BTreeKey <> ();
-    /*nKey.get().key = (K) tree.keyValues.getKey().separate(
-            small.getLastKey().get().key,
-            large.getFirstKey().get().key);*/
-    nKey.get().key = (K) CBUtil.separate((K)small.getLastKey().getKey(), 
-        (K)large.getFirstKey().getKey());
+  public BTreeKey <B> generateSeparator(BCBlock <KeyValue.KV<B, D>, KeyValue <B, D>> small,
+                                        BCBlock <KeyValue.KV<B, D>, KeyValue <B, D>> large) {
+    BTreeKey <B> nKey = new BTreeKey <> ();
+    nKey.get().key = (B) CBUtil.separate((B)small.getLast().getKey(),
+        (B)large.getFirst().getKey());
     return nKey;
   }
 
@@ -303,14 +292,10 @@ public class MemMappedBPlusHelper<A,K extends BComparable<A,K>,B,V extends BStor
    *          the larger value to compare with
    * @return a separator.
    */
-  public BTreeKey <K> generateSeparator(SortedBlock <KeyValue <K,V>> small, KeyValue <K,V> large) {
-    // this should change to use the provided separator function.
-    // for now take the small one:
-    BTreeKey <K> nKey = new BTreeKey <> ();
-    /*nKey.get().key = (K) tree.keyValues.getKey().separate(
-            small.getLastKey().getKey(), large.getKey());*/
-    nKey.get().key = (K) CBUtil.separate((K)small.getLastKey().getKey(), 
-        (K) large.getKey());
+  public BTreeKey <B> generateSeparator(BCBlock <KeyValue.KV<B, D>, KeyValue <B, D>> small, KeyValue <B, D> large) {
+    BTreeKey <B> nKey = new BTreeKey <> ();
+    nKey.get().key = (B) CBUtil.separate((B)small.getLast().getKey(),
+        (B) large.getKey());
     return nKey;
   }
 
@@ -322,7 +307,7 @@ public class MemMappedBPlusHelper<A,K extends BComparable<A,K>,B,V extends BStor
    *          a sorted block to check
    * @return true if the block has the minimum amount of information
    */
-  public boolean checkUnderflow(SortedBlock <?> sb) {
+  public boolean checkUnderflow(BCBlock <?,?> sb) {
     return sb.getDataAndPointersBytes() > (sb.storageCapacity() / 2) ? true
             : false;
   }
@@ -337,11 +322,11 @@ public class MemMappedBPlusHelper<A,K extends BComparable<A,K>,B,V extends BStor
    * @return the node (i.e block number) to the left child or -1 if there are no
    *         left child.
    */
-  public int getPreviousNeighbor(int search, SortedBlock <BTreeKey <K>> sb) {
+  public int getPreviousNeighbor(int search, BCBlock <BTreeKey.Entry<B>, BTreeKey <B>> sb) {
     int pos = getPreviousPos(search);
     if (pos == -1)
       return -1;
-    return sb.getKey(pos).get().leftNode;
+    return sb.get(pos).get().leftNode;
   }
 
   /**
@@ -377,13 +362,13 @@ public class MemMappedBPlusHelper<A,K extends BComparable<A,K>,B,V extends BStor
    *          the sorted block where to find the neighbor.
    * @return the node (i.e block number) to the right neighbor.
    */
-  public int getNextNeighbor(int search, SortedBlock <BTreeKey <K>> sb) {
+  public int getNextNeighbor(int search, BCBlock <BTreeKey.Entry<B>, BTreeKey <B>> sb) {
     int pos = getNextPos(search);
     if (pos > sb.getNumberOfElements())
       return -1;
     if (pos == sb.getNumberOfElements())
       return getLastPointer(sb);
-    return sb.getKey(pos).get().leftNode;
+    return sb.get(pos).get().leftNode;
   }
 
   /**
@@ -412,18 +397,18 @@ public class MemMappedBPlusHelper<A,K extends BComparable<A,K>,B,V extends BStor
    *          the block to search
    * @return node
    */
-  public int getNode(int search, SortedBlock <BTreeKey <K>> sb) {
+  public int getNode(int search, BCBlock <BTreeKey.Entry<B>, BTreeKey <B>> sb) {
     int pos = getPos(search);
     if (pos == sb.getNumberOfElements())
       return getLastPointer(sb);
-    return sb.getKey(pos).get().leftNode;
+    return sb.get(pos).get().leftNode;
   }
 
 
-  public void extractPointers(List<Integer> list, SortedBlock <BTreeKey <K>> sb){
-    BTreeKey <K> bKey;
+  public void extractPointers(List<Integer> list, BCBlock <BTreeKey.Entry<B>, BTreeKey <B>> sb){
+    BTreeKey <B> bKey;
     for (int i = 0; i < sb.getNumberOfElements(); i++) {
-      bKey = sb.getKey(i);
+      bKey = sb.get(i);
       list.add(bKey.get().leftNode);
       if (i + 1 == sb.getNumberOfElements())
         list.add(getLastPointer(sb));
@@ -452,7 +437,7 @@ public class MemMappedBPlusHelper<A,K extends BComparable<A,K>,B,V extends BStor
     while(iter.hasNext()){
       int record = iter.next().record;
       sb.append("RECORD: "+record+'\n');
-      SortedBlock <BTreeKey <K>> block = getIndexBlock(record);
+      BCBlock <BTreeKey.Entry<B>, BTreeKey <B>> block = getIndexBlock(record);
       sb.append(block.toString()+'\n');
     }
   }
@@ -462,8 +447,8 @@ public class MemMappedBPlusHelper<A,K extends BComparable<A,K>,B,V extends BStor
           throws IOException {
     if (pNo == -1) // no root
       return;
-    SortedBlock <BTreeKey <K>> sb = getIndexBlock(pNo);
-    BTreeKey <K> bKey;
+    BCBlock <BTreeKey.Entry<B>, BTreeKey <B>> sb = getIndexBlock(pNo);
+    BTreeKey <B> bKey;
     preTab(level, buff);
     if (level == tree.leafLevel) { // final level
       if (printLeaf) {
@@ -476,7 +461,7 @@ public class MemMappedBPlusHelper<A,K extends BComparable<A,K>,B,V extends BStor
       buff.append("rightMostPointer: " + getLastPointer(sb) + "\n");
       buff.append(sb);
       for (int i = 0; i < sb.getNumberOfElements(); i++) {
-        bKey = sb.getKey(i);
+        bKey = sb.get(i);
         buildOutputTree(bKey.get().leftNode, buff, level + 1, printLeaf);
         if (i + 1 == sb.getNumberOfElements())
           buildOutputTree(getLastPointer(sb), buff, level + 1, printLeaf);
@@ -492,7 +477,7 @@ public class MemMappedBPlusHelper<A,K extends BComparable<A,K>,B,V extends BStor
   public void printValueBlocks(StringBuilder sb) throws IOException{
     Iterator <Record> iter = tree.splitFile.iterator();
     while(iter.hasNext()){
-      SortedBlock <KeyValue <K,V>> block = getValueBlock(iter.next().record);
+      BCBlock <KeyValue.KV<B, D>, KeyValue <B, D>> block = getValueBlock(iter.next().record);
       sb.append(block.toString()+'\n');
     }
   }
@@ -500,16 +485,16 @@ public class MemMappedBPlusHelper<A,K extends BComparable<A,K>,B,V extends BStor
 
   //Logical iteration
   private boolean countValueBlock(int stopBlock, MapEntry<Integer, Integer> entry,
-                                  SortedBlock <BTreeKey <K>> sb) throws IOException{
+                                  BCBlock <BTreeKey.Entry<B>, BTreeKey <B>> sb) throws IOException{
     boolean foundStop = false;
-    BTreeKey <K> bKey;
+    BTreeKey <B> bKey;
     for(int i = 0; i < sb.getNumberOfElements(); i++){
-      bKey = sb.getKey(i);
+      bKey = sb.get(i);
       if(bKey.get().leftNode == stopBlock){
         foundStop = true;
         break;
       }
-      SortedBlock <KeyValue <K,V>> valBlock = getValueBlock(bKey.get().leftNode);
+      BCBlock <KeyValue.KV<B, D>,KeyValue <B, D>> valBlock = getValueBlock(bKey.get().leftNode);
       entry.setValue(entry.getValue() + valBlock.getNumberOfElements());
       entry.setKey(entry.getKey()+1);
       if(i + 1 == sb.getNumberOfElements()){
@@ -530,14 +515,14 @@ public class MemMappedBPlusHelper<A,K extends BComparable<A,K>,B,V extends BStor
     throws IOException{
     if(leafLevel == -1) return true;
     if(pNo == -1) return true;
-    BTreeKey <K> bKey;
-    SortedBlock <BTreeKey <K>> sb = getIndexBlock(pNo);
+    BTreeKey <B> bKey;
+    BCBlock <BTreeKey.Entry<B>, BTreeKey <B>> sb = getIndexBlock(pNo);
     if(level == leafLevel){
       return countValueBlock(highBlock, result, sb);
     }
     else {
       for (int i = 0; i < sb.getNumberOfElements(); i++) {
-        bKey = sb.getKey(i);
+        bKey = sb.get(i);
         if(count(bKey.get().leftNode, level + 1, leafLevel, result, highBlock))
           return true;
 
@@ -572,14 +557,14 @@ public class MemMappedBPlusHelper<A,K extends BComparable<A,K>,B,V extends BStor
     }
 
     if(pNo == -1) return;
-    BTreeKey <K> bKey;
-    SortedBlock <BTreeKey <K>> sb = getIndexBlock(pNo);
+    BTreeKey <B> bKey;
+    BCBlock <BTreeKey.Entry<B>, BTreeKey <B>> sb = getIndexBlock(pNo);
     if(level == leafLevel){
       extractPointers(ptr, sb);
     }
     else{
       for (int i = 0; i < sb.getNumberOfElements(); i++) {
-        bKey = sb.getKey(i);
+        bKey = sb.get(i);
         buildPointers(bKey.get().leftNode, ptr, level + 1, leafLevel);
         if (i + 1 == sb.getNumberOfElements())
           buildPointers(getLastPointer(sb), ptr, level + 1, leafLevel);

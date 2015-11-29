@@ -32,6 +32,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
+@Deprecated
 public class DateUtils {
 
   public static SimpleDateFormat ISO8601_WIKI_FORMAT = new SimpleDateFormat(

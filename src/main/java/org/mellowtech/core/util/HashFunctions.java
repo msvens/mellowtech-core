@@ -26,6 +26,7 @@
  */
 package org.mellowtech.core.util;
 
+@Deprecated
 public class HashFunctions {
 
   static class Mixer {

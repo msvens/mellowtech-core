@@ -26,7 +26,7 @@
  */
 
 package org.mellowtech.core.util;
-
+@Deprecated
 public class NoNativeAccessException extends Exception {
   public NoNativeAccessException(){
     super();

@@ -76,6 +76,7 @@ import org.mellowtech.core.CoreLog;
  * 
  * 
  */
+@Deprecated
 public class FileInfo {
   
   HashMap<String, String[]> extToInfo = new HashMap<String, String[]>();

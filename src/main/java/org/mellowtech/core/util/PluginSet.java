@@ -83,6 +83,7 @@ import org.xml.sax.helpers.DefaultHandler;
  * </blockquote>
  * 
  */
+@Deprecated
 public class PluginSet {
   String fParentClassName;
   Class fParent;

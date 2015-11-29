@@ -3,17 +3,15 @@ package org.mellowtech.core.bytestorable.io;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.mellowtech.core.bytestorable.BComparable;
 import org.mellowtech.core.bytestorable.CBString;
 
-import java.nio.ByteBuffer;
-import java.util.Arrays;
+import java.nio.BufferOverflowException;
 import java.util.Iterator;
 
 /**
  * Created by msvens on 25/11/15.
  */
-public class SortedBlockTest {
+public class BCBlockTest {
 
   public static CBString[] words = new CBString[]{new CBString("hotel"), new CBString("delta"),
       new CBString("alpha"), new CBString("bravo"), new CBString("india"), new CBString("echo"),
@@ -38,16 +36,19 @@ public class SortedBlockTest {
       len += str.byteSize();
     }
     wordLen = len;
-    blockSize = len + SortedBlock.extraBytes(10, SortedBlock.PTR_NORMAL);
+    blockSize = len + BCBlock.bytesNeeded(10, SortedBlock.PTR_NORMAL);
   }
 
-  SortedBlock<CBString> sb;
+  BCBlock<String, CBString> sb;
 
 
-  public SortedBlock<CBString> newBlock() {
+  public BCBlock<String, CBString> newBlock() {
+    return new BCBlock<String, CBString>(blockSize, new CBString(), BCBlock.PtrType.NORMAL, (short) 0);
+    /*
     SortedBlock <CBString> temp = new SortedBlock<>();
     temp.setBlock(new byte[blockSize], new CBString(), true, SortedBlock.PTR_NORMAL, (short) 0);
     return temp;
+    */
   }
 
   @Before
@@ -57,8 +58,8 @@ public class SortedBlockTest {
 
   //common tests
   @Test
-  public void testPointerSize() {
-    Assert.assertEquals(SortedBlock.PTR_NORMAL, sb.getPointerSize());
+  public void testPointerType() {
+    Assert.assertEquals(BCBlock.PtrType.NORMAL, sb.getPointerType());
   }
 
   @Test
@@ -83,57 +84,57 @@ public class SortedBlockTest {
   }
 
 
-  @Test
+  /*@Test
   public void testGetKeyType(){
-    Assert.assertEquals(CBString.class, sb.getKeyType().getClass());
-  }
+    Assert.assertEquals(CBString.class, sb);
+  }*/
 
 
   @Test
   public void testStorageCapacity(){
-    Assert.assertEquals(sb.storageCapacity(), wordLen + (SortedBlock.PTR_NORMAL * words.length));
+    Assert.assertEquals(sb.storageCapacity(), wordLen + (BCBlock.PtrType.NORMAL.size() * words.length));
   }
 
   //Tests on empty block:
   @Test
   public void zeroBinarySearchBC() {
-    Assert.assertEquals(-1, sb.binarySearchBC(new CBString("first")));
+    Assert.assertEquals(-1, sb.searchBC(new CBString("first")));
   }
 
   //Tests on empty block:
   @Test
   public void zeroBinarySearch() {
-    Assert.assertEquals(-1, sb.binarySearch(new CBString("first")));
+    Assert.assertEquals(-1, sb.search(new CBString("first")));
   }
 
   @Test
   public void zeroCanMerge() {
-    Assert.assertTrue(sb.canMerge(newBlock()));
+    Assert.assertTrue(sb.fits(newBlock()));
   }
 
   @Test
   public void zeroCanMergePlusOne(){
-    Assert.assertTrue(sb.canMerge(newBlock(), new CBString("additional")));
+    Assert.assertTrue(sb.fits(newBlock(), new CBString("additional")));
   }
 
   @Test
   public void zeroContainsKey(){
-    Assert.assertFalse(sb.containsKey(ascend[0]));
+    Assert.assertFalse(sb.contains(ascend[0]));
   }
 
   @Test
   public void zeroDeleteKeyAtPos(){
-    Assert.assertNull(sb.deleteKey(0));
+    Assert.assertNull(sb.delete(0));
   }
 
   @Test
   public void zeroDeleteKey(){
-    Assert.assertNull(sb.deleteKey(ascend[0]));
+    Assert.assertNull(sb.delete(ascend[0]));
   }
 
   @Test
   public void zeroFitsKey(){
-    Assert.assertTrue(sb.fitsKey(ascend[0]));
+    Assert.assertTrue(sb.fits(ascend[0]));
   }
 
   @Test
@@ -157,22 +158,22 @@ public class SortedBlockTest {
 
   @Test
   public void zeroFirstKey(){
-    Assert.assertNull(sb.getFirstKey());
+    Assert.assertNull(sb.getFirst());
   }
 
   @Test
   public void zeroGetKeyAtPos(){
-    Assert.assertNull(sb.getKey(0));
+    Assert.assertNull(sb.get(0));
   }
 
   @Test
   public void zeroGetKey(){
-    Assert.assertNull(sb.getKey(ascend[0]));
+    Assert.assertNull(sb.get(ascend[0]));
   }
 
   @Test
   public void zeroGetLastKey(){
-    Assert.assertNull(sb.getLastKey());
+    Assert.assertNull(sb.getLast());
   }
 
   @Test
@@ -187,42 +188,42 @@ public class SortedBlockTest {
 
   @Test
   public void zeroIteratorRangeInclusive(){
-    Assert.assertFalse(sb.iterator(ascend[1], true, ascend[8], true).hasNext());
+    Assert.assertFalse(sb.iterator(false,ascend[1], true, ascend[8], true).hasNext());
   }
 
   @Test
   public void zeroIteratorRangeExclusive(){
-    Assert.assertFalse(sb.iterator(ascend[1], false, ascend[8], false).hasNext());
+    Assert.assertFalse(sb.iterator(false,ascend[1], false, ascend[8], false).hasNext());
   }
 
   @Test
   public void zeroReverseIterator(){
-    Assert.assertFalse(sb.reverseIterator().hasNext());
+    Assert.assertFalse(sb.iterator(true).hasNext());
   }
 
   @Test
   public void zeroReverseIteratorRangeInclusive(){
-    Assert.assertFalse(sb.reverseIterator(ascend[8], true, ascend[1], true).hasNext());
+    Assert.assertFalse(sb.iterator(true, ascend[8], true, ascend[1], true).hasNext());
   }
 
   @Test
   public void zeroReverseIteratorRangeExclusive(){
-    Assert.assertFalse(sb.reverseIterator(ascend[8], false, ascend[1], false).hasNext());
+    Assert.assertFalse(sb.iterator(true, ascend[8], false, ascend[1], false).hasNext());
   }
 
   @Test
   public void zeroMergeBlock(){
-    SortedBlock <CBString> other = newBlock();
-    Assert.assertEquals(0, sb.mergeBlock(other).getNumberOfElements());
-    other.insertKey(ascend[0]);
-    Assert.assertEquals(ascend[0], sb.mergeBlock(other).getFirstKey());
+    BCBlock <String, CBString> other = newBlock();
+    Assert.assertEquals(0, sb.merge(other).getNumberOfElements());
+    other.insert(ascend[0]);
+    Assert.assertEquals(ascend[0], sb.merge(other).getFirst());
   }
 
   @Test
   public void zeroReopen(){
     byte[] bytes = sb.getBlock();
-    SortedBlock <CBString> other = new SortedBlock<>();
-    Assert.assertEquals(0, other.setBlock(bytes, new CBString()).getNumberOfElements());
+    BCBlock <String, CBString> other = new BCBlock<>(bytes, new CBString());
+    Assert.assertEquals(0, other.getNumberOfElements());
   }
 
   @Test
@@ -232,60 +233,60 @@ public class SortedBlockTest {
 
   @Test
   public void zeroSplitBlock(){
-    Assert.assertEquals(0, sb.splitBlock().getNumberOfElements());
+    Assert.assertEquals(0, sb.split().getNumberOfElements());
   }
 
   //Tests on block with 1 entry:
   public void putFirst(){
-    sb.insertKey(ascend[0]);
+    sb.insert(ascend[0]);
   }
 
   @Test
   public void oneBinarySearch() {
     putFirst();
-    Assert.assertEquals(0, sb.binarySearch(ascend[0]));
+    Assert.assertEquals(0, sb.search(ascend[0]));
   }
 
   @Test
   public void oneBinarySearchBC() {
     putFirst();
-    Assert.assertEquals(0, sb.binarySearchBC(ascend[0]));
+    Assert.assertEquals(0, sb.searchBC(ascend[0]));
   }
 
   @Test
   public void oneCanMerge() {
     putFirst();
-    Assert.assertTrue(sb.canMerge(newBlock()));
+    Assert.assertTrue(sb.fits(newBlock()));
   }
 
   @Test
   public void oneCanMergePlusOne(){
     putFirst();
-    Assert.assertTrue(sb.canMerge(newBlock(), ascend[1]));
+    Assert.assertTrue(sb.fits(newBlock(), ascend[1]));
   }
 
   @Test
   public void oneContainsKey(){
     putFirst();
-    Assert.assertTrue(sb.containsKey(ascend[0]));
+    Assert.assertTrue(sb.contains(ascend[0]));
   }
 
   @Test
   public void oneDeleteKeyAtPos(){
     putFirst();
-    Assert.assertEquals(ascend[0],sb.deleteKey(0));
+    Assert.assertEquals(ascend[0],sb.delete(0));
   }
 
   @Test
   public void oneDeleteKey(){
     putFirst();
-    Assert.assertEquals(ascend[0],sb.deleteKey(ascend[0]));
+    Assert.assertEquals(ascend[0],sb.delete(ascend[0]));
   }
 
   @Test
   public void oneFitsKey(){
     putFirst();
-    Assert.assertTrue(sb.fitsKey(ascend[1]));
+    Assert.assertTrue(sb.fits(ascend[1]));
   }
 
   @Test
@@ -310,25 +311,25 @@ public class SortedBlockTest {
   @Test
   public void oneFirstKey(){
     putFirst();
-    Assert.assertEquals(ascend[0],sb.getFirstKey());
+    Assert.assertEquals(ascend[0],sb.getFirst());
   }
 
   @Test
   public void oneGetKeyAtPos(){
     putFirst();
-    Assert.assertEquals(ascend[0],sb.getKey(0));
+    Assert.assertEquals(ascend[0],sb.get(0));
   }
 
   @Test
   public void oneGetKey(){
     putFirst();
-    Assert.assertEquals(ascend[0], sb.getKey(ascend[0]));
+    Assert.assertEquals(ascend[0], sb.get(ascend[0]));
   }
 
   @Test
   public void oneGetLastKey(){
     putFirst();
-    Assert.assertEquals(ascend[0], sb.getLastKey());
+    Assert.assertEquals(ascend[0], sb.getLast());
   }
 
   @Test
@@ -346,48 +347,48 @@ public class SortedBlockTest {
   @Test
   public void oneIteratorRangeInclusive(){
     putFirst();
-    Assert.assertFalse(sb.iterator(ascend[1], true, ascend[8], true).hasNext());
+    Assert.assertFalse(sb.iterator(false, ascend[1], true, ascend[8], true).hasNext());
   }
 
   @Test
   public void oneIteratorRangeExclusive(){
     putFirst();
-    Assert.assertFalse(sb.iterator(ascend[1], false, ascend[8], false).hasNext());
+    Assert.assertFalse(sb.iterator(false, ascend[1], false, ascend[8], false).hasNext());
   }
 
   @Test
   public void oneReverseIterator(){
     putFirst();
-    Assert.assertTrue(sb.reverseIterator().hasNext());
+    Assert.assertTrue(sb.iterator(true).hasNext());
   }
 
   @Test
   public void oneReverseIteratorRangeInclusive(){
     putFirst();
-    Assert.assertFalse(sb.reverseIterator(ascend[8], true, ascend[1], true).hasNext());
+    Assert.assertFalse(sb.iterator(true, ascend[8], true, ascend[1], true).hasNext());
   }
 
   @Test
   public void oneReverseIteratorRangeExclusive(){
     putFirst();
-    Assert.assertFalse(sb.reverseIterator(ascend[8], false, ascend[1], false).hasNext());
+    Assert.assertFalse(sb.iterator(true, ascend[8], false, ascend[1], false).hasNext());
   }
 
   @Test
   public void oneMergeBlock(){
     putFirst();
-    SortedBlock <CBString> other = newBlock();
-    Assert.assertEquals(1, sb.mergeBlock(other).getNumberOfElements());
-    other.insertKey(ascend[1]);
-    Assert.assertEquals(ascend[1], sb.mergeBlock(other).getLastKey());
+    BCBlock <String, CBString> other = newBlock();
+    Assert.assertEquals(1, sb.merge(other).getNumberOfElements());
+    other.insert(ascend[1]);
+    Assert.assertEquals(ascend[1], sb.merge(other).getLast());
   }
 
   @Test
   public void oneReopen(){
     putFirst();
     byte[] bytes = sb.getBlock();
-    SortedBlock <CBString> other = new SortedBlock<>();
-    Assert.assertEquals(1, other.setBlock(bytes, new CBString()).getNumberOfElements());
+    BCBlock <String, CBString> other = new BCBlock<>(bytes, new CBString());
+    Assert.assertEquals(1, other.getNumberOfElements());
   }
 
   @Test
@@ -399,7 +400,7 @@ public class SortedBlockTest {
   @Test
   public void oneSplitBlock(){
     putFirst();
-    SortedBlock<CBString> nb = sb.splitBlock();
+    BCBlock<String, CBString> nb = sb.split();
     Assert.assertEquals(0, sb.getNumberOfElements());
     Assert.assertEquals(1, nb.getNumberOfElements());
   }
@@ -407,55 +408,55 @@ public class SortedBlockTest {
   //Tests on block with max entries:
   public void putAll(){
     for(CBString s : words)
-      sb.insertKey(s);
+      sb.insert(s);
   }
 
   @Test
   public void tenBinarySearch() {
     putAll();
-    Assert.assertEquals(0, sb.binarySearch(ascend[0]));
+    Assert.assertEquals(0, sb.search(ascend[0]));
   }
 
   @Test
   public void tenBinarySearchBC() {
     putAll();
-    Assert.assertEquals(0, sb.binarySearchBC(ascend[0]));
+    Assert.assertEquals(0, sb.searchBC(ascend[0]));
   }
 
   @Test
   public void tenCanMerge() {
     putAll();
-    Assert.assertTrue(sb.canMerge(newBlock()));
+    Assert.assertTrue(sb.fits(newBlock()));
   }
 
   @Test
   public void tenCanMergePlusOne(){
     putAll();
-    Assert.assertFalse(sb.canMerge(newBlock(), new CBString("additional")));
+    Assert.assertFalse(sb.fits(newBlock(), new CBString("additional")));
   }
 
   @Test
   public void tenContainsKey(){
     putAll();
-    Assert.assertTrue(sb.containsKey(ascend[0]));
+    Assert.assertTrue(sb.contains(ascend[0]));
   }
 
   @Test
   public void tenDeleteKeyAtPos(){
     putAll();
-    Assert.assertEquals(ascend[0],sb.deleteKey(0));
+    Assert.assertEquals(ascend[0],sb.delete(0));
   }
 
   @Test
   public void tenDeleteKey(){
     putAll();
-    Assert.assertEquals(ascend[0],sb.deleteKey(ascend[0]));
+    Assert.assertEquals(ascend[0],sb.delete(ascend[0]));
   }
 
   @Test
   public void tenFitsKey(){
     putAll();
-    Assert.assertFalse(sb.fitsKey(ascend[1]));
+    Assert.assertFalse(sb.fits(ascend[1]));
   }
 
   @Test
@@ -480,25 +481,25 @@ public class SortedBlockTest {
   @Test
   public void tenFirstKey(){
     putAll();
-    Assert.assertEquals(ascend[0],sb.getFirstKey());
+    Assert.assertEquals(ascend[0],sb.getFirst());
   }
 
   @Test
   public void tenGetKeyAtPos(){
     putAll();
-    Assert.assertEquals(ascend[0],sb.getKey(0));
+    Assert.assertEquals(ascend[0],sb.get(0));
   }
 
   @Test
   public void tenGetKey(){
     putAll();
-    Assert.assertEquals(ascend[0], sb.getKey(ascend[0]));
+    Assert.assertEquals(ascend[0], sb.get(ascend[0]));
   }
 
   @Test
   public void tenGetLastKey(){
     putAll();
-    Assert.assertEquals(ascend[9], sb.getLastKey());
+    Assert.assertEquals(ascend[9], sb.getLast());
   }
 
   @Test
@@ -523,7 +524,7 @@ public class SortedBlockTest {
   public void tenIteratorRangeInclusive(){
     putAll();
     int i = 1;
-    Iterator<CBString> iter = sb.iterator(ascend[1], true, ascend[8], true);
+    Iterator<CBString> iter = sb.iterator(false, ascend[1], true, ascend[8], true);
     while(iter.hasNext()){
       Assert.assertEquals(ascend[i], iter.next());
       i++;
@@ -535,7 +536,7 @@ public class SortedBlockTest {
   public void tenIteratorRangeExclusive(){
     putAll();
     int i = 2;
-    Iterator<CBString> iter = sb.iterator(ascend[1], false, ascend[8], false);
+    Iterator<CBString> iter = sb.iterator(false, ascend[1], false, ascend[8], false);
     while(iter.hasNext()){
       Assert.assertEquals(ascend[i], iter.next());
       i++;
@@ -547,7 +548,7 @@ public class SortedBlockTest {
   public void tenReverseIterator(){
     putAll();
     int i = 9;
-    Iterator<CBString> iter = sb.reverseIterator();
+    Iterator<CBString> iter = sb.iterator(true);
     while(iter.hasNext()){
       Assert.assertEquals(ascend[i], iter.next());
       i--;
@@ -559,7 +560,7 @@ public class SortedBlockTest {
   public void tenReverseIteratorRangeInclusive(){
     putAll();
     int i = 8;
-    Iterator<CBString> iter = sb.reverseIterator(ascend[8], true, ascend[1], true);
+    Iterator<CBString> iter = sb.iterator(true, ascend[8], true, ascend[1], true);
     while(iter.hasNext()){
       Assert.assertEquals(ascend[i], iter.next());
       i--;
@@ -571,7 +572,7 @@ public class SortedBlockTest {
   public void tenReverseIteratorRangeExclusive(){
     putAll();
     int i = 7;
-    Iterator<CBString> iter = sb.reverseIterator(ascend[8], false, ascend[1], false);
+    Iterator<CBString> iter = sb.iterator(true, ascend[8], false, ascend[1], false);
     while(iter.hasNext()){
       Assert.assertEquals(ascend[i], iter.next());
       i--;
@@ -580,27 +581,33 @@ public class SortedBlockTest {
   }
 
   @Test
-  public void tenMergeBlock(){
+  public void tenMergeEmptyBlock(){
     putAll();
-    SortedBlock <CBString> other = newBlock();
-    Assert.assertEquals(10, sb.mergeBlock(other).getNumberOfElements());
-    other.insertKey(new CBString("newItem"));
-    Assert.assertEquals(10, sb.mergeBlock(other).getNumberOfElements());
+    BCBlock <String, CBString> other = newBlock();
+    Assert.assertEquals(10, sb.merge(other).getNumberOfElements());
+  }
+
+  @Test(expected = BufferOverflowException.class)
+  public void tenMergeNonEmptyBlock(){
+    putAll();
+    BCBlock <String, CBString> other = newBlock();
+    other.insert(new CBString("newItem"));
+    Assert.assertEquals(10, sb.merge(other).getNumberOfElements());
   }
 
   @Test
   public void tenReopen(){
     putAll();
     byte[] bytes = sb.getBlock();
-    SortedBlock <CBString> other = new SortedBlock<>();
-    Assert.assertEquals(10, other.setBlock(bytes, new CBString()).getNumberOfElements());
+    BCBlock <String, CBString> other = new BCBlock<String,CBString>(bytes, new CBString());
+    Assert.assertEquals(10, other.getNumberOfElements());
   }
 
   @Test
   public void tenSort(){
     //putAll();
     for(CBString w : words){
-      sb.insertKeyUnsorted(w);
+      sb.insertUnsorted(w);
     }
     sb.sort(false);
     Iterator <CBString> iter = sb.iterator();
@@ -614,7 +621,7 @@ public class SortedBlockTest {
   @Test
   public void tenSplitBlock(){
     putAll();
-    SortedBlock<CBString> nb = sb.splitBlock();
+    BCBlock<String, CBString> nb = sb.split();
     Assert.assertEquals(5, sb.getNumberOfElements());
     Assert.assertEquals(5, nb.getNumberOfElements());
   }

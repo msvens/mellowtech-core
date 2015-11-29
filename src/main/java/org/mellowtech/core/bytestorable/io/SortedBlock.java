@@ -32,8 +32,6 @@ import java.util.*;
 import org.mellowtech.core.bytestorable.BComparable;
 import org.mellowtech.core.bytestorable.BStorable;
 
-//import org.mellowtech.core.bytestorable.ByteComparable;
-//import org.mellowtech.core.bytestorable.ByteStorableOld;
 
 /**
  * The SortedBlock keeps a sorted byte array of ByteStorables. The SortedBlock
@@ -51,7 +49,7 @@ import org.mellowtech.core.bytestorable.BStorable;
  * @author Martin Svensson
  */
 
-
+@Deprecated
 public class SortedBlock <T extends BComparable<?,T>> {
 
   /**
@@ -186,13 +184,15 @@ public class SortedBlock <T extends BComparable<?,T>> {
     return -(low + 1);
   }
 
-  public int binarySearchBC(BComparable <?,T> key, int low, int highSearch) {
+  public int binarySearchBC(T key) {
+    int low = 0;
+    int highSearch = high - 1, mid;
     ByteBuffer bbKey = key.to();
     ByteBuffer bbVal = ByteBuffer.wrap(block);
     while (low <= highSearch) {
-      int mid = (low + highSearch) / 2;
+      mid = (low + highSearch) / 2;
       int midValOffset = getPhysicalPos(mid);
-      int cmp = key.byteCompare(0, bbKey, midValOffset, bbVal);
+      int cmp = key.byteCompare(midValOffset, bbVal, 0, bbKey);
       if (cmp < 0)
         low = mid + 1;
       else if (cmp > 0)
@@ -933,7 +933,7 @@ public class SortedBlock <T extends BComparable<?,T>> {
     int cursor;
     int lastRet = -1;
     int stop = 0;
-    T nextItem = null;
+    //T nextItem = null;
 
     public SBReverseIter(){
       cursor = getUpperBound(null, true);

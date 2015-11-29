@@ -37,6 +37,7 @@ import java.util.logging.Level;
 
 import org.mellowtech.core.CoreLog;
 
+@Deprecated
 public class NativeLibLoader {
   
   private static NativeLibLoader libLoader = null;
