@@ -25,15 +25,15 @@ Go to the detailed descriptions for usage instructions
 * [Sorting](src/site/markdown/sorting.md)
 * [Collections](src/site/markdown/collections.md)
 
-#Releases
+##Releases
 
-##3.0.3 - Hardening
+###3.0.3 - Hardening
 * Added extensive unit testing for key classes. Around 1000 tests were added
 * Added proper support of java Map and NavigableMap Apis. Now Map views are proper views of the underlying disc map
 * Continued deprecation of old and unused classes
 * Refactored collections package with a more clean separation of Api and implementation
 
-##3.0.2 - To Maven Offical
+###3.0.2 - To Maven Official
 * Initial release on official Maven repository
 * Major update to ByteStorable API
 * First release to require java 8
