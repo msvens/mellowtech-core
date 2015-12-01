@@ -352,7 +352,7 @@ class DBValueCollection<A,B> extends AbstractCollection<B> {
 
   @Override
   public boolean remove(Object o) {
-    throw new Error("removal is not supported yet");
+    throw new Error("removal is not supported");
   }
 }
 

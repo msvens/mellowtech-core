@@ -45,15 +45,21 @@ To be written
 If you prefer to work with normal objects (i.e. not ByteStorables) the *org.mellowtech.core.collections.DiscMap* API is for you.
 It extends *java.util.Map* and adds a couple of methods for closing/saving a map to disc as well as 2 entry iterators.
 
-DiscMap comes with 2 concrete implementations (DiscBasedMap and DiscBasedHashMap) that use BTree and ExtendibleHashTable
-respectively.
+DiscMap comes with 2 concrete implementations (one for hashed maps and one for sorted maps) that use BTree and ExtendibleHashTable
+respectively. DiscMap extends the Map Api while SortedDiscMap extends the NavigableMap API. Views (submaps) works in the same
+as you would expect. There are a few methods that are not yet implemented in submaps (i.e. value collections).
 
 ```java
-//sorted disc based map that memory maps both index and key/values
-DiscMap <String, Integer> db = new DiscBasedMap <> (CBString.class, CBInt.class, "/tmp/discbasedmap", false, true);
+DiscMapBuilder builder = new DiscMapBuilder();
+builder.memMappedKeyBlocks(true);
 
-//hash based map that stores blob values with index and blob pointer in memory
-DiscMap <String, String> db1 = new DiscBasedHashMap <> (CBString.class, CBString.class, "tmp/hashbasedmap", true, false);
+//if blobValues is set to true the map will contain a pointer to a separate file with the value
+SortedDiscMap <String, Integer> db = builder.blobValues(false).sorted(String.class, Integer.class, "/tmp/discbasedmap");
+DiscMap <String, String> db1 = builder.blobValues(true).hashed(String.class, String.class, "tmp/hashbasedmap");
+
+//or more generically (in which case you would have to cast to SortedDiscMap)
+db = (SortedDiscMap<String, Integer>) builder.blobValues(false).build(String.class, Integer.class, "/tmp/discbasedmap", true);
+db1 = builder.blobValues(true).build(String.class, String.class, "tmp/hashbasedmap", false);
 ```
 
 If you prefer to work with the underlying structure directly you can do this as well using the tree and hash builders

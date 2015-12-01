@@ -31,6 +31,11 @@ public class DiscMapBuilder {
     return this;
   }
 
+  public DiscMapBuilder blobValues(boolean blobs){
+    this.blobValues = blobs;
+    return this;
+  }
+
   public DiscMapBuilder valueBlockSize(int size) {
     this.valueBlockSize = size;
     return this;
