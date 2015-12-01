@@ -486,7 +486,7 @@ implements BTree<A, B, C, D> {
     indexFile.clear();
     valueFile.clear();
     leafLevel = -1;
-
+    size = 0;
     BCBlock<KeyValue.KV<B,D>,KeyValue<B,D>> sb =
         new BCBlock<>(valueFile.getBlockSize(), keyValues, BCBlock.PtrType.NORMAL);
     valueFile.insert(0, sb.getBlock());

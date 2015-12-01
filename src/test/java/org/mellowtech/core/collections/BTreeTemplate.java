@@ -140,14 +140,36 @@ public abstract class BTreeTemplate {
   }
 
   @Test
-  public void emptyIterator() throws IOException{
+  public void zeroIterator() throws Exception{
     Assert.assertFalse(tree.iterator().hasNext());
+
   }
 
   @Test
-  public void emptyIteratorFrom() throws IOException{
-    Assert.assertFalse(tree.iterator(firstWord).hasNext());
+  public void zeroIteratorRangeInclusive() throws Exception{
+    Assert.assertFalse(tree.iterator(false, ascend[0], true, ascend[9], true).hasNext());
   }
+
+  @Test
+  public void zeroIteratorRangeExclusive() throws Exception{
+    Assert.assertFalse(tree.iterator(false, ascend[0], false, ascend[9], false).hasNext());
+  }
+
+  @Test
+  public void zeroReverseIterator() throws Exception{
+    Assert.assertFalse(tree.iterator(true).hasNext());
+  }
+
+  @Test
+  public void zeroReverseIteratorRangeInclusive() throws Exception{
+    Assert.assertFalse(tree.iterator(true, ascend[9], true, ascend[0], true).hasNext());
+  }
+
+  @Test
+  public void zeroReverseIteratorRangeExclusive() throws Exception{
+    Assert.assertFalse(tree.iterator(true, ascend[9], false, ascend[0], false).hasNext());
+  }
+
 
   @Test(expected = IOException.class)
   public void emptyGetKey() throws IOException{
@@ -164,73 +186,117 @@ public abstract class BTreeTemplate {
     Assert.assertEquals(0,tree.getPositionWithMissing(firstWord).getSmaller());
   }
 
-  /***********one item tree tests*****************************/
   protected CBInt val(CBString key){
     return new CBInt(key.get().length());
   }
 
+  /***********one item tree tests*****************************/
+  protected void onePut() throws IOException{
+    tree.put(ascend[0], val(ascend[0]));
+  }
   @Test
   public void oneSize() throws IOException{
-    tree.put(firstWord, val(firstWord));
+    onePut();
     Assert.assertEquals(1, tree.size());
   }
 
   @Test
   public void oneTruncate() throws IOException {
+    onePut();
     tree.truncate();
     Assert.assertEquals(0, tree.size());
   }
 
   @Test
   public void oneIsEmpty() throws IOException {
-    tree.put(firstWord, val(firstWord));
+    onePut();
     Assert.assertFalse(tree.isEmpty());
   }
 
   @Test
   public void oneContainsKey() throws IOException {
-    tree.put(firstWord, val(firstWord));
-    Assert.assertTrue(tree.containsKey(firstWord));
+    onePut();
+    Assert.assertTrue(tree.containsKey(ascend[0]));
   }
 
   @Test
   public void oneRemove() throws IOException{
-    tree.put(firstWord, val(firstWord));
-    Assert.assertEquals(val(firstWord), tree.remove(firstWord));
+    onePut();
+    Assert.assertEquals(val(ascend[0]), tree.remove(ascend[0]));
   }
 
   @Test
   public void oneGet() throws IOException{
-    tree.put(firstWord, val(firstWord));
-    Assert.assertEquals(val(firstWord), tree.get(firstWord));
+    onePut();
+    Assert.assertEquals(val(ascend[0]), tree.get(ascend[0]));
   }
 
   @Test
   public void oneReopen() throws Exception{
-    tree.put(firstWord, val(firstWord));
+    onePut();
     tree.close();
     tree = reopen(TestUtils.getAbsolutDir(dir+"/"+fName()));
-    Assert.assertEquals(val(firstWord), tree.get(firstWord));
+    Assert.assertEquals(val(ascend[0]), tree.get(ascend[0]));
   }
 
   @Test
   public void oneGetKeyValue() throws IOException{
-    tree.put(firstWord, val(firstWord));
-    KeyValue<CBString, CBInt> kv = tree.getKeyValue(firstWord);
-    Assert.assertEquals(firstWord, kv.getKey());
-    Assert.assertEquals(val(firstWord), kv.getValue());
+    onePut();
+    KeyValue<CBString, CBInt> kv = tree.getKeyValue(ascend[0]);
+    Assert.assertEquals(ascend[0], kv.getKey());
+    Assert.assertEquals(val(ascend[0]), kv.getValue());
   }
 
   @Test
-  public void oneIterator() throws IOException{
-    tree.put(firstWord, val(firstWord));
-    Assert.assertTrue(tree.iterator().hasNext());
+  public void oneIterator() throws Exception{
+    onePut();
+    int i = 0;
+    Iterator<KeyValue<CBString, CBInt>> iter = tree.iterator();
+    while(iter.hasNext()){
+      org.junit.Assert.assertEquals(ascend[0], iter.next().getKey());
+      i++;
+    }
+    org.junit.Assert.assertEquals(1, i);
   }
 
   @Test
-  public void oneIteratorFrom() throws IOException{
-    tree.put(firstWord, val(firstWord));
-    Assert.assertTrue(tree.iterator(firstWord).hasNext());
+  public void oneIteratorRangeInclusive() throws Exception{
+    onePut();
+    Iterator<KeyValue<CBString, CBInt>> iter = tree.iterator(false, ascend[0], true, ascend[9], true);
+    Assert.assertTrue(iter.hasNext());
+  }
+
+  @Test
+  public void oneIteratorRangeExclusive() throws Exception{
+    onePut();
+    Iterator<KeyValue<CBString, CBInt>> iter = tree.iterator(false, ascend[0], false, ascend[9], false);
+    Assert.assertFalse(iter.hasNext());
+  }
+
+  @Test
+  public void oneReverseIterator() throws Exception{
+    onePut();
+    int i = 0;
+    Iterator<KeyValue<CBString, CBInt>> iter = tree.iterator(true);
+    while(iter.hasNext()){
+      Assert.assertEquals(ascend[i], iter.next().getKey());
+      i--;
+    }
+    Assert.assertEquals(-1, i);
+  }
+
+  @Test
+  public void oneReverseIteratorRangeInclusive() throws Exception{
+    onePut();
+    Iterator<KeyValue<CBString, CBInt>> iter = tree.iterator(true, ascend[9], true, ascend[0], true);
+    Assert.assertTrue(iter.hasNext());
+  }
+
+  @Test
+  public void oneReverseIteratorRangeExclusive() throws Exception{
+    onePut();
+    Iterator<KeyValue<CBString, CBInt>> iter = tree.iterator(true, ascend[9], false, ascend[0], false);
+    Assert.assertFalse(iter.hasNext());
   }
 
   @Test
@@ -500,8 +566,6 @@ public abstract class BTreeTemplate {
     int from = 50;
     int to = mAscend.length - 50;
     Iterator<KeyValue<CBString, CBInt>> iter = tree.iterator(false, mAscend[from], true, mAscend[to], true);
-    System.out.println("iter has next: "+iter.hasNext()+" "+mAscend[from]+" "+mAscend[to]);
-    System.out.println("contains key "+tree.containsKey(mAscend[from])+" "+tree.containsKey(mAscend[to]));
     while(iter.hasNext()){
       org.junit.Assert.assertEquals(mAscend[from], iter.next().getKey());
       from++;
