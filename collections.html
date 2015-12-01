@@ -146,15 +146,20 @@
 <div class="section">
 <h2><a name="Collections"></a>Collections</h2>
 <p>If you prefer to work with normal objects (i.e. not ByteStorables) the <i>org.mellowtech.core.collections.DiscMap</i> API is for you. It extends <i>java.util.Map</i> and adds a couple of methods for closing/saving a map to disc as well as 2 entry iterators.</p>
-<p>DiscMap comes with 2 concrete implementations (DiscBasedMap and DiscBasedHashMap) that use BTree and ExtendibleHashTable respectively.</p>
+<p>DiscMap comes with 2 concrete implementations (one for hashed maps and one for sorted maps) that use BTree and ExtendibleHashTable respectively. DiscMap extends the Map Api while SortedDiscMap extends the NavigableMap API. Views (submaps) works in the same as you would expect. There are a few methods that are not yet implemented in submaps (i.e. value collections).</p>
 
 <div class="source">
 <div class="source">
-<pre>//sorted disc based map that memory maps both index and key/values
-DiscMap &lt;String, Integer&gt; db = new DiscBasedMap &lt;&gt; (CBString.class, CBInt.class, &quot;/tmp/discbasedmap&quot;, false, true);
+<pre>DiscMapBuilder builder = new DiscMapBuilder();
+builder.memMappedKeyBlocks(true);
 
-//hash based map that stores blob values with index and blob pointer in memory
-DiscMap &lt;String, String&gt; db1 = new DiscBasedHashMap &lt;&gt; (CBString.class, CBString.class, &quot;tmp/hashbasedmap&quot;, true, false);
+//if blobValues is set to true the map will contain a pointer to a separate file with the value
+SortedDiscMap &lt;String, Integer&gt; db = builder.blobValues(false).sorted(String.class, Integer.class, &quot;/tmp/discbasedmap&quot;);
+DiscMap &lt;String, String&gt; db1 = builder.blobValues(true).hashed(String.class, String.class, &quot;tmp/hashbasedmap&quot;);
+
+//or more generically (in which case you would have to cast to SortedDiscMap)
+db = (SortedDiscMap&lt;String, Integer&gt;) builder.blobValues(false).build(String.class, Integer.class, &quot;/tmp/discbasedmap&quot;, true);
+db1 = builder.blobValues(true).build(String.class, String.class, &quot;tmp/hashbasedmap&quot;, false);
 </pre></div></div>
 <p>If you prefer to work with the underlying structure directly you can do this as well using the tree and hash builders</p>
 

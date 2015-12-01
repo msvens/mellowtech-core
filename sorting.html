@@ -170,7 +170,7 @@
 <div class="source">
 <pre>public static void sSort() throws Exception {
   long l = System.currentTimeMillis();
-  EDiscBasedSort&lt;String,CBString&gt; edb = new EDiscBasedSort &lt;&gt;(new CBString(), &quot;/tmp&quot;);
+  EDiscBasedSort&lt;String,CBString&gt; edb = new EDiscBasedSort &lt;&gt;(CBString.class, &quot;/tmp&quot;);
   edb.sort(&quot;/tmp/english.1024MB.bs&quot;, &quot;/tmp/english-sorted.bs&quot;, 1024*1024*160);
   System.out.println(&quot;esort took: &quot;+ (System.currentTimeMillis() - l) + &quot;ms&quot;);
 }
@@ -188,7 +188,7 @@
   Scanner s = new Scanner(is);
   s.useDelimiter(p);
   BufferedOutputStream os = new BufferedOutputStream(new FileOutputStream(&quot;/tmp/english-sorted-1.bs&quot;),1024*1024);
-  EDiscBasedSort &lt;String, CBString&gt; edb = new EDiscBasedSort &lt;&gt;(new CBString(), &quot;/tmp&quot;);
+  EDiscBasedSort &lt;String, CBString&gt; edb = new EDiscBasedSort &lt;&gt;(CBString.class, &quot;/tmp&quot;);
   edb.sort(new ScannerInputStream(s,1), os, 1024*1024*160);
   os.close();
 }
