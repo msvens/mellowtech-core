@@ -14,7 +14,7 @@ that involves
 
 In our own work we have used this library mainly for developing search engines.
 
-The library itself was initially created by <Martin Svensson> and <Rickard Cöster> while
+The library itself was initially created by Martin Svensson and Rickard Cöster while
 working at the Swedish Institue of Computer Science in 2002. Since then it has undergone
 a lot of changes and enhancements and is now maintained and developed by mellowtech.org.
 
