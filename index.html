@@ -128,28 +128,61 @@
 
 <ul>
   
-<li>a need for storing your collections on disc</li>
+<li>
+<p>a need for storing your collections on disc</p></li>
   
-<li>sorting large collections of objects that will not fit in memory</li>
+<li>
+<p>sorting large collections of objects that will not fit in memory</p></li>
   
-<li>consistent access to files that contains objects</li>
+<li>
+<p>consistent access to files that contains objects</p></li>
   
-<li>fast transformation of objects from and to byte representations (instead of using normal  Java Serialization)</li>
+<li>
+<p>fast transformation of objects from and to byte representations (instead of using normal Java Serialization)</p></li>
 </ul>
 <p>In our own work we have used this library mainly for developing search engines.</p>
 <p>The library itself was initially created by Martin Svensson and Rickard C&#xf6;ster while working at the Swedish Institue of Computer Science in 2002. Since then it has undergone a lot of changes and enhancements and is now maintained and developed by mellowtech.org.</p>
+<p>Go to the detailed descriptions for usage instructions</p>
+
+<ul>
+  
+<li><a href="src/site/markdown/byteStorables.md">ByteStorables</a></li>
+  
+<li><a href="src/site/markdown/IO.md">IO</a></li>
+  
+<li><a href="src/site/markdown/sorting.md">Sorting</a></li>
+  
+<li><a href="src/site/markdown/collections.md">Collections</a></li>
+</ul>
+<div class="section">
+<h2><a name="Releases"></a>Releases</h2>
+<div class="section">
+<h3><a name="a3.0.3_-_Hardening"></a>3.0.3 - Hardening</h3>
+
+<ul>
+  
+<li>Added extensive unit testing for key classes. Around 1000 tests were added</li>
+  
+<li>Added proper support of java Map and NavigableMap Apis. Now Map views are proper views of the underlying disc map</li>
+  
+<li>Continued deprecation of old and unused classes</li>
+  
+<li>Refactored collections package with a more clean separation of Api and implementation</li>
+</ul></div>
+<div class="section">
+<h3><a name="a3.0.2_-_To_Maven_Official"></a>3.0.2 - To Maven Official</h3>
+
+<ul>
+  
+<li>Initial release on official Maven repository</li>
+  
+<li>Major update to ByteStorable API</li>
+  
+<li>First release to require java 8</li>
+</ul></div></div>
 <div class="section">
 <h2><a name="Download"></a>Download</h2>
-<p>All mellowtech.org APIs can be downloaded from our maven repository <a class="externalLink" href="http://www.mellowtech.org/nexus/content/repositories/snapshots">http://www.mellowtech.org/nexus/content/repositories/snapshots</a></p>
-
-<div class="source">
-<div class="source">
-<pre>&lt;repository&gt;
-   &lt;id&gt;mellowtech-snapshots&lt;/id&gt;
-   &lt;name&gt;Mellowtech Snapshots&lt;/name&gt;
-   &lt;url&gt;http://www.mellowtech.org/nexus/content/repositories/snapshots/&lt;/url&gt;
-&lt;/repository&gt;
-</pre></div></div>
+<p>The core mellowtech.org API can be downloaded from the central maven repository</p>
 <p>In your &lt;pom.xml&gt; include the following dependency</p>
 
 <div class="source">
@@ -157,7 +190,7 @@
 <pre>&lt;dependency&gt;
   &lt;groupId&gt;com.mellowtech&lt;/groupId&gt;
   &lt;artifactId&gt;core&lt;/artifactId&gt;
-  &lt;version&gt;0.7-SNAPSHOT&lt;/version&gt;
+  &lt;version&gt;3.0.3&lt;/version&gt;
 &lt;/dependency&gt;
 </pre></div></div></div>
                   </div>
