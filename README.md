@@ -50,6 +50,6 @@ In your <pom.xml> include the following dependency
 <dependency>
   <groupId>com.mellowtech</groupId>
   <artifactId>core</artifactId>
-  <version>3.0.2</version>
+  <version>3.0.3</version>
 </dependency>
 ```
