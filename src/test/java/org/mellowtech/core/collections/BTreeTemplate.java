@@ -1,20 +1,17 @@
-package org.mellowtech.core.collections.impl;
+package org.mellowtech.core.collections;
 
 import junit.framework.Assert;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
+
 import org.junit.Test;
 import org.mellowtech.core.TestUtils;
 import org.mellowtech.core.bytestorable.CBInt;
 import org.mellowtech.core.bytestorable.CBString;
-import org.mellowtech.core.collections.BTree;
-import org.mellowtech.core.collections.KeyValue;
 
 import java.io.IOException;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
 
 /**
  * Created by msvens on 01/11/15.
@@ -27,7 +24,15 @@ public abstract class BTreeTemplate {
   public static int MAX_WORD_LENGTH = 20;
   public static int MAX_BYTES = 4000;
 
-  public static CBString[] manyWords = TestUtils.randomWords(chars, MAX_WORD_LENGTH, MAX_BYTES);
+  public static CBString[] manyWords, mAscend, mDescend;
+
+  static {
+    manyWords = TestUtils.randomWords(chars, MAX_WORD_LENGTH, MAX_BYTES);
+    mAscend = Arrays.copyOf(manyWords, manyWords.length);
+    mDescend = Arrays.copyOf(manyWords, manyWords.length);
+    Arrays.sort(mAscend);
+    Arrays.sort(mDescend, Collections.reverseOrder());
+  }
 
   public static CBString[] words = new CBString[]{
       new CBString("hotel"), new CBString("delta"),
@@ -36,16 +41,27 @@ public abstract class BTreeTemplate {
       new CBString("foxtrot"), new CBString("juliet"),
       new CBString("charlie"), new CBString("golf")};
 
+  public static CBString[] ascend = new CBString[]{new CBString("alpha"),
+      new CBString("bravo"), new CBString("charlie"),
+      new CBString("delta"), new CBString("echo"),
+      new CBString("foxtrot"), new CBString("golf"),
+      new CBString("hotel"), new CBString("india"), new CBString("juliet")};
+
+  public static CBString[] descend = new CBString[]{new CBString("juliet"), new CBString("india"),
+      new CBString("hotel"), new CBString("golf"),
+      new CBString("foxtrot"), new CBString("echo"), new CBString("delta"), new CBString("charlie"),
+      new CBString("bravo"), new CBString("alpha")};
+
   public static CBString firstWord = new CBString("alpha");
   public static CBString forthWord = new CBString("delta");
 
 
-  abstract String fName();
+  public abstract String fName();
 
-  abstract BTree<String,CBString,Integer,CBInt>
+  public abstract BTree<String,CBString,Integer,CBInt>
     init(String fileName, int valueBlockSize, int indexBlockSize, int maxValueBlocks, int maxIndexBlocks) throws Exception;
 
-  abstract BTree<String,CBString,Integer,CBInt> reopen(String fileName) throws Exception;
+  public abstract BTree<String,CBString,Integer,CBInt> reopen(String fileName) throws Exception;
 
   @BeforeClass
   public static void createDir(){
@@ -236,14 +252,14 @@ public abstract class BTreeTemplate {
   }
 
   /***********ten item tree tests*****************************/
-  protected void fillTree() throws IOException{
+  protected void tenPut() throws IOException{
     for(CBString w : words){
       tree.put(w, val(w));
     }
   }
   @Test
   public void tenSize() throws IOException{
-    fillTree();
+    tenPut();
     Assert.assertEquals(words.length, tree.size());
   }
 
@@ -255,13 +271,13 @@ public abstract class BTreeTemplate {
 
   @Test
   public void tenIsEmpty() throws IOException {
-    fillTree();
+    tenPut();
     Assert.assertFalse(tree.isEmpty());
   }
 
   @Test
   public void tenContainsKey() throws IOException {
-    fillTree();
+    tenPut();
     for(CBString w : words) {
       Assert.assertTrue(tree.containsKey(w));
     }
@@ -269,21 +285,21 @@ public abstract class BTreeTemplate {
 
   @Test
   public void tenRemove() throws IOException{
-    fillTree();
+    tenPut();
     for(CBString w : words)
       Assert.assertEquals(val(w), tree.remove(w));
   }
 
   @Test
   public void tenGet() throws IOException{
-    fillTree();
+    tenPut();
     for(CBString w : words)
       Assert.assertEquals(val(w), tree.get(w));
   }
 
   @Test
   public void tenReopen() throws Exception{
-    fillTree();
+    tenPut();
     tree.close();
     tree = reopen(TestUtils.getAbsolutDir(dir+"/"+fName()));
     for(CBString w : words)
@@ -292,7 +308,7 @@ public abstract class BTreeTemplate {
 
   @Test
   public void tenGetKeyValue() throws IOException{
-    fillTree();
+    tenPut();
     for(CBString w : words) {
       KeyValue<CBString, CBInt> kv = tree.getKeyValue(w);
       Assert.assertEquals(w, kv.getKey());
@@ -301,49 +317,97 @@ public abstract class BTreeTemplate {
   }
 
   @Test
-  public void tenIterator() throws IOException{
-    fillTree();
-    Iterator iter = tree.iterator();
-    int tot = 0;
+  public void tenIterator() throws Exception{
+    tenPut();
+    int i = 0;
+    Iterator<KeyValue<CBString, CBInt>> iter = tree.iterator();
     while(iter.hasNext()){
-      tot++;
-      iter.next();
+      org.junit.Assert.assertEquals(ascend[i], iter.next().getKey());
+      i++;
     }
-    Assert.assertEquals(10, tot);
+    org.junit.Assert.assertEquals(10, i);
   }
 
   @Test
-  public void tenIteratorFrom() throws IOException{
-    fillTree();
-    Iterator iter = tree.iterator(forthWord);
-    int tot = 0;
+  public void tenIteratorRangeInclusive() throws Exception{
+    tenPut();
+    int i = 1;
+    Iterator<KeyValue<CBString, CBInt>> iter = tree.iterator(false, ascend[1], true, ascend[8], true);
     while(iter.hasNext()){
-      tot++;
-      iter.next();
+      org.junit.Assert.assertEquals(ascend[i], iter.next().getKey());
+      i++;
     }
-    Assert.assertEquals(7, tot);
+    org.junit.Assert.assertEquals(9, i);
+  }
+
+  @Test
+  public void tenIteratorRangeExclusive() throws Exception{
+    tenPut();
+    int i = 2;
+    Iterator<KeyValue<CBString, CBInt>> iter = tree.iterator(false, ascend[1], false, ascend[8], false);
+    while(iter.hasNext()){
+      org.junit.Assert.assertEquals(ascend[i], iter.next().getKey());
+      i++;
+    }
+    org.junit.Assert.assertEquals(8, i);
+  }
+
+  @Test
+  public void tenReverseIterator() throws Exception{
+    tenPut();
+    int i = 9;
+    Iterator<KeyValue<CBString, CBInt>> iter = tree.iterator(true);
+    while(iter.hasNext()){
+      org.junit.Assert.assertEquals(ascend[i], iter.next().getKey());
+      i--;
+    }
+    org.junit.Assert.assertEquals(-1, i);
+  }
+
+  @Test
+  public void tenReverseIteratorRangeInclusive() throws Exception{
+    tenPut();
+    int i = 8;
+    Iterator<KeyValue<CBString, CBInt>> iter = tree.iterator(true, ascend[8], true, ascend[1], true);
+    while(iter.hasNext()){
+      org.junit.Assert.assertEquals(ascend[i], iter.next().getKey());
+      i--;
+    }
+    org.junit.Assert.assertEquals(0, i);
+  }
+
+  @Test
+  public void tenReverseIteratorRangeExclusive() throws Exception{
+    tenPut();
+    int i = 7;
+    Iterator<KeyValue<CBString, CBInt>> iter = tree.iterator(true, ascend[8], false, ascend[1], false);
+    while(iter.hasNext()){
+      org.junit.Assert.assertEquals(ascend[i], iter.next().getKey());
+      i--;
+    }
+    org.junit.Assert.assertEquals(1, i);
   }
 
   @Test
   public void tenGetKey() throws IOException{
-    fillTree();
+    tenPut();
     Assert.assertEquals(firstWord, tree.getKey(0));
   }
 
   @Test
   public void tenGetPosition() throws IOException{
-    fillTree();
+    tenPut();
     Assert.assertNotNull(tree.getPosition(firstWord));
   }
 
   @Test
   public void tenGetPositionWithMissing() throws IOException{
-    fillTree();
+    tenPut();
     Assert.assertEquals(3,tree.getPositionWithMissing(forthWord).getSmaller());
   }
 
   /**********many item tree tests*****************************/
-  protected void fillManyTree() throws IOException{
+  protected void putMany() throws IOException{
     for(CBString w : manyWords){
       tree.put(w, val(w));
 
@@ -359,7 +423,7 @@ public abstract class BTreeTemplate {
 
   @Test
   public void manySize() throws IOException{
-    fillManyTree();
+    putMany();
     Assert.assertEquals(manyWords.length, tree.size());
   }
 
@@ -371,42 +435,35 @@ public abstract class BTreeTemplate {
 
   @Test
   public void manyIsEmpty() throws IOException {
-    fillManyTree();
+    putMany();
     Assert.assertFalse(tree.isEmpty());
   }
 
   @Test
   public void manyContainsKey() throws IOException {
-    fillManyTree();
+    putMany();
     for(CBString w : manyWords) {
       Assert.assertTrue(tree.containsKey(w));
     }
   }
 
-  //void put(B key, D value) throws IOException;
-
-  /*default void putIfNotExists(B key, D value) throws IOException{
-    if(!containsKey(key))
-      put(key,value);
-  }*/
-
   @Test
   public void manyRemove() throws IOException{
-    fillManyTree();
+    putMany();
     for(CBString w : manyWords)
       Assert.assertEquals(val(w), tree.remove(w));
   }
 
   @Test
   public void manyGet() throws IOException{
-    fillManyTree();
+    putMany();
     for(CBString w : manyWords)
       Assert.assertEquals(val(w), tree.get(w));
   }
 
   @Test
   public void manyReopen() throws Exception{
-    fillManyTree();
+    putMany();
     tree.close();
     tree = reopen(TestUtils.getAbsolutDir(dir+"/"+fName()));
     for(CBString w : manyWords)
@@ -415,7 +472,7 @@ public abstract class BTreeTemplate {
 
   @Test
   public void manyGetKeyValue() throws IOException{
-    fillManyTree();
+    putMany();
     for(CBString w : manyWords) {
       KeyValue<CBString, CBInt> kv = tree.getKeyValue(w);
       Assert.assertEquals(w, kv.getKey());
@@ -424,46 +481,109 @@ public abstract class BTreeTemplate {
   }
 
   @Test
-  public void manyIterator() throws IOException{
-    fillManyTree();
-    TreeMap <CBString, CBInt> m = getManyTree();
-    Iterator <KeyValue<CBString,CBInt>> iter = tree.iterator();
-    Iterator <Map.Entry<CBString,CBInt>> iter1 = m.entrySet().iterator();
-    while(iter1.hasNext()){
-      Assert.assertEquals(iter1.next().getKey(), iter.next().getKey());
+  public void manyIterator() throws Exception{
+    putMany();
+    int from = 0;
+    int to = mAscend.length - 1;
+    Iterator<KeyValue<CBString, CBInt>> iter = tree.iterator();
+    while(iter.hasNext()){
+      org.junit.Assert.assertEquals(mAscend[from], iter.next().getKey());
+      from++;
     }
-    Assert.assertFalse(iter.hasNext());
+    from--;
+    org.junit.Assert.assertEquals(from, to);
   }
 
-  /*@Test
-  public void tenIteratorFrom() throws IOException{
-    fillTree();
-    Iterator iter = tree.iterator(forthWord);
-    int tot = 0;
+  @Test
+  public void manyIteratorRangeInclusive() throws Exception{
+    putMany();
+    int from = 50;
+    int to = mAscend.length - 50;
+    Iterator<KeyValue<CBString, CBInt>> iter = tree.iterator(false, mAscend[from], true, mAscend[to], true);
+    System.out.println("iter has next: "+iter.hasNext()+" "+mAscend[from]+" "+mAscend[to]);
+    System.out.println("contains key "+tree.containsKey(mAscend[from])+" "+tree.containsKey(mAscend[to]));
     while(iter.hasNext()){
-      tot++;
-      iter.next();
+      org.junit.Assert.assertEquals(mAscend[from], iter.next().getKey());
+      from++;
     }
-    Assert.assertEquals(7, tot);
-  }*/
+    from--;
+    org.junit.Assert.assertEquals(to, from);
+  }
+
+  @Test
+  public void manyIteratorRangeExclusive() throws Exception{
+    putMany();
+    int from = 51;
+    int to = mAscend.length - 51;
+    Iterator<KeyValue<CBString, CBInt>> iter = tree.iterator(false, mAscend[from-1], false, mAscend[to+1], false);
+    while(iter.hasNext()){
+      org.junit.Assert.assertEquals(mAscend[from], iter.next().getKey());
+      from++;
+    }
+    from--;
+    org.junit.Assert.assertEquals(to, from);
+  }
+
+  @Test
+  public void manyReverseIterator() throws Exception{
+    putMany();
+    int from = mAscend.length-1;
+    int to = 0;
+    Iterator<KeyValue<CBString, CBInt>> iter = tree.iterator(true);
+    while(iter.hasNext()){
+      org.junit.Assert.assertEquals(mAscend[from], iter.next().getKey());
+      from--;
+    }
+    from++;
+    org.junit.Assert.assertEquals(to, from);
+  }
+
+  @Test
+  public void manyReverseIteratorRangeInclusive() throws Exception{
+    putMany();
+    int from = mAscend.length - 50;
+    int to = 50;
+    Iterator<KeyValue<CBString, CBInt>> iter = tree.iterator(true, mAscend[from], true, mAscend[to], true);
+    while(iter.hasNext()){
+      org.junit.Assert.assertEquals(mAscend[from], iter.next().getKey());
+      from--;
+    }
+    from++;
+    org.junit.Assert.assertEquals(to, from);
+  }
+
+  @Test
+  public void manyReverseIteratorRangeExclusive() throws Exception{
+    putMany();
+    int from = mAscend.length - 51;
+    int to = 51;
+
+    Iterator<KeyValue<CBString, CBInt>> iter = tree.iterator(true, mAscend[from+1], false, mAscend[to-1], false);
+    while(iter.hasNext()){
+      org.junit.Assert.assertEquals(mAscend[from], iter.next().getKey());
+      from--;
+    }
+    from++;
+    org.junit.Assert.assertEquals(from, to);
+  }
 
   @Test
   public void manyGetKey() throws IOException{
-    fillManyTree();
+    putMany();
     TreeMap <CBString, CBInt> m = getManyTree();
     Assert.assertEquals(m.firstKey(), tree.getKey(0));
   }
 
   @Test
   public void manyGetPosition() throws IOException{
-    fillManyTree();
+    putMany();
     TreeMap <CBString, CBInt> m = getManyTree();
     Assert.assertEquals(0, tree.getPosition(m.firstKey()).getSmaller());
   }
 
   /*@Test
   public void tenGetPositionWithMissing() throws IOException{
-    fillTree();
+    tenPut();
     Assert.assertEquals(3,tree.getPositionWithMissing(forthWord).smaller);
   }*/
 

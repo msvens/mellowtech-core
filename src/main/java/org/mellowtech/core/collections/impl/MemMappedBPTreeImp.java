@@ -1165,10 +1165,7 @@ public class MemMappedBPTreeImp<A,B extends BComparable<A,B>,C,D extends BStorab
     KeyValue <B,D> next = null;
 
     public BPIter(boolean reverse) {
-      this.reverse = reverse;
-      initPtrs();
-      nextIter(null);
-      getNext();
+      this(reverse, null, false, null, false);
     }
 
     public BPIter(boolean reverse, B from, boolean inclusive, B to, boolean endInclusive){
@@ -1177,6 +1174,7 @@ public class MemMappedBPTreeImp<A,B extends BComparable<A,B>,C,D extends BStorab
       this.end = to == null ? null : new KeyValue<> (to, null);
       this.endInclusive = endInclusive;
       initPtrs();
+      setCurrentBlock(from);
       nextIter(from);
       getNext();
     }
@@ -1191,6 +1189,28 @@ public class MemMappedBPTreeImp<A,B extends BComparable<A,B>,C,D extends BStorab
       KeyValue<B,D> toRet = next;
       getNext();
       return toRet;
+    }
+
+    private void setCurrentBlock(B from){
+      if(reverse){
+        this.currblock = blocks.size() - 1;
+        if(from != null){
+          int bNo = searchBlock(from);
+          for(; currblock > 0; currblock--){
+            if(blocks.get(currblock) == bNo)
+              break;
+          }
+        }
+      } else {
+        this.currblock = 0;
+        if(from != null){
+          int bNo = searchBlock(from);
+          for (; currblock < blocks.size(); currblock++) {
+            if (blocks.get(currblock) == bNo)
+              break;
+          }
+        }
+      }
     }
 
     private void getNext(){

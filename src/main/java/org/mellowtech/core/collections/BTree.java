@@ -32,6 +32,7 @@ import java.util.Iterator;
 
 import org.mellowtech.core.bytestorable.BComparable;
 import org.mellowtech.core.bytestorable.BStorable;
+import org.mellowtech.core.util.RangeIterable;
 
 /**
  * Representation of a file based sorted tree
@@ -45,7 +46,7 @@ import org.mellowtech.core.bytestorable.BStorable;
  * @author Martin Svensson
  */
 public interface BTree <A,B extends BComparable<A,B>, C, D extends BStorable<C,D>> 
-  extends BMap <A,B,C,D>{
+  extends BMap <A,B,C,D>, RangeIterable<KeyValue<B,D>, B>{
 
   
   //bulk creation:
@@ -83,19 +84,13 @@ public interface BTree <A,B extends BComparable<A,B>, C, D extends BStorable<C,D
    */
   TreePosition getPositionWithMissing(B key) throws IOException;
 
-  /**
-   * Returns an iterator over the key/value pairs in this btree starting at a
-   * given position.
-   *
-   * @param descending iterator going from the largest to smallest element
-   * @param from where to start iterating. If the key does not exist start at
-   *            position just greater than key
-   * @param fromInclusive if from exists include it in the iterator
-   * @param to where to stop the iteration
-   * @param toInclusive if to exists include it in the iterator
-   * @return this tree's iterator
-   * @see org.mellowtech.core.collections.KeyValue
-   */
+  @Override
+  default Iterator<KeyValue<B,D>> iterator(){
+    return iterator(false, null, false, null, false);
+  }
+
+  //Iterator<KeyValue <B, D>> iterator();
+  /*
   Iterator<KeyValue <B, D>> iterator(boolean descending, B from, boolean fromInclusive, B to, boolean toInclusive);
 
 
@@ -114,6 +109,7 @@ public interface BTree <A,B extends BComparable<A,B>, C, D extends BStorable<C,D
   default Iterator <KeyValue<B,D>> iterator(boolean descending, B from){
     return iterator(descending, from, true, null, false);
   }
+  */
 
 
 

@@ -12,8 +12,7 @@ import org.mellowtech.core.collections.BMap;
 import org.mellowtech.core.collections.KeyValue;
 
 import java.io.IOException;
-import java.util.Iterator;
-import java.util.TreeMap;
+import java.util.*;
 
 /**
  * Created by msvens on 01/11/15.
@@ -26,7 +25,15 @@ public abstract class BMapTemplate {
   public static int MAX_WORD_LENGTH = 20;
   public static int MAX_BYTES = 4000;
 
-  public static CBString[] manyWords = TestUtils.randomWords(chars, MAX_WORD_LENGTH, MAX_BYTES);
+  public static CBString[] manyWords, mAscend, mDescend;
+
+  static {
+    manyWords = TestUtils.randomWords(chars, MAX_WORD_LENGTH, MAX_BYTES);
+    mAscend = Arrays.copyOf(manyWords, manyWords.length);
+    mDescend = Arrays.copyOf(manyWords, manyWords.length);
+    Arrays.sort(mAscend);
+    Arrays.sort(mDescend, Collections.reverseOrder());
+  }
 
   public static CBString[] words = new CBString[]{
       new CBString("hotel"), new CBString("delta"),
@@ -35,30 +42,42 @@ public abstract class BMapTemplate {
       new CBString("foxtrot"), new CBString("juliet"),
       new CBString("charlie"), new CBString("golf")};
 
+  public static CBString[] ascend = new CBString[]{new CBString("alpha"),
+      new CBString("bravo"), new CBString("charlie"),
+      new CBString("delta"), new CBString("echo"),
+      new CBString("foxtrot"), new CBString("golf"),
+      new CBString("hotel"), new CBString("india"), new CBString("juliet")};
+
+  public static CBString[] descend = new CBString[]{new CBString("juliet"), new CBString("india"),
+      new CBString("hotel"), new CBString("golf"),
+      new CBString("foxtrot"), new CBString("echo"), new CBString("delta"), new CBString("charlie"),
+      new CBString("bravo"), new CBString("alpha")};
+
+
   public static CBString firstWord = new CBString("alpha");
   public static CBString forthWord = new CBString("delta");
 
 
   public abstract String fName();
 
-  public abstract BMap<String,CBString,Integer,CBInt>
-    init(String fileName, int bucketSize, int maxBuckets) throws Exception;
+  public abstract BMap<String, CBString, Integer, CBInt>
+  init(String fileName, int bucketSize, int maxBuckets) throws Exception;
 
-  public abstract BMap<String,CBString,Integer,CBInt> reopen(String fileName) throws Exception;
+  public abstract BMap<String, CBString, Integer, CBInt> reopen(String fileName) throws Exception;
 
   @BeforeClass
-  public static void createDir(){
+  public static void createDir() {
     TestUtils.deleteTempDir(dir);
     TestUtils.createTempDir(dir);
   }
 
   @Before
-  public void setup() throws Exception{
-    tree = init(TestUtils.getAbsolutDir(dir+"/"+fName()), 1024, 16);
+  public void setup() throws Exception {
+    tree = init(TestUtils.getAbsolutDir(dir + "/" + fName()), 1024, 16);
   }
 
   @After
-  public void after() throws Exception{
+  public void after() throws Exception {
     tree.close();
     tree.delete();
   }
@@ -78,9 +97,11 @@ public abstract class BMapTemplate {
    */
   //void compact() throws IOException, UnsupportedOperationException;
 
-  /***********empty tree tests*****************************/
+  /***********
+   * empty tree tests
+   *****************************/
   @Test
-  public void emptySize() throws IOException{
+  public void emptySize() throws IOException {
     Assert.assertEquals(0, tree.size());
   }
 
@@ -95,39 +116,41 @@ public abstract class BMapTemplate {
   }
 
   @Test
-  public void emptyRemove() throws IOException{
+  public void emptyRemove() throws IOException {
     Assert.assertNull(tree.remove(firstWord));
   }
 
   @Test
-  public void emptyGet() throws IOException{
+  public void emptyGet() throws IOException {
     Assert.assertNull(tree.get(firstWord));
   }
 
   @Test
-  public void emptyReopen() throws Exception{
+  public void emptyReopen() throws Exception {
     tree.close();
-    tree = reopen(TestUtils.getAbsolutDir(dir+"/"+fName()));
+    tree = reopen(TestUtils.getAbsolutDir(dir + "/" + fName()));
     Assert.assertNull(tree.get(firstWord));
   }
 
   @Test
-  public void emptyGetKeyValue() throws IOException{
+  public void emptyGetKeyValue() throws IOException {
     Assert.assertNull(tree.getKeyValue(firstWord));
   }
 
   @Test
-  public void emptyIterator() throws IOException{
+  public void emptyIterator() throws IOException {
     Assert.assertFalse(tree.iterator().hasNext());
   }
 
-  /***********one item tree tests*****************************/
-  protected CBInt val(CBString key){
+  /***********
+   * one item tree tests
+   *****************************/
+  protected CBInt val(CBString key) {
     return new CBInt(key.get().length());
   }
 
   @Test
-  public void oneSize() throws IOException{
+  public void oneSize() throws IOException {
     tree.put(firstWord, val(firstWord));
     Assert.assertEquals(1, tree.size());
   }
@@ -145,27 +168,27 @@ public abstract class BMapTemplate {
   }
 
   @Test
-  public void oneRemove() throws IOException{
+  public void oneRemove() throws IOException {
     tree.put(firstWord, val(firstWord));
     Assert.assertEquals(val(firstWord), tree.remove(firstWord));
   }
 
   @Test
-  public void oneGet() throws IOException{
+  public void oneGet() throws IOException {
     tree.put(firstWord, val(firstWord));
     Assert.assertEquals(val(firstWord), tree.get(firstWord));
   }
 
   @Test
-  public void oneReopen() throws Exception{
+  public void oneReopen() throws Exception {
     tree.put(firstWord, val(firstWord));
     tree.close();
-    tree = reopen(TestUtils.getAbsolutDir(dir+"/"+fName()));
+    tree = reopen(TestUtils.getAbsolutDir(dir + "/" + fName()));
     Assert.assertEquals(val(firstWord), tree.get(firstWord));
   }
 
   @Test
-  public void oneGetKeyValue() throws IOException{
+  public void oneGetKeyValue() throws IOException {
     tree.put(firstWord, val(firstWord));
     KeyValue<CBString, CBInt> kv = tree.getKeyValue(firstWord);
     Assert.assertEquals(firstWord, kv.getKey());
@@ -173,19 +196,22 @@ public abstract class BMapTemplate {
   }
 
   @Test
-  public void oneIterator() throws IOException{
+  public void oneIterator() throws IOException {
     tree.put(firstWord, val(firstWord));
     Assert.assertTrue(tree.iterator().hasNext());
   }
 
-  /***********ten item tree tests*****************************/
-  protected void fillTree() throws IOException{
-    for(CBString w : words){
+  /***********
+   * ten item tree tests
+   *****************************/
+  protected void fillTree() throws IOException {
+    for (CBString w : words) {
       tree.put(w, val(w));
     }
   }
+
   @Test
-  public void tenSize() throws IOException{
+  public void tenSize() throws IOException {
     fillTree();
     Assert.assertEquals(words.length, tree.size());
   }
@@ -199,38 +225,38 @@ public abstract class BMapTemplate {
   @Test
   public void tenContainsKey() throws IOException {
     fillTree();
-    for(CBString w : words) {
+    for (CBString w : words) {
       Assert.assertTrue(tree.containsKey(w));
     }
   }
 
   @Test
-  public void tenRemove() throws IOException{
+  public void tenRemove() throws IOException {
     fillTree();
-    for(CBString w : words)
+    for (CBString w : words)
       Assert.assertEquals(val(w), tree.remove(w));
   }
 
   @Test
-  public void tenGet() throws IOException{
+  public void tenGet() throws IOException {
     fillTree();
-    for(CBString w : words)
+    for (CBString w : words)
       Assert.assertEquals(val(w), tree.get(w));
   }
 
   @Test
-  public void tenReopen() throws Exception{
+  public void tenReopen() throws Exception {
     fillTree();
     tree.close();
-    tree = reopen(TestUtils.getAbsolutDir(dir+"/"+fName()));
-    for(CBString w : words)
+    tree = reopen(TestUtils.getAbsolutDir(dir + "/" + fName()));
+    for (CBString w : words)
       Assert.assertEquals(val(w), tree.get(w));
   }
 
   @Test
-  public void tenGetKeyValue() throws IOException{
+  public void tenGetKeyValue() throws IOException {
     fillTree();
-    for(CBString w : words) {
+    for (CBString w : words) {
       KeyValue<CBString, CBInt> kv = tree.getKeyValue(w);
       Assert.assertEquals(w, kv.getKey());
       Assert.assertEquals(val(w), kv.getValue());
@@ -238,33 +264,36 @@ public abstract class BMapTemplate {
   }
 
   @Test
-  public void tenIterator() throws IOException{
+  public void tenIterator() throws IOException {
     fillTree();
     Iterator iter = tree.iterator();
     int tot = 0;
-    while(iter.hasNext()){
+    while (iter.hasNext()) {
       tot++;
       iter.next();
     }
     Assert.assertEquals(10, tot);
   }
 
-  /**********many item tree tests*****************************/
-  protected void fillManyTree() throws IOException{
-    for(CBString w : manyWords){
+  /**********
+   * many item tree tests
+   *****************************/
+  protected void fillManyTree() throws IOException {
+    for (CBString w : manyWords) {
       tree.put(w, val(w));
     }
   }
-  protected TreeMap <CBString,CBInt> getManyTree(){
-    TreeMap <CBString,CBInt> m = new TreeMap<>();
-    for(CBString w : manyWords){
+
+  protected TreeMap<CBString, CBInt> getManyTree() {
+    TreeMap<CBString, CBInt> m = new TreeMap<>();
+    for (CBString w : manyWords) {
       m.put(w, val(w));
     }
     return m;
   }
 
   @Test
-  public void manySize() throws IOException{
+  public void manySize() throws IOException {
     fillManyTree();
     Assert.assertEquals(manyWords.length, tree.size());
   }
@@ -278,41 +307,41 @@ public abstract class BMapTemplate {
   @Test
   public void manyContainsKey() throws IOException {
     fillManyTree();
-    for(CBString w : manyWords) {
+    for (CBString w : manyWords) {
       Assert.assertTrue(tree.containsKey(w));
     }
   }
 
   @Test
-  public void manyRemove() throws IOException{
+  public void manyRemove() throws IOException {
     fillManyTree();
     int i = 0;
-    for(CBString w : manyWords) {
+    for (CBString w : manyWords) {
       Assert.assertEquals(val(w), tree.remove(w));
     }
   }
 
   @Test
-  public void manyGet() throws IOException{
+  public void manyGet() throws IOException {
     fillManyTree();
-    for(CBString w : manyWords)
+    for (CBString w : manyWords)
       Assert.assertEquals(val(w), tree.get(w));
   }
 
   @Test
-  public void manyReopen() throws Exception{
+  public void manyReopen() throws Exception {
     fillManyTree();
     tree.close();
-    tree = reopen(TestUtils.getAbsolutDir(dir+"/"+fName()));
-    for(CBString w : manyWords) {
+    tree = reopen(TestUtils.getAbsolutDir(dir + "/" + fName()));
+    for (CBString w : manyWords) {
       Assert.assertEquals(val(w), tree.get(w));
     }
   }
 
   @Test
-  public void manyGetKeyValue() throws IOException{
+  public void manyGetKeyValue() throws IOException {
     fillManyTree();
-    for(CBString w : manyWords) {
+    for (CBString w : manyWords) {
       KeyValue<CBString, CBInt> kv = tree.getKeyValue(w);
       Assert.assertEquals(w, kv.getKey());
       Assert.assertEquals(val(w), kv.getValue());
@@ -320,19 +349,18 @@ public abstract class BMapTemplate {
   }
 
   @Test
-  public void manyIterator() throws IOException{
+  public void manyIterator() throws IOException {
     fillManyTree();
-    TreeMap <CBString, CBInt> m = getManyTree();
-    Iterator <KeyValue<CBString,CBInt>> iter = tree.iterator();
+    TreeMap<CBString, CBInt> m = getManyTree();
+    Iterator<KeyValue<CBString, CBInt>> iter = tree.iterator();
     int items = 0;
-    while(iter.hasNext()){
+    while (iter.hasNext()) {
       items++;
       CBString w = iter.next().getKey();
       Assert.assertTrue(m.containsKey(w));
     }
     Assert.assertEquals(m.size(), items);
   }
-
 
 
 }

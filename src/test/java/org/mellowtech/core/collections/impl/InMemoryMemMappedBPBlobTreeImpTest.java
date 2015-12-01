@@ -29,26 +29,27 @@ package org.mellowtech.core.collections.impl;
 import org.mellowtech.core.bytestorable.CBInt;
 import org.mellowtech.core.bytestorable.CBString;
 import org.mellowtech.core.collections.BTree;
+import org.mellowtech.core.collections.BTreeTemplate;
 
 
 /**
  * @author Martin Svensson
  */
-public class InMemoryMemMappedBPBlobTreeImpTest extends BTreeTemplate{
+public class InMemoryMemMappedBPBlobTreeImpTest extends BTreeTemplate {
 
   @Override
-  String fName() {
+  public String fName() {
     return "inmemorymemmappedblobbtreeimp";
   }
 
   @Override
-  BTree<String, CBString, Integer, CBInt> init(String fileName, int valueBlockSize, int indexBlockSize,
+  public BTree<String, CBString, Integer, CBInt> init(String fileName, int valueBlockSize, int indexBlockSize,
                                                int maxValueBlocks, int maxIndexBlocks) throws Exception{
     return new MemMappedBPBlobTreeImp<>(fileName, CBString.class, CBInt.class, indexBlockSize,
         valueBlockSize,false,maxValueBlocks,maxIndexBlocks);
   }
   @Override
-  BTree<String, CBString, Integer, CBInt> reopen(String fileName) throws Exception{
+  public BTree<String, CBString, Integer, CBInt> reopen(String fileName) throws Exception{
     return new MemMappedBPBlobTreeImp<>(fileName, CBString.class, CBInt.class, false);
   }
 

@@ -72,6 +72,7 @@ public abstract class SortedDiscMapTemplate extends NavigableMapTemplate {
   }
 
   /*****test 10 item map**************************/
+
   @Test
   public void tenIterator() {
     tenPut();
