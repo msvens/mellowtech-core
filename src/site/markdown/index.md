@@ -20,11 +20,6 @@ a lot of changes and enhancements and is now maintained and developed by mellowt
 
 Go to the detailed descriptions for usage instructions
 
-* [ByteStorables](src/site/markdown/byteStorables.md)
-* [IO](src/site/markdown/IO.md)
-* [Sorting](src/site/markdown/sorting.md)
-* [Collections](src/site/markdown/collections.md)
-
 ##Releases
 
 ###3.0.3 - Hardening
