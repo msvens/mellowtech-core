@@ -32,7 +32,7 @@
     <groupId>org.mellowtech</groupId>
     <artifactId>core</artifactId>
     <packaging>jar</packaging>
-    <version>3.0.3</version>
+    <version>3.0.4-SNAPSHOT</version>
     <name>MELLOWTECH-CORE</name>
     <description>A library for storing, retrieving and searching objects on disc</description>
     <url>http://msvens.github.io/mellowtech-core/</url>
@@ -64,7 +64,7 @@
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
-            <version>13.0.1</version>
+            <version>19.0</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
