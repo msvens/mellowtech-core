@@ -37,6 +37,7 @@ import java.util.zip.GZIPOutputStream;
  * 
  * @author rickard.coster@asimus.se
  */
+@Deprecated
 public class Compressor {
 
   /**

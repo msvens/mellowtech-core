@@ -42,6 +42,7 @@ import java.util.Map;
  *
  * @author Martin Svensson
  */
+@Deprecated
 public class CompressorTest {
 
   @Test
