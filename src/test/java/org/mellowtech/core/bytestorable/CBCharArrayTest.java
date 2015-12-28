@@ -32,7 +32,14 @@ public class CBCharArrayTest extends BComparableTemplate <char[], CBCharArray> {
     char[] b2 = new char[]{'a','c'};
     values = new char[][]{b1,b2};
     sizes = new int[]{3,3};
+  }
 
+  @Override
+  public void testGet() throws Exception {
+    CBCharArray b = newB(0);
+    char[] val = b.get();
+    Assert.assertEquals(values[0][0], val[0]);
+    Assert.assertEquals(values[0][1], val[1]);
   }
 
 }

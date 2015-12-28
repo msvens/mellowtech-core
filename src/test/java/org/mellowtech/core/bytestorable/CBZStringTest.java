@@ -1,4 +1,3 @@
-
 /*
  * Copyright 2015 mellowtech.org
  *
@@ -17,29 +16,20 @@
 
 package org.mellowtech.core.bytestorable;
 
-import junit.framework.Assert;
 import org.junit.Before;
 
 /**
- * @author msvens
+ * Date: 2013-04-17
+ * Time: 17:59
  *
+ * @author Martin Svensson
  */
-public class CBByteArrayTest extends BComparableTemplate <byte[], CBByteArray> {
+public class CBZStringTest extends BStorableTemplate <String, CBZString> {
 
   @Before public void init(){
-    type = CBByteArray.class;
-    byte[] b1 = new byte[]{1,2};
-    byte[] b2 = new byte[]{1,3};
-    values = new byte[][]{b1,b2};
-    sizes = new int[]{3,3};
+    type = CBZString.class;
+    values = new String[]{"aöc","aöd"};
+    sizes = new int[]{10,10};
   }
-
-  @Override
-  public void testGet() throws Exception {
-    CBByteArray b = newB(0);
-    byte[] val = b.get();
-    Assert.assertEquals(values[0][0], val[0]);
-    Assert.assertEquals(values[0][1], val[1]);
-  }
-
+  
 }

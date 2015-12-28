@@ -17,6 +17,8 @@
 package org.mellowtech.core.bytestorable;
 
 import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
+import java.nio.charset.Charset;
 import java.util.Arrays;
 
 /**
@@ -24,6 +26,13 @@ import java.util.Arrays;
  *
  */
 public class UtfUtil {
+
+  public static byte[] toBytes(char[] chars){
+    ByteBuffer bb = Charset.forName("UTF-8").encode(CharBuffer.wrap(chars));
+    byte[] b = new byte[bb.remaining()];
+    bb.get(b);
+    return b;
+  }
 
   public static int utfLength(final String str) {
     int len = str.length();
