@@ -28,17 +28,32 @@ import java.util.logging.Level;
 import org.mellowtech.core.CoreLog;
 
 /**
- * Date: 2012-12-31
- * Time: 16:58
- *
- * @author Martin Svensson
+ * DelDir is a simple utility for deleting non empty directories using Files.walkFileTree
+ * @author Martin Svensson {@literal <msvens@gmail.com>}
+ * @see java.nio.file.Files#walkFileTree(Path, FileVisitor)
  */
 public class DelDir {
 
-  public static boolean d(String path){
-    Path dir = Paths.get(path);
+
+  /**
+   * Deletes all files including the given path
+   * @param path directory to delete
+   * @return true if no exception was thrown
+   */
+  public static boolean d(Path path){
+    return d(path, false);
+  }
+
+  /**
+   * Delete all files in the given path
+   * @param path directory to empty
+   * @param excludeTop - don't delete the top most directory
+   * @return true if no exception was thrown
+   */
+  public static boolean d(Path path, boolean excludeTop){
+    Path top = path;
     try {
-      Files.walkFileTree(dir, new SimpleFileVisitor<Path>() {
+      Files.walkFileTree(top, new SimpleFileVisitor<Path>() {
 
         @Override
         public FileVisitResult visitFile(Path file,
@@ -55,7 +70,8 @@ public class DelDir {
 
           CoreLog.L().finer("Deleting dir: " + dir);
           if (exc == null) {
-            Files.delete(dir);
+            if(!excludeTop || !dir.equals(top))
+              Files.delete(dir);
             return FileVisitResult.CONTINUE;
           } else {
             throw exc;
@@ -64,8 +80,28 @@ public class DelDir {
 
       });
     } catch (IOException e) {
-     CoreLog.L().log(Level.WARNING, "", e);
+      CoreLog.L().log(Level.WARNING, "", e);
+      return false;
     }
     return true;
+  }
+
+  /**
+   * Delete all files in the given path
+   * @param path directory to empty
+   * @param excludeTop - don't delete the top most directory
+   * @return true if no exception was thrown
+   */
+  public static boolean d(String path, boolean excludeTop){
+    return d(Paths.get(path), excludeTop);
+  }
+
+  /**
+   * Deletes all files including the given path
+   * @param path directory to delete
+   * @return true if no exception was thrown
+   */
+  public static boolean d(String path) {
+    return d(path,false);
   }
 }
