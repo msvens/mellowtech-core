@@ -205,7 +205,8 @@ public class CBUtil {
     else if(first instanceof CBCharArray){
       return (B) separate((CBCharArray)first, (CBCharArray) second);
     }
-    return first.compareTo(second) < 0 ? first : second;
+    //System.out.println(first+" "+second);
+    return first.compareTo(second) > 0 ? first : second;
   }
   
   public static CBString separate(CBString first, CBString second){

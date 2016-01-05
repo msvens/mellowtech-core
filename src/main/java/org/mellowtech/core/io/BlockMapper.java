@@ -45,7 +45,7 @@ public class BlockMapper {
   }
 
   public void expand(int toIndex) throws IOException {
-    int pos = getBufferPos(toIndex);
+    long pos = getBufferPos(toIndex);
     for (int i = blocks.size(); i <= pos; i++) {
       long filePos = offset + (pos * blockSize * blocksToMap);
       blocks.add(fc.map(FileChannel.MapMode.READ_WRITE, filePos, blockSize * blocksToMap));

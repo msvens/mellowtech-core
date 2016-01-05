@@ -32,14 +32,14 @@ public class CBUtilTest {
   public void separateIntSecondSmaller() {
     CBInt str1 = new CBInt(2);
     CBInt str2 = new CBInt(1);
-    Assert.assertEquals(1, CBUtil.separate(str1, str2).value());
+    Assert.assertEquals(2, CBUtil.separate(str1, str2).value());
   }
   
   @Test
   public void separateIntFirstSmaller() {
     CBInt str1 = new CBInt(1);
     CBInt str2 = new CBInt(2);
-    Assert.assertEquals(1, CBUtil.separate(str1, str2).value());
+    Assert.assertEquals(2, CBUtil.separate(str1, str2).value());
   }
   
   @Test

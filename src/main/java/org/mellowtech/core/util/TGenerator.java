@@ -57,7 +57,7 @@ public final class TGenerator {
     incrR(arr, arr.length - 1, 'A', 'Z');
   }
 
-  static final <T> Iterator<T> of(Class<T> clazz, int length, char from, char to, boolean mutable) {
+  public static final <T> Iterator<T> of(Class<T> clazz, int length, char from, char to, boolean mutable) {
     if (clazz == String.class) {
       return (Iterator<T>) new StringGen(length, from, to);
     } else if (clazz == char[].class) {
@@ -69,7 +69,7 @@ public final class TGenerator {
     }
   }
 
-  static final <T> Iterator<T> of(Class<T> clazz, T start, char from, char to, boolean mutable) {
+  public static final <T> Iterator<T> of(Class<T> clazz, T start, char from, char to, boolean mutable) {
     if (clazz == String.class) {
       return (Iterator<T>) new StringGen((String) start, from, to);
     } else if (clazz == char[].class) {
@@ -191,4 +191,6 @@ public final class TGenerator {
       return new String(iter.next());
     }
   }
+
+
 }
