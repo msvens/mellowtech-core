@@ -51,6 +51,29 @@ public class MemBlockFile extends AbstractBlockFile {
   }
 
   @Override
+  public ByteBuffer getMapped(int record){
+    if(bitSet.get(record)){
+      ByteBuffer bb = bmap.find(record).duplicate();
+      record = bmap.truncate(record);
+      bb.position(record * getBlockSize());
+      bb.limit(bb.position()+getBlockSize());
+      return bb;
+    }
+    return null;
+  }
+/*@Override
+  public ByteBuffer getMapped(int record) throws UnsupportedOperationException{
+    if(bitSet.get(record)){
+      ByteBuffer bb = bmap.find(record).duplicate();
+      record = bmap.truncate(record);
+      bb.position(record * getBlockSize());
+      bb.limit(bb.position()+getBlockSize());
+      return bb;
+    }
+    return null;
+  }*/
+
+  @Override
   public boolean get(int record, byte[] buffer) throws IOException {
     if (bitSet.get(record)) {
       //ByteBuffer bb = findBuffer(record);

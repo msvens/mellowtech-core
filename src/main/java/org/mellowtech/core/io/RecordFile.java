@@ -17,6 +17,7 @@
 package org.mellowtech.core.io;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.util.Iterator;
 import java.util.Map;
@@ -55,6 +56,8 @@ public interface RecordFile {
     byte[] bytes = new byte[getBlockSize()];
     return get(record, bytes) ? bytes : null;
   }
+
+  ByteBuffer getMapped(int record) throws UnsupportedOperationException;
 
   boolean get(int record, byte[] buffer) throws IOException;
 

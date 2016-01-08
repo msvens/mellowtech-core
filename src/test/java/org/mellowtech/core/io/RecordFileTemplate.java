@@ -21,6 +21,7 @@ import org.mellowtech.core.TestUtils;
 import org.mellowtech.core.bytestorable.*;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.Iterator;
 
 /**
@@ -125,6 +126,13 @@ public abstract class RecordFileTemplate {
   }
 
   @Test
+  public void zeroGetMapped() throws Exception {
+    try{
+      Assert.assertNull(rf.getMapped(0));
+    } catch(UnsupportedOperationException uoe){;}
+  }
+
+  @Test
   public void zeroGetBoolean() throws Exception {
     byte b[] = new byte[blockSize];
     Assert.assertFalse(rf.get(0, b));
@@ -193,6 +201,18 @@ public abstract class RecordFileTemplate {
   public void oneGet() throws Exception {
     rf.insert(testBlock);
     Assert.assertEquals(new String(testBlock), new String(rf.get(0)));
+  }
+
+  @Test
+  public void oneGetMapped() throws Exception {
+    try{
+      rf.insert(testBlock);
+      byte[] b = new byte[1024];
+      ByteBuffer bb = rf.getMapped(0);
+      Assert.assertEquals(blockSize, bb.limit()-bb.position());
+      bb.get(b);
+      Assert.assertEquals(new String(testBlock), new String(b));
+    } catch(UnsupportedOperationException e){;}
   }
 
   @Test
@@ -269,6 +289,19 @@ public abstract class RecordFileTemplate {
   public void lastGet() throws Exception {
     rf.insert(maxBlocks-1, testBlock);
     Assert.assertEquals(new String(testBlock), new String(rf.get(maxBlocks-1)));
+  }
+
+  @Test
+  public void lastGetMapped() throws Exception{
+    rf.insert(maxBlocks-1, testBlock);
+    ByteBuffer bb = null;
+    try{
+      bb = rf.getMapped(maxBlocks-1);
+    } catch(UnsupportedOperationException e){return;}
+    byte[] b = new byte[blockSize];
+    Assert.assertEquals(blockSize, bb.limit()-bb.position());
+    bb.get(b);
+    Assert.assertEquals(new String(testBlock), new String(b));
   }
 
   @Test
@@ -359,6 +392,21 @@ public abstract class RecordFileTemplate {
     fillFile();
     for(int i = 0; i < maxBlocks; i++) {
       Assert.assertEquals(new String(testBlock), new String(rf.get(i)));
+    }
+  }
+
+  @Test
+  public void allGetMapped() throws Exception{
+    fillFile();
+    for(int i = 0; i < maxBlocks; i++) {
+      ByteBuffer bb = null;
+      try{
+        bb = rf.getMapped(i);
+      } catch(UnsupportedOperationException e){return;}
+      byte[] b = new byte[blockSize];
+      Assert.assertEquals(blockSize, bb.limit()-bb.position());
+      bb.get(b);
+      Assert.assertEquals(new String(testBlock), new String(b));
     }
   }
 

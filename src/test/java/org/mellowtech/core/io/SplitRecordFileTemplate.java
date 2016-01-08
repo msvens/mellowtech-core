@@ -19,6 +19,7 @@ package org.mellowtech.core.io;
 import org.junit.*;
 import org.mellowtech.core.TestUtils;
 
+import java.nio.ByteBuffer;
 import java.util.Iterator;
 
 /**
@@ -85,6 +86,11 @@ public abstract class SplitRecordFileTemplate extends RecordFileTemplate{
   }
 
   @Test
+  public void zeroGetRegionMapped() throws Exception {
+    Assert.assertNull(rf1.getRegionMapped(0));
+  }
+
+  @Test
   public void zeroReopenRegion() throws Exception {
     reop();
     Assert.assertNull(rf1.getRegion(0));
@@ -143,6 +149,21 @@ public abstract class SplitRecordFileTemplate extends RecordFileTemplate{
   public void oneGetRegion() throws Exception {
     rf1.insertRegion(testBlock);
     Assert.assertEquals(new String(testBlock), new String(rf1.getRegion(0)));
+  }
+
+  @Test
+  public void oneGetRegionMapped() throws Exception {
+    rf1.insertRegion(testBlock);
+    ByteBuffer bb;
+    try{
+      bb = rf1.getRegionMapped(0);
+    } catch(UnsupportedOperationException e){
+      return;
+    }
+    Assert.assertEquals(blockSize, bb.limit()-bb.position());
+    byte[] b = new byte[blockSize];
+    bb.get(b);
+    Assert.assertEquals(new String(testBlock), new String(b));
   }
 
   @Test
@@ -210,6 +231,21 @@ public abstract class SplitRecordFileTemplate extends RecordFileTemplate{
   public void lastGetRegion() throws Exception {
     rf1.insertRegion(maxBlocks-1, testBlock);
     Assert.assertEquals(new String(testBlock), new String(rf1.getRegion(maxBlocks-1)));
+  }
+
+  @Test
+  public void lastGetRegionMapped() throws Exception {
+    rf1.insertRegion(maxBlocks-1, testBlock);
+    ByteBuffer bb;
+    try{
+      bb = rf1.getRegionMapped(maxBlocks-1);
+    } catch(UnsupportedOperationException e){
+      return;
+    }
+    Assert.assertEquals(blockSize, bb.limit()-bb.position());
+    byte[] b = new byte[blockSize];
+    bb.get(b);
+    Assert.assertEquals(new String(testBlock), new String(b));
   }
 
   @Test
@@ -290,6 +326,21 @@ public abstract class SplitRecordFileTemplate extends RecordFileTemplate{
     fillRegionFile();
     for(int i = 0; i < maxBlocks; i++) {
       Assert.assertEquals(new String(testBlock), new String(rf1.getRegion(i)));
+    }
+  }
+
+  @Test
+  public void allGetRegionMapped() throws Exception{
+    fillRegionFile();
+    for(int i = 0; i < maxBlocks; i++) {
+      ByteBuffer bb = null;
+      try{
+        bb = rf1.getRegionMapped(i);
+      } catch(UnsupportedOperationException e){return;}
+      byte[] b = new byte[blockSize];
+      Assert.assertEquals(blockSize, bb.limit()-bb.position());
+      bb.get(b);
+      Assert.assertEquals(new String(testBlock), new String(b));
     }
   }
 

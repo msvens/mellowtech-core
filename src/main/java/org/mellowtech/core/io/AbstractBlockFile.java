@@ -116,6 +116,7 @@ abstract class AbstractBlockFile implements RecordFile {
       return false;
   }
 
+
   @Override
   public int getBlockSize() {
     return blockSize;
@@ -129,6 +130,11 @@ abstract class AbstractBlockFile implements RecordFile {
   @Override
   public int getFreeBlocks() {
     return maxBlocks - bitSet.cardinality();
+  }
+
+  @Override
+  public ByteBuffer getMapped(int record) throws UnsupportedOperationException {
+    throw new UnsupportedOperationException();
   }
 
   @Override

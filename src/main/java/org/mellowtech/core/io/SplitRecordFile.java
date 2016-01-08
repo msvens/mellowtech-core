@@ -17,6 +17,7 @@
 package org.mellowtech.core.io;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.Iterator;
 
 /**
@@ -39,6 +40,10 @@ public interface SplitRecordFile extends RecordFile {
   }
 
   boolean getRegion(int record, byte[] buffer) throws IOException;
+
+  default ByteBuffer getRegionMapped(int record) throws UnsupportedOperationException{
+    throw new UnsupportedOperationException();
+  }
 
   default boolean updateRegion(int record, byte[] bytes) throws IOException{
     return updateRegion(record, bytes, 0, bytes.length);

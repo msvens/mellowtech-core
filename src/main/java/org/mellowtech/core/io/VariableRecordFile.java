@@ -200,6 +200,11 @@ public class VariableRecordFile implements RecordFile {
   }
 
   @Override
+  public ByteBuffer getMapped(int record) throws UnsupportedOperationException {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
   public boolean get(int record, byte[] buffer) throws IOException {
     Idx idx = getIdx(record);
     if(idx == null) return false;

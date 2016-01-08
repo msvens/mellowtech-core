@@ -825,8 +825,6 @@ implements BTree<A, B, C, D> {
         sb1.insert(keyValue);
       helper.putValueBlock(bNo, sb);
       int newBlockNo = valueFile.insert(sb1.getBlock());
-      //writeVBlock(logicalNo, sb);
-      //writeVBlock(logicalNo + 1, sb1);
       return new BPlusReturn <> (BPlusReturn.SPLIT, keyValue, helper.generateSeparator(sb,
               sb1), newBlockNo);
     } catch (Exception e) {

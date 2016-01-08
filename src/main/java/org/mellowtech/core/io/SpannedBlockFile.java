@@ -138,6 +138,11 @@ public class SpannedBlockFile implements RecordFile{
   }
 
   @Override
+  public ByteBuffer getMapped(int record) throws UnsupportedOperationException {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
   public boolean get(int record, byte[] buffer) throws IOException {
     ByteBuffer bb;
     //read first block

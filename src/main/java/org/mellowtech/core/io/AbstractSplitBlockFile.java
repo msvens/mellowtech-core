@@ -188,6 +188,11 @@ abstract class AbstractSplitBlockFile implements SplitRecordFile {
   }
 
   @Override
+  public ByteBuffer getMapped(int record) throws UnsupportedOperationException {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
   public boolean getRegion(int record, byte[] buffer) throws IOException {
     if (mappedBitSet.get(record)) {
       mappedBlocks.position(record * getBlockSizeRegion());
@@ -198,6 +203,17 @@ abstract class AbstractSplitBlockFile implements SplitRecordFile {
       return true;
     }
     return false;
+  }
+
+  @Override
+  public ByteBuffer getRegionMapped(int record){
+    if(mappedBitSet.get(record)){
+      ByteBuffer bb = mappedBlocks.duplicate();
+      bb.position(record * getBlockSizeRegion());
+      bb.limit(bb.position()+getBlockSizeRegion());
+      return bb;
+    } else
+      return null;
   }
 
   @Override
