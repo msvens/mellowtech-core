@@ -153,6 +153,12 @@ abstract class AbstractSplitBlockFile implements SplitRecordFile {
   }
 
   @Override
+  public void deleteAllRegion() throws IOException {
+    mappedBitSet.clear();
+    saveBitSet(mappedBitSet, mappedBitBuffer);
+  }
+
+  @Override
   public long fileSize() throws IOException{
     return fc.size();
   }

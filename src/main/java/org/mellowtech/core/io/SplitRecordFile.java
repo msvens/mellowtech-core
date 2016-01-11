@@ -57,6 +57,7 @@ public interface SplitRecordFile extends RecordFile {
   int insertRegion(byte[] bytes, int offset, int length) throws IOException;
   void insertRegion(int record, byte[] bytes) throws IOException;
   boolean deleteRegion(int record) throws IOException;
+  void deleteAllRegion() throws IOException;
 
   boolean containsRegion(int record) throws IOException;
 

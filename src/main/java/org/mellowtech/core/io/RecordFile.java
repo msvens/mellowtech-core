@@ -45,6 +45,8 @@ public interface RecordFile {
 
   boolean delete(int record) throws IOException;
 
+  void deleteAll() throws IOException;
+
   default void forEach(Consumer<Record> action){
     Iterator <Record> iter = iterator();
     while(iter.hasNext()){

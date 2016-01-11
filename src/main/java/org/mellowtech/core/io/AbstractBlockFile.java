@@ -116,6 +116,12 @@ abstract class AbstractBlockFile implements RecordFile {
       return false;
   }
 
+  @Override
+  public void deleteAll() throws IOException {
+    bitSet.clear();
+    saveBitSet();
+  }
+
 
   @Override
   public int getBlockSize() {
