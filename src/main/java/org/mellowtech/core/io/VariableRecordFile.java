@@ -273,6 +273,11 @@ public class VariableRecordFile implements RecordFile {
   }
 
   @Override
+  public void deleteAll() throws IOException{
+    clear();
+  }
+
+  @Override
   public boolean contains(int record) throws IOException {
     return getIdx(record) != null;
   }

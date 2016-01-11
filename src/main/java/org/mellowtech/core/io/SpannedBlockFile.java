@@ -104,6 +104,11 @@ public class SpannedBlockFile implements RecordFile{
     }
     return toRet;
   }
+
+  @Override
+  public void deleteAll() throws IOException{
+    clear();
+  }
   
   @Override
   public byte[] get(int record) throws IOException{

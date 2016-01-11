@@ -143,6 +143,12 @@ abstract class AbstractSplitBlockFile implements SplitRecordFile {
   }
 
   @Override
+  public void deleteAll() throws IOException {
+    bitSet.clear();
+    saveBitSet(bitSet, bitBuffer);
+  }
+
+  @Override
   public boolean deleteRegion(int record) throws IOException {
     if (mappedBitSet.get(record)) {
       mappedBitSet.flip(record);
