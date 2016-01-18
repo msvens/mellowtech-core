@@ -64,8 +64,7 @@ public class BCBufferTest {
     ByteBuffer bb = ByteBuffer.allocate(blockSize+100);
     bb.position(50);
     bb.limit(bb.position()+blockSize);
-    //System.out.println(bb.position()+" "+bb.capacity()+" "+bb.limit()+" "+blockSize);
-    return new BCBuffer<String, CBString>(bb, new CBString(), BCBlock.PtrType.NORMAL, (short) 0);
+    return new BCBuffer<String, CBString>(bb.slice(), new CBString(), BCBlock.PtrType.NORMAL, (short) 0);
   }
 
   @Before
@@ -86,7 +85,7 @@ public class BCBufferTest {
 
   @Test
   public void testGetReservedSpaceStart(){
-    Assert.assertEquals(2+50, sb.getReservedSpaceStart());
+    Assert.assertEquals(2, sb.getReservedSpaceStart());
   }
 
   @Test

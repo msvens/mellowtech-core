@@ -39,6 +39,7 @@ import org.mellowtech.core.bytestorable.BComparable;
 import org.mellowtech.core.bytestorable.BStorable;
 import org.mellowtech.core.bytestorable.CBUtil;
 import org.mellowtech.core.bytestorable.io.BCBlock;
+import org.mellowtech.core.collections.BTree;
 import org.mellowtech.core.collections.KeyValue;
 import org.mellowtech.core.io.Record;
 import org.mellowtech.core.util.MapEntry;
@@ -49,6 +50,7 @@ import org.mellowtech.core.util.MapEntry;
  *
  * @author Martin Svensson
  */
+@Deprecated
 public class MemMappedBPlusHelper<A, B extends BComparable<A, B>, C, D extends BStorable<C, D>> {
   private final MemMappedBPTreeImp<A, B, C, D> tree;
 
@@ -278,8 +280,7 @@ public class MemMappedBPlusHelper<A, B extends BComparable<A, B>, C, D extends B
   public BTreeKey <B> generateSeparator(BCBlock <KeyValue.KV<B, D>, KeyValue <B, D>> small,
                                         BCBlock <KeyValue.KV<B, D>, KeyValue <B, D>> large) {
     BTreeKey <B> nKey = new BTreeKey <> ();
-    nKey.get().key = (B) CBUtil.separate((B)small.getLast().getKey(),
-        (B)large.getFirst().getKey());
+    nKey.get().key = CBUtil.separate(small.getLast().getKey(), large.getFirst().getKey());
     return nKey;
   }
 
@@ -294,8 +295,13 @@ public class MemMappedBPlusHelper<A, B extends BComparable<A, B>, C, D extends B
    */
   public BTreeKey <B> generateSeparator(BCBlock <KeyValue.KV<B, D>, KeyValue <B, D>> small, KeyValue <B, D> large) {
     BTreeKey <B> nKey = new BTreeKey <> ();
-    nKey.get().key = (B) CBUtil.separate((B)small.getLast().getKey(),
-        (B) large.getKey());
+    nKey.get().key = CBUtil.separate(small.getLast().getKey(),large.getKey());
+    return nKey;
+  }
+
+  public BTreeKey <B> generateSeparator(B small, B large){
+    BTreeKey <B> nKey = new BTreeKey<>();
+    nKey.get().key = CBUtil.separate(small, large);
     return nKey;
   }
 

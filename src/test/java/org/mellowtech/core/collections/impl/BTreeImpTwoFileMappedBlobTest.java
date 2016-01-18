@@ -21,27 +21,35 @@ import org.mellowtech.core.bytestorable.CBString;
 import org.mellowtech.core.collections.BTree;
 import org.mellowtech.core.collections.BTreeTemplate;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
 
 /**
  * @author Martin Svensson
  */
-@Deprecated
-public class MemMappedBPBlobTreeImpTest extends BTreeTemplate {
+public class BTreeImpTwoFileMappedBlobTest extends BTreeTemplate {
 
   @Override
   public String fName() {
-    return "memmappedblobbtreeimp";
+    return "btreeimptwofilemappedblob";
+  }
+
+  static Path getDir(String fName){
+    return Paths.get(fName).getParent();
   }
 
   @Override
   public BTree<String, CBString, Integer, CBInt> init(String fileName, int valueBlockSize, int indexBlockSize,
                                                int maxValueBlocks, int maxIndexBlocks) throws Exception{
-    return new MemMappedBPBlobTreeImp<>(fileName, CBString.class, CBInt.class, indexBlockSize,
-        valueBlockSize,false,maxValueBlocks,maxIndexBlocks);
+    return new BTreeBlobImp<>(getDir(fileName), fName(), CBString.class, CBInt.class, indexBlockSize, valueBlockSize,maxIndexBlocks,maxValueBlocks,
+        false,true,true);
   }
   @Override
   public BTree<String, CBString, Integer, CBInt> reopen(String fileName) throws Exception{
-    return new MemMappedBPBlobTreeImp<>(fileName, CBString.class, CBInt.class, false);
+    return new BTreeBlobImp<>(getDir(fileName), fName(), CBString.class, CBInt.class,
+        false,true,true);
   }
+
 
 }

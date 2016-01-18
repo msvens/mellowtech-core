@@ -504,6 +504,17 @@ public abstract class BTreeTemplate {
   }
 
   @Test
+  public void manyCreateIndex() throws IOException {
+    putMany();
+    tree.save();
+    try{
+      tree.createIndex();
+    } catch(UnsupportedOperationException uoe){
+      return;
+    }
+  }
+
+  @Test
   public void manySize() throws IOException{
     putMany();
     Assert.assertEquals(manyWords.length, tree.size());
@@ -511,6 +522,7 @@ public abstract class BTreeTemplate {
 
   @Test
   public void manyTruncate() throws IOException {
+    putMany();
     tree.truncate();
     Assert.assertEquals(0, tree.size());
   }
@@ -532,8 +544,10 @@ public abstract class BTreeTemplate {
   @Test
   public void manyRemove() throws IOException{
     putMany();
-    for(CBString w : manyWords)
+    tree.save();
+    for(CBString w : manyWords) {
       Assert.assertEquals(val(w), tree.remove(w));
+    }
   }
 
   @Test

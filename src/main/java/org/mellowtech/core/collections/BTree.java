@@ -17,6 +17,7 @@
 package org.mellowtech.core.collections;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.util.Iterator;
 
 import org.mellowtech.core.bytestorable.BComparable;
@@ -40,6 +41,10 @@ public interface BTree <A,B extends BComparable<A,B>, C, D extends BStorable<C,D
   
   //bulk creation:
   void createIndex(Iterator<KeyValue <B,D>> iterator) throws IOException;
+
+  default void createIndex() throws IOException, UnsupportedOperationException{
+    throw new UnsupportedOperationException();
+  }
 
 
   /**

@@ -40,6 +40,7 @@ import org.mellowtech.core.util.MapEntry;
  * @author Martin Svensson
  */
 @SuppressWarnings("rawtypes")
+@Deprecated
 public class BPlusHelper <A, B extends BComparable<A,B>, C, D extends BStorable <C,D>> {
   
   private final BPTreeImp<A,B,C,D> tree;

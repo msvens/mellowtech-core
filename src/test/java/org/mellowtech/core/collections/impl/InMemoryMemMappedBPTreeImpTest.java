@@ -25,6 +25,7 @@ import org.mellowtech.core.collections.BTreeTemplate;
 /**
  * @author Martin Svensson
  */
+@Deprecated
 public class InMemoryMemMappedBPTreeImpTest extends BTreeTemplate {
 
   @Override

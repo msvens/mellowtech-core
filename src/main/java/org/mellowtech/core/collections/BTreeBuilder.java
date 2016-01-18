@@ -18,10 +18,10 @@ package org.mellowtech.core.collections;
 
 import org.mellowtech.core.bytestorable.BComparable;
 import org.mellowtech.core.bytestorable.BStorable;
-import org.mellowtech.core.collections.impl.BPBlobTreeImp;
-import org.mellowtech.core.collections.impl.BPTreeImp;
-import org.mellowtech.core.collections.impl.MemMappedBPBlobTreeImp;
-import org.mellowtech.core.collections.impl.MemMappedBPTreeImp;
+import org.mellowtech.core.collections.impl.*;
+
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 /**
  * @author msvens
@@ -43,6 +43,7 @@ public class BTreeBuilder {
   private int maxIndexBlocks = DEFAULT_MAX_INDEX_BLOCKS;
   private boolean forceNew = false;
   private boolean blobValues = false;
+  private boolean oneFileTree = true;
   
   public BTreeBuilder indexBlockSize(int size) {
     this.indexBlockSize = size;
@@ -56,6 +57,11 @@ public class BTreeBuilder {
   
   public BTreeBuilder blobValues(boolean blobs) {
     this.blobValues = blobs;
+    return this;
+  }
+
+  public BTreeBuilder oneFileTree(boolean oneFile){
+    this.oneFileTree = oneFile;
     return this;
   }
   
@@ -84,9 +90,62 @@ public class BTreeBuilder {
     return this;
   }
 
+  private boolean isOneFileTree(){
+    return oneFileTree && indexInMemory;
+  }
+
+  public <A,B extends BComparable<A,B>, C, D extends BStorable<C,D>> BTree <A,B,C,D>
+  build(Class<B> keyType, Class<D> valueType, String fileName) throws Exception{
+    Path p = Paths.get(fileName);
+    Path dir = p.getParent();
+    return build(keyType, valueType,dir,p.getFileName().toString());
+
+  }
+
+  public <A,B extends BComparable<A,B>, C, D extends BStorable<C,D>> BTree <A,B,C,D>
+  build(Class<B> keyType, Class<D> valueType, Path dir, String name) throws Exception{
+    if(blobValues) return buildBlob(keyType, valueType, dir, name);
+    BTree <A,B,C,D> toRet = null;
+
+    try {
+      //first try to open
+      toRet = new BTreeImp<>(dir,name,keyType,valueType,isOneFileTree(),indexInMemory,valuesInMemory);
+    } catch (Exception e){
+      //try create
+      return new BTreeImp<>(dir,name,keyType,valueType,indexBlockSize,valueBlockSize,
+          maxIndexBlocks,maxBlocks,isOneFileTree(),indexInMemory,valuesInMemory,true);
+    }
+    if(!forceNew) return toRet;
+
+    //delete old and create new:
+    toRet.delete();
+    return new BTreeImp<>(dir,name,keyType,valueType,indexBlockSize,valueBlockSize,
+        maxIndexBlocks,maxBlocks,isOneFileTree(),indexInMemory,valuesInMemory,true);
+  }
+
+  public <A,B extends BComparable<A,B>,C,D extends BStorable<C,D>> BTree <A,B,C,D>
+  buildBlob(Class<B> keyType, Class<D> valueType, Path dir, String name) throws Exception{
+    BTree<A,B,C,D> toRet = null;
+    //first try to open
+    try {
+      toRet = new BTreeBlobImp<>(dir, name, keyType, valueType,isOneFileTree(),indexInMemory,valuesInMemory);
+    } catch (Exception e){
+      //try create
+      return new BTreeBlobImp<>(dir,name, keyType, valueType,indexBlockSize,valueBlockSize,
+          maxIndexBlocks,maxBlocks,isOneFileTree(),indexInMemory,valuesInMemory);
+    }
+
+    if(!forceNew) return toRet;
+    //delete old and create new:
+    toRet.delete();
+    return new BTreeBlobImp<>(dir,name, keyType, valueType,indexBlockSize,valueBlockSize,
+        maxIndexBlocks,maxBlocks,isOneFileTree(),indexInMemory,valuesInMemory);
+  }
+
+  @Deprecated
   public <A,B extends BComparable<A,B>, C, D extends BStorable<C,D>> BTree <A,B,C,D> 
-    build(Class<B> keyType, Class<D> valueType, String fileName) throws Exception{
-    if(blobValues) return buildBlob(keyType, valueType, fileName);
+    buildOld(Class<B> keyType, Class<D> valueType, String fileName) throws Exception{
+    if(blobValues) return buildBlobOld(keyType, valueType, fileName);
     BTree <A,B,C,D> toRet = null;
     //first try to open
     try {
@@ -111,9 +170,10 @@ public class BTreeBuilder {
       return new BPTreeImp <> (fileName, keyType, valueType, valueBlockSize, indexBlockSize, maxBlocks, maxIndexBlocks);
     }
   }
-  
+
+  @Deprecated
   public <A,B extends BComparable<A,B>,C,D extends BStorable<C,D>> BTree <A,B,C,D> 
-    buildBlob(Class<B> keyType, Class<D> valueType, String fileName) throws Exception{
+    buildBlobOld(Class<B> keyType, Class<D> valueType, String fileName) throws Exception{
     BTree<A,B,C,D> toRet = null;
     //first try to open
     try {
@@ -138,6 +198,5 @@ public class BTreeBuilder {
       return new BPBlobTreeImp <> (fileName, keyType, valueType, valueBlockSize, indexBlockSize, maxBlocks, maxIndexBlocks);
     }
   }
-  
   
 }

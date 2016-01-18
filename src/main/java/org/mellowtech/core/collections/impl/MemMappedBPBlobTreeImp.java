@@ -50,6 +50,7 @@ import org.mellowtech.core.collections.TreePosition;
  *
  * @author Martin Svensson
  */
+@Deprecated
 public class MemMappedBPBlobTreeImp<A,B extends BComparable<A,B>,C,D extends BStorable<C,D>>
   implements BTree<A,B,C,D> {
 

@@ -24,6 +24,7 @@ import org.mellowtech.core.collections.BTreeTemplate;
 /**
  * @author Martin Svensson
  */
+@Deprecated
 public class BPTreeImpTest extends BTreeTemplate {
 
 

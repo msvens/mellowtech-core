@@ -87,6 +87,7 @@ import org.mellowtech.core.io.RecordFile;
  * @author Martin Svensson
  * @version 1.0
  */
+@Deprecated
 public class BPTreeImp<A, B extends BComparable <A,B>, C, D extends BStorable <C,D>>
 implements BTree<A, B, C, D> {
   private static final boolean FORCE_INTEGRITY = false;
@@ -185,7 +186,6 @@ implements BTree<A, B, C, D> {
     valueName = fName + ".val";
     this.keyType = keyType.newInstance();
     this.valueType = valueType.newInstance();
-    //System.out.println("btree blocks max: "+maxBlocks+" "+maxIndexBlocks);
     keyValues = new KeyValue <> (this.keyType, this.valueType);
     indexKeys = new BTreeKey <> (this.keyType, 0);
     leafLevel = -1;
@@ -486,12 +486,6 @@ implements BTree<A, B, C, D> {
     this.useCache = true;
     this.fullIndex = fullIndex;
     this.readOnly = readOnly;
-    /*
-    if(fullIndex)
-      this.indexFile.setCache(readOnly, Integer.MAX_VALUE, false);
-    else
-      this.indexFile.setCache(readOnly, 1024*1024, true);
-    */
   }
 
   /**

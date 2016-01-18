@@ -99,6 +99,7 @@ import org.mellowtech.core.io.SplitRecordFile;
  * @author Martin Svensson
  * @version 1.0
  */
+@Deprecated
 public class MemMappedBPTreeImp<A,B extends BComparable<A,B>,C,D extends BStorable<C,D>>
         implements BTree<A,B,C,D> {
   //private static final boolean FORCE_INTEGRITY = false;
@@ -227,7 +228,6 @@ public class MemMappedBPTreeImp<A,B extends BComparable<A,B>,C,D extends BStorab
     leafLevel = -1;
     size = 0;
     rootPage = splitFile.insert(helper.newVBlock().getBlock());
-
   }
 
   /**
@@ -730,7 +730,7 @@ public class MemMappedBPTreeImp<A,B extends BComparable<A,B>,C,D extends BStorab
 
   /**
    * Create an index from a sorted array of key/value pairs. This method is much
-   * faster than doing individual insertations. If you you have a large number
+   * faster than doing individual insertations (orders of magnitude). If you you have a large number
    * of keys from which you want to build an index, the best way is to
    * externally sort them and then calling createIndex.
    *
@@ -738,30 +738,61 @@ public class MemMappedBPTreeImp<A,B extends BComparable<A,B>,C,D extends BStorab
    * @throws java.io.IOException if an error occurs
    */
   public void createIndex(KeyValue <B,D>[] keysAndValues) throws IOException {
-    splitFile.clear();
-    byte b[] = new byte[splitFile.getBlockSize()];
-    BCBlock<KeyValue.KV<B,D>, KeyValue<B,D>> sb = helper.newVBlock(b);
-    KeyValue <B,D> tmpKV = new KeyValue <> ();
-    @SuppressWarnings("unchecked")
-    SBBNo <B> [] levels = (SBBNo <B>[]) new SBBNo <?> [20];
-    // valueFile.insertBlock(-1);
-    //int bNo = 0;
-    int bNo = 0 ;
-    for (int i = 0; i < keysAndValues.length; i++) {
-      tmpKV = keysAndValues[i];
-      if (!sb.fits(tmpKV)) {
-        splitFile.insert(bNo, sb.getBlock());
-        bNo++;
-        BTreeKey <B> sep = helper.generateSeparator(sb, tmpKV);
-        sep.get().leftNode = bNo - 1;
-        insertSeparator(sep, levels, 0, bNo);
-        sb = helper.newVBlock(b);
+    createIndex(new Iterator<KeyValue<B, D>>() {
+      int i = 0;
+      @Override
+      public boolean hasNext() {
+        return i < keysAndValues.length;
       }
-      sb.insertUnsorted(tmpKV);
+
+      @Override
+      public KeyValue<B, D> next() {
+        return keysAndValues[i++];
+      }
+    });
+  }
+
+  @Override
+  public void createIndex() throws IOException{
+    //just return if there are no value blocks
+    if(splitFile.size() == 0){
+      truncate();
+      return;
     }
-    //write last block
-    splitFile.insert(bNo, sb.getBlock());
-    if (levels[0] != null) // we have to write the index levels
+
+    BCBlock<KeyValue.KV<B,D>, KeyValue<B,D>> tmp;
+    SmallLarge<B>[] blocks = new SmallLarge[splitFile.size()];
+    Iterator <Record> iter = splitFile.iterator();
+    int i = 0;
+    int s = 0;
+    while(iter.hasNext()){
+      Record r = iter.next();
+      tmp = new BCBlock<KeyValue.KV<B, D>, KeyValue<B, D>>(r.data, this.keyValues);
+      KeyValue <B,D> first = tmp.getFirst();
+      KeyValue <B,D> last = tmp.getLast();
+      SmallLarge sl = new SmallLarge<>(first.getKey(), last.getKey(), r.record);
+      blocks[i] = sl;
+      i++;
+      s += tmp.getNumberOfElements();
+    }
+
+    //Sort the blocks and set all initial values
+    Arrays.sort(blocks);
+    leafLevel = -1;
+    size = 0;
+    rootPage = blocks[0].bNo;
+    size = s;
+    splitFile.deleteAllRegion(); //delete any existing index blocks
+
+    SBBNo <B>[] levels = (SBBNo <B> []) new SBBNo <?> [20];
+    for(i = 0; i < blocks.length-1; i++){
+      SmallLarge<B> left = blocks[i];
+      SmallLarge<B> right = blocks[i+1];
+      BTreeKey<B> sep = helper.generateSeparator(left.large, right.small);
+      sep.get().leftNode = left.bNo;
+      insertSeparator(sep,levels,0,right.bNo);
+    }
+    if(levels[0] != null)
       writeIndexBlocks(levels);
   }
 
@@ -775,14 +806,22 @@ public class MemMappedBPTreeImp<A,B extends BComparable<A,B>,C,D extends BStorab
    * @throws java.io.IOException if an error occurs
    */
   public void createIndex(Iterator<KeyValue <B,D>> iterator) throws IOException {
+    if(!iterator.hasNext()) {
+      truncate();
+      return;
+    }
+    //clear file (cannot use truncate because it creates a block in the file)
     splitFile.clear();
+    leafLevel = -1;
+    rootPage = 0;
+
+    int bNo = rootPage;
     byte b[] = new byte[splitFile.getBlockSize()];
     BCBlock<KeyValue.KV<B,D>, KeyValue<B,D>> sb = helper.newVBlock(b);
     KeyValue <B,D> tmpKV;
     @SuppressWarnings("unchecked")
     SBBNo <B>[] levels = (SBBNo <B> []) new SBBNo <?> [20];
-    //int bNo = blockFile.getRecordStart();
-    int bNo = 0;
+    int s = 0;
     while (iterator.hasNext()) {
       tmpKV = iterator.next();
       if (!sb.fits(tmpKV)) {
@@ -793,8 +832,10 @@ public class MemMappedBPTreeImp<A,B extends BComparable<A,B>,C,D extends BStorab
         insertSeparator(sep, levels, 0, bNo);
         sb = helper.newVBlock(b);
       }
+      s++;
       sb.insertUnsorted(tmpKV);
     }
+    size = s;
     splitFile.insert(bNo, sb.getBlock());
     if (levels[0] != null) // we have to write the index levels
       writeIndexBlocks(levels);
@@ -1152,6 +1193,22 @@ public class MemMappedBPTreeImp<A,B extends BComparable<A,B>,C,D extends BStorab
     BCBlock <BTreeKey.Entry<B>, BTreeKey <B>> sb;
 
     int bNo;
+  }
+
+  static class SmallLarge <B extends BComparable<?,B>> implements Comparable<SmallLarge<B>> {
+    int bNo;
+    B small;
+    B large;
+
+    public SmallLarge(B small, B large, int bNo){
+      this.bNo = bNo;
+      this.small = small;
+      this.large = large;
+    }
+    @Override
+    public int compareTo(SmallLarge<B> o) {
+      return small.compareTo(o.small);
+    }
   }
 
   class BPIter implements Iterator<KeyValue<B,D>> {

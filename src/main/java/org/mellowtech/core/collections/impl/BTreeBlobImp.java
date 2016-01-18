@@ -16,21 +16,23 @@
 
 package org.mellowtech.core.collections.impl;
 
-import static java.nio.file.StandardOpenOption.*;
-
-import java.io.File;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
-import java.util.Iterator;
-import java.util.logging.Level;
-
 import org.mellowtech.core.CoreLog;
 import org.mellowtech.core.bytestorable.BComparable;
 import org.mellowtech.core.bytestorable.BStorable;
 import org.mellowtech.core.collections.BTree;
 import org.mellowtech.core.collections.KeyValue;
 import org.mellowtech.core.collections.TreePosition;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Iterator;
+import java.util.logging.Level;
+
+import static java.nio.file.StandardOpenOption.*;
 
 /**
  * A BPTreeImp that allows for large values
@@ -39,30 +41,35 @@ import org.mellowtech.core.collections.TreePosition;
  *
  * @author Martin Svensson
  */
-@Deprecated
-public class BPBlobTreeImp <A,B extends BComparable<A,B>, C, D extends BStorable<C,D>>
+public class BTreeBlobImp<A,B extends BComparable<A,B>,C,D extends BStorable<C,D>>
   implements BTree<A,B,C,D> {
 
   FileChannel blobs;
-  BPTreeImp <A,B, ?,BlobPointer> tree;
+  BTreeImp <A,B,?,BlobPointer> tree;
   D template;
-  private final String fName;
 
-  public BPBlobTreeImp(String fName, Class <B> keyType, Class <D> valueType) throws Exception {
-    tree = new BPTreeImp<>(fName, keyType, BlobPointer.class);
+
+  public BTreeBlobImp(Path dir, String name, Class<B> keyType, Class<D> valueType,
+                      boolean oneFileTree, boolean mappedIndex,
+                      boolean mappedValues) throws Exception {
+    tree = new BTreeImp<>(dir, name, keyType, BlobPointer.class, oneFileTree, mappedIndex, mappedValues);
     this.template = valueType.newInstance();
-    this.fName = fName;
-    File f = new File(fName+".blb");
-    blobs = FileChannel.open(f.toPath(), WRITE, READ); 
+    blobs = FileChannel.open(blobPath(), WRITE, READ);
   }
 
-  public BPBlobTreeImp(String fName, Class<B> keyType, Class<D> valueType, int valueBlockSize, int indexBlockSize,
-      int maxBlocks, int maxIndexBlocks) throws Exception {
-    tree = new BPTreeImp <>(fName, keyType, BlobPointer.class, valueBlockSize, indexBlockSize, maxBlocks, maxIndexBlocks);
+  public BTreeBlobImp(Path dir, String name, Class<B> keyType, Class<D> valueType,
+                      int indexBlockSize, int valueBlockSize,
+                      int maxIndexBlocks, int maxValueBlocks,
+                      boolean oneFileTree, boolean mappedIndex, boolean mappedValues) throws Exception {
+    tree = new BTreeImp <> (dir, name, keyType, BlobPointer.class,
+        indexBlockSize, valueBlockSize, maxIndexBlocks, maxValueBlocks,
+        oneFileTree, mappedIndex, mappedValues, true);
     this.template = valueType.newInstance();
-    this.fName = fName;
-    File f = new File(fName+".blb");
-    blobs = FileChannel.open(f.toPath(), WRITE, READ, TRUNCATE_EXISTING, CREATE); 
+    blobs = FileChannel.open(blobPath(), WRITE, READ, TRUNCATE_EXISTING, CREATE);
+  }
+
+  private Path blobPath(){
+    return tree.dir.resolve(tree.name+".blb");
   }
 
   @Override
@@ -81,8 +88,7 @@ public class BPBlobTreeImp <A,B extends BComparable<A,B>, C, D extends BStorable
   public void delete() throws IOException {
     tree.delete();
     blobs.close();
-    File f = new File(fName+".blb");
-    f.delete();
+    Files.delete(blobPath());
   }
 
   @Override
@@ -111,8 +117,8 @@ public class BPBlobTreeImp <A,B extends BComparable<A,B>, C, D extends BStorable
     int size = value.byteSize();
     long fpos = blobs.size();
     BlobPointer bp = new BlobPointer(fpos, size);
-    tree.put(key, bp);
     ByteBuffer bb = value.to(); bb.flip();
+    tree.put(key, bp);
     blobs.write(bb, fpos);
   }
 
@@ -141,7 +147,7 @@ public class BPBlobTreeImp <A,B extends BComparable<A,B>, C, D extends BStorable
 
   @Override
   public KeyValue<B,D> getKeyValue(B key) throws IOException {
-    KeyValue <B, BlobPointer> tmp = tree.getKeyValue(key);
+    KeyValue <B,BlobPointer> tmp = tree.getKeyValue(key);
     if(tmp != null){
       KeyValue <B,D> kv = new KeyValue<>(tmp.getKey(), null);
       if(tmp.getValue() != null)
@@ -164,8 +170,7 @@ public class BPBlobTreeImp <A,B extends BComparable<A,B>, C, D extends BStorable
   /*@Override
   public Iterator<KeyValue<B,D>> iterator() {
     return new BPBlobIterator();
-  }
-  */
+  }*/
 
   @Override
   public Iterator<KeyValue<B,D>> iterator(boolean descending, B from, boolean inclusive, B to, boolean toInclusive) {
@@ -225,7 +230,13 @@ public class BPBlobTreeImp <A,B extends BComparable<A,B>, C, D extends BStorable
   }
 
   @Override
+  public void createIndex() throws IOException {
+    tree.createIndex();
+  }
+
+  @Override
   public void createIndex(Iterator<KeyValue<B,D>> iterator) throws IOException {
+    blobs.truncate(0);
     BlobMapCreateIterator <B,D> iter = new BlobMapCreateIterator <> (iterator,blobs);
     tree.createIndex(iter);
   }
