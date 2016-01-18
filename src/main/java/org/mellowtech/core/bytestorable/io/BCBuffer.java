@@ -43,7 +43,7 @@ public class BCBuffer<A, B extends BComparable<A, B>> implements RangeIterable<B
   private short reservedSpace;
   private byte ptrSize;
   private int headerSize;
-  private int offset;
+  //private int offset;
   private int capacity;
 
   /**
@@ -64,8 +64,16 @@ public class BCBuffer<A, B extends BComparable<A, B>> implements RangeIterable<B
     this(ByteBuffer.allocate(blockSize), template, true, ptrType, (short) 0);
   }
 
+  public BCBuffer(byte[] block, B template, PtrType ptrType){
+    this(ByteBuffer.wrap(block), template, ptrType, (short) 0);
+  }
+
   public BCBuffer(ByteBuffer block, B template, PtrType ptrType, short reservedSpace) {
     this(block, template, true, ptrType, reservedSpace);
+  }
+
+  public BCBuffer(ByteBuffer block, B template, PtrType ptrType){
+    this(block, template, ptrType, (short) 0);
   }
 
 
@@ -213,8 +221,7 @@ public class BCBuffer<A, B extends BComparable<A, B>> implements RangeIterable<B
           * ptrSize);
     }
     // now compact the data:
-    //System.out.println(" byteCopy: "+firstPos+" "+firstPos+" "+byteSize+" "+pPos);
-    byteBufferCopy(firstPos, firstPos + byteSize, pPos - firstPos - offset);
+    byteBufferCopy(firstPos, firstPos + byteSize, pPos - firstPos);
 
     // finally update all positions less than pos by adding toDelete.byteSize()
     // to
@@ -300,11 +307,26 @@ public class BCBuffer<A, B extends BComparable<A, B>> implements RangeIterable<B
    * Return the current block. Be careful to manipulate a block directly (and
    * not via SortedBlock) since the sorted block stores pointers in each block.
    *
-   * @return an array of bytes containing the keys.
+   * @return ByteBuffer of bytes containing the keys.
    */
   public ByteBuffer getBlock() {
-    block.position(offset);
     return block;
+  }
+
+  /**
+   * Return the current block as an array. In case the ByteBuffer is not backed
+   * by an array the returned array will be a copy of this block
+   * @return array of bytes containg the keys stored in this block
+   */
+  public byte[] getArray() {
+    if(block.hasArray())
+      return block.array();
+    else {
+      byte b[] = new byte[capacity];
+      block.position(0);
+      block.get(b);
+      return b;
+    }
   }
 
   /**
@@ -389,7 +411,7 @@ public class BCBuffer<A, B extends BComparable<A, B>> implements RangeIterable<B
    * @return an <code>int</code> value
    */
   public int getReservedSpaceStart() {
-    return offset + 2;
+    return 2;
   }
 
   /**
@@ -411,7 +433,7 @@ public class BCBuffer<A, B extends BComparable<A, B>> implements RangeIterable<B
     pos = Math.abs(pos);
 
     // calculate physical position:
-    int pPos = offset + (capacity - bytesWritten - key.byteSize());
+    int pPos = capacity - bytesWritten - key.byteSize();
 
     // shift all the elments to the right of pos to fit the pPos (e.g. a short)
     if (pos < high)
@@ -438,7 +460,7 @@ public class BCBuffer<A, B extends BComparable<A, B>> implements RangeIterable<B
   public boolean insertUnsorted(B key) {
     if (!fits(key))
       return false;
-    int pPos = offset + (capacity - bytesWritten - key.byteSize());
+    int pPos = capacity - bytesWritten - key.byteSize();
     setPhysicalPos(high, pPos);
     high++;
     writeNumElements(high);
@@ -460,22 +482,16 @@ public class BCBuffer<A, B extends BComparable<A, B>> implements RangeIterable<B
   }
 
   public BCBuffer<A, B> merge(BCBuffer<A, B> other) {
-    if (other.isEmpty()) return this;
-
-    if (isEmpty() || other.getFirst().compareTo(getLast()) > 0) { //all keys in other larger than this block..insert unsorted
-      for (B key : other) {
-        if (!insertUnsorted(key))
+    //rewrite needs to always copy to this buffer
+    if(other.isEmpty()) return this;
+    else if(isEmpty() || other.getFirst().compareTo(getLast()) > 0){ //all keys in other are large...can insert unsorted
+      for(B key : other){
+        if(!insertUnsorted(key))
           throw new BufferOverflowException();
       }
-    } else if (other.getLast().compareTo(getFirst()) < 0) { //all keys in other smaller than this block
-      for (B key : this) {
-        if (!other.insertUnsorted(key))
-          throw new BufferOverflowException();
-      }
-      this.setBlock(other.getBlock(), false, null, (short) -1);
-    } else {
-      for (B key : other) {
-        if (insert(key) < 0)
+    } else { //insert as usual
+      for(B key : other){
+        if(insert(key) < 0)
           throw new BufferOverflowException();
       }
     }
@@ -633,14 +649,13 @@ public class BCBuffer<A, B extends BComparable<A, B>> implements RangeIterable<B
   private void byteBufferCopy(int srcPos, int destPos, int length) {
     if (tmpArr.length < length)
       tmpArr = new byte[length];
-    block.position(offset + srcPos);
+    block.position(srcPos);
     block.get(tmpArr, 0, length);
-    block.position(offset + destPos);
+    block.position(destPos);
     block.put(tmpArr, 0, length);
   }
 
   private int getIndexPos(int index) {
-    //System.out.println("indexPos: "+index+" "+(reservedSpace + headerSize + (index * ptrSize)));
     return reservedSpace + headerSize + (index * ptrSize);
   }
 
@@ -649,7 +664,7 @@ public class BCBuffer<A, B extends BComparable<A, B>> implements RangeIterable<B
   }
 
   private int read(int position) {
-    int aligned = offset + position;
+    int aligned = position;
     switch (ptrType) {
       case BIG:
         return block.getInt(aligned);
@@ -670,19 +685,17 @@ public class BCBuffer<A, B extends BComparable<A, B>> implements RangeIterable<B
   }
 
   private PtrType readPtrType() {
-    byte b = block.get(offset + reservedSpace);
+    byte b = block.get(reservedSpace);
     return PtrType.from(b);
   }
 
   private short readReservedSpace() {
-    return block.getShort(offset);
+    return block.getShort(0);
   }
 
   private void setBlock(ByteBuffer block, boolean newBlock, PtrType ptrType, short reservedSpace) {
     this.block = block;
-    this.offset = block.position();
-    this.capacity = block.limit() - offset;
-
+    this.capacity = block.limit();
     if (newBlock) {
       this.reservedSpace = (short) (reservedSpace + 2); // the capacity has to be
       // stored:
@@ -705,21 +718,19 @@ public class BCBuffer<A, B extends BComparable<A, B>> implements RangeIterable<B
   }
 
   private void setPhysicalPos(int index, int value) {
-    //System.out.println("set physical pos: "+index+" "+value);
     write(getIndexPos(index), value);
   }
 
   private void write(int position, int value) {
-    int aligned = offset + position;
     switch (ptrType) {
       case BIG:
-        block.putInt(aligned, value);
+        block.putInt(position, value);
         break;
       case NORMAL:
-        block.putShort(aligned, (short) value);
+        block.putShort(position, (short) value);
         break;
       case TINY:
-        block.put(aligned, (byte) value);
+        block.put(position, (byte) value);
         break;
     }
   }
@@ -733,11 +744,11 @@ public class BCBuffer<A, B extends BComparable<A, B>> implements RangeIterable<B
   }
 
   private void writePtrSize() {
-    block.put(offset + reservedSpace, ptrType.size());
+    block.put(reservedSpace, ptrType.size());
   }
 
   private void writeReservedSpaceLength() {
-    block.putShort(offset, (short) (reservedSpace - 2));
+    block.putShort(0, (short) (reservedSpace - 2));
   }
 
   int getLowerBound(B key, boolean inclusive) {

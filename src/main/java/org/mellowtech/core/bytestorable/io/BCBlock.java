@@ -31,14 +31,11 @@ import java.util.Iterator;
 public class BCBlock<A, B extends BComparable<A, B>> implements RangeIterable<B, B> {
 
 
-  public static final byte PTR_TINY = 1;
+  //public static final byte PTR_TINY = 1;
   private byte[] block;
-
-  ;
   private byte[] tmpArr = new byte[128];
   private ByteBuffer buffer;
   private B keyType;
-  //private Class<B> keyClass;
   private int high;
   private int bytesWritten;
   private short reservedSpace;
