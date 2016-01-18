@@ -18,10 +18,13 @@
 package org.mellowtech.core.io;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.List;
+
+import static org.mellowtech.core.sort.DiscBasedSort.getBlockSize;
 
 /**
  * Description...
@@ -54,6 +57,14 @@ public class BlockMapper {
 
   public MappedByteBuffer find(int record) {
     return blocks.get(getBufferPos(record));
+  }
+
+  public MappedByteBuffer slice(int record){
+    MappedByteBuffer bb = (MappedByteBuffer) find(record).duplicate();
+    int r = truncate(record);
+    bb.position(record * getBlockSize());
+    bb.limit(bb.position()+getBlockSize());
+    return (MappedByteBuffer) bb.slice();
   }
 
   public void force() {

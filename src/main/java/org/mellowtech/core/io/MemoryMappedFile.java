@@ -28,6 +28,7 @@ import sun.misc.Unsafe;
  * @author msvens
  *
  */
+@Deprecated
 public class MemoryMappedFile {
 
   private static final Unsafe unsafe;

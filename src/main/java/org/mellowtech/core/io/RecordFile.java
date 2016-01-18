@@ -59,7 +59,7 @@ public interface RecordFile {
     return get(record, bytes) ? bytes : null;
   }
 
-  ByteBuffer getMapped(int record) throws UnsupportedOperationException;
+  MappedByteBuffer getMapped(int record) throws UnsupportedOperationException;
 
   boolean get(int record, byte[] buffer) throws IOException;
 

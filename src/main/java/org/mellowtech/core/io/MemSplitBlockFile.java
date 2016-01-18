@@ -18,6 +18,7 @@ package org.mellowtech.core.io;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.MappedByteBuffer;
 import java.nio.file.Path;
 
 /**
@@ -76,6 +77,20 @@ public class MemSplitBlockFile extends AbstractSplitBlockFile {
       return true;
     }
     return false;
+  }
+
+  @Override
+  public MappedByteBuffer getMapped(int record){
+    return bitSet.get(record) ? bmap.slice(record) : null;
+    /*if(bitSet.get(record)){
+      ByteBuffer bb = bmap.find(record);
+      record = bmap.truncate(record);
+      bb.position(record * getBlockSize());
+      ByteBuffer toRet = bb.slice();
+      toRet.limit(getBlockSize());
+      return toRet;
+    }
+    return null;*/
   }
 
   public int getLastMappedRecord(){

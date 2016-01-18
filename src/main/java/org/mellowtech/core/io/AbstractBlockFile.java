@@ -139,7 +139,7 @@ abstract class AbstractBlockFile implements RecordFile {
   }
 
   @Override
-  public ByteBuffer getMapped(int record) throws UnsupportedOperationException {
+  public MappedByteBuffer getMapped(int record) throws UnsupportedOperationException {
     throw new UnsupportedOperationException();
   }
 
