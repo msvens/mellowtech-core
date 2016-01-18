@@ -45,8 +45,8 @@ public class BCBlock<A, B extends BComparable<A, B>> implements RangeIterable<B,
 
   /**
    * Open an existing block
-   * @param block
-   * @param template
+   * @param block data
+   * @param template bytecomparable template
    */
   public BCBlock(byte[] block, B template) {
     this(block, template, false, null, (short) -1);
@@ -139,8 +139,8 @@ public class BCBlock<A, B extends BComparable<A, B>> implements RangeIterable<B,
    * Redistribute the keys in a number of blocks as evenly as possible.
    *
    * @param blocks An array of sorted blocks that should be redistributed.
-   * @param <A>
-   * @param <B>
+   * @param <A> wrapped class
+   * @param <B> bytecomparable class
    */
   public static <A, B extends BComparable<A, B>> void redistribute(BCBlock<A, B>[] blocks) {
     // first the total num bytes written and calculate the
@@ -553,6 +553,7 @@ public class BCBlock<A, B extends BComparable<A, B>> implements RangeIterable<B,
    * @param parallelSort If true use Arrays.parallelSort, otherwise use Arrays.sort
    * @see SortedBlock#sort
    * @see SortedBlock#insertKeyUnsorted
+   * @return this block sorted
    */
   public BCBlock<A, B> sort(boolean parallelSort) {
     BComparable toSort[] = new BComparable[high];

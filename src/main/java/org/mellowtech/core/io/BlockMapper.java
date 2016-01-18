@@ -51,8 +51,10 @@ public class BlockMapper {
     long pos = getBufferPos(toIndex);
     for (int i = blocks.size(); i <= pos; i++) {
       long filePos = offset + (pos * blockSize * blocksToMap);
+      //System.out.println("expanding: "+filePos+" "+(blockSize*blocksToMap));
       blocks.add(fc.map(FileChannel.MapMode.READ_WRITE, filePos, blockSize * blocksToMap));
     }
+    //System.out.println("expanded to record "+toIndex+" "+blocks.size());
   }
 
   public MappedByteBuffer find(int record) {
@@ -62,8 +64,8 @@ public class BlockMapper {
   public MappedByteBuffer slice(int record){
     MappedByteBuffer bb = (MappedByteBuffer) find(record).duplicate();
     int r = truncate(record);
-    bb.position(record * getBlockSize());
-    bb.limit(bb.position()+getBlockSize());
+    bb.position(r * blockSize);
+    bb.limit(bb.position()+blockSize);
     return (MappedByteBuffer) bb.slice();
   }
 
@@ -104,6 +106,13 @@ public class BlockMapper {
       int region = blockSize * blocksToMap;
       fc.truncate(offset + ((blockNo + 1) * region));
     }
+  }
+
+  public String toString(){
+    return "offset: "+offset +
+      " offset: " + blockSize +
+      " maxBlocks: " + maxBlocks +
+      " blocksToMap: " + blocksToMap;
   }
 
   public int truncate(int record) {

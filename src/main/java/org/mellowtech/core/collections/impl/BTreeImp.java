@@ -496,9 +496,6 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
     return sbuff.toString();
   }
 
-  /**
-   * @throws IOException
-   */
   @Override
   public void truncate() throws IOException {
     if (oneFileTree)

@@ -595,6 +595,7 @@ public class SortedBlock <T extends BComparable<?,T>> {
    *          the sortedblock bytes.
    * @param keyType
    *          the keyType always has to be provied.
+   * @return this
    */
   public SortedBlock <T> setBlock(byte[] block, T keyType) {
     return setBlock(block, keyType, false, (byte) -1, (short) -1);
@@ -621,6 +622,7 @@ public class SortedBlock <T extends BComparable<?,T>> {
    * @param reservedSpace
    *          X bytes will be reserved for caller to use freely (for instance
    *          for specific header information).
+   * @return this
    */
   public SortedBlock <T> setBlock(byte[] block, T keyType, boolean newBlock,
       byte ptrSize, short reservedSpace) {
@@ -662,6 +664,7 @@ public class SortedBlock <T extends BComparable<?,T>> {
    * @param ptrSize
    *          The size of the pointers in this block. If the normal pointer size
    *          is used this block can store up to 32000 keys
+   * @return this
    */
   public SortedBlock<T> setBlock(byte[] block, T keyType, boolean newBlock,
       byte ptrSize) {
@@ -681,6 +684,7 @@ public class SortedBlock <T extends BComparable<?,T>> {
    *          If true use Arrays.parallelSort, otherwise use Arrays.sort
    * @see SortedBlock#sort
    * @see SortedBlock#insertKeyUnsorted
+   * @return this
    */
   public SortedBlock<T> sort(boolean parallelSort) {
     BComparable toSort[] = new BComparable[high];

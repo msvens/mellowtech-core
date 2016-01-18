@@ -27,7 +27,7 @@ import java.util.Iterator;
 import java.util.logging.Level;
 
 /**
- * @author Martin Svensson {@literal <msvens@gmail.com>
+ * @author Martin Svensson {@literal <msvens@gmail.com>}
  * @since 14/01/16.
  */
 public class BTreeIterator<A, B extends BComparable<A, B>, C, D extends BStorable<C, D>> implements Iterator<KeyValue<B, D>> {
