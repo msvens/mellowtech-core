@@ -26,9 +26,9 @@ import org.mellowtech.core.bytestorable.BStorable;
  * StorableReadChannel
  * @param <A> Wrapped BStorable class
  * @param <B> BStorable class
- * 
- * @author Martin Svensson
- * @version 1.0
+ *
+ * @author Martin Svensson {@literal <msvens@gmail.com>}
+ * @since 3.0.1
  * @see StorableReadChannel
  */
 public class StorableInputStream <A, B extends BStorable <A,B>> {
@@ -36,23 +36,23 @@ public class StorableInputStream <A, B extends BStorable <A,B>> {
   private StorableReadChannel <A,B> mChannel;
 
   /**
-   * Initialize to read ByteStorables from a given input stream using the
+   * Initialize to read BStorables from a given input stream using the
    * specified template.
    * 
    * @param is
    *          stream to read from
    * @param template
-   *          a ByteStorable template
+   *          a BStorable template
    * @exception IOException
    *              if an error occurs
    */
   public StorableInputStream(InputStream is, B template)
       throws IOException {
-    mChannel = new StorableReadChannel <A,B> (Channels.newChannel(is), template);
+    mChannel = new StorableReadChannel <> (Channels.newChannel(is), template);
   }
 
   /**
-   * Retrieve the next ByteStorable in the stream.
+   * Retrieve the next BStorable in the stream.
    * 
    * @return the next object or null if there are no more to read.
    * @exception IOException
@@ -63,7 +63,7 @@ public class StorableInputStream <A, B extends BStorable <A,B>> {
   }
   
   /**
-   * Sets the template to use, useful when same stream is used to read different objects
+   * Set the template to use, useful when same stream is used to read different objects
    * according some rules.
    * @param template BStorable template
    */

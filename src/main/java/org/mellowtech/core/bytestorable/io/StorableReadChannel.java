@@ -23,12 +23,12 @@ import org.mellowtech.core.bytestorable.BStorable;
 import org.mellowtech.core.bytestorable.CBUtil;
 
 /**
- * Reads ByteStorables from a given byte channel.
+ * Reads BStorables from a given byte channel.
  * @param <A> Wrapped BStorable class
  * @param <B> BStorable class
  * 
- * @author Martin Svensson
- * @version 1.0
+ * @author Martin Svensson {@literal <msvens@gmail.com>}
+ * @since 3.0.1
  */
 public class StorableReadChannel <A, B extends BStorable <A,B>> {
 
@@ -38,7 +38,7 @@ public class StorableReadChannel <A, B extends BStorable <A,B>> {
   private boolean endOfChannel = false;
 
   /**
-   * Initialize to read ByteStorables from a given channel using the specified
+   * Initialize to read BStorable from a given channel using the specified
    * template.
    * 
    * @param rbc
@@ -75,7 +75,7 @@ public class StorableReadChannel <A, B extends BStorable <A,B>> {
   }
 
   /**
-   * Retrieve the next ByteStorable in the channel.
+   * Retrieve the next BStorable in the channel.
    * 
    * @return the next object or null if there are no more to read.
    * @exception IOException
@@ -119,7 +119,7 @@ public class StorableReadChannel <A, B extends BStorable <A,B>> {
   } // next
 
   /**
-   * Checks if more ByteStorables can be read from the channel.
+   * Checks if more BStorables can be read from the channel.
    * 
    * @return true if no more ByteStorables can be read.
    */

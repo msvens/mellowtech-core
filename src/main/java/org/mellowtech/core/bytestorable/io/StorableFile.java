@@ -15,30 +15,33 @@
  */
 package org.mellowtech.core.bytestorable.io;
 
-import java.io.File;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 
 import org.mellowtech.core.bytestorable.BStorable;
 
 /**
  * Static methods for storing a single ByteStorable or ByteBuffer in a File.
+ * @author Martin Svensson {@literal <msvens@gmail.com>}
+ * @since 3.0.1
  */
 public class StorableFile {
 
   /**
-   * Converting an entire file's content to a ByteStorable, useful if one has a
-   * single ByteStorable in a file.
+   * Converting an entire file's content to a ByteStorable
    * 
    * @param fileName
    *          the file name
    * @param template
    *          the BComparable template
-   * @param <A> Wrapped BComparable class
-   * @param <B> BComparable class 
-   * @return BComparable of type B
+   * @param <A> wrapped type
+   * @param <B> BComparable type
+   * @return BComparable of type B or null if file is empty
    * @exception IOException
    *              if an error occurs
    */
@@ -50,8 +53,7 @@ public class StorableFile {
   }
 
   /**
-   * Converting an entire ByteStorable to a file, useful if one needs a single
-   * ByteStorable in a file.
+   * Convert a ByteStorable to a file.
    * 
    * @param fileName
    *          the file name
@@ -75,18 +77,12 @@ public class StorableFile {
    */
   private static ByteBuffer readFileAsByteBuffer(String fileName)
       throws IOException {
-    File f = new File(fileName);
-    if(!f.exists()) return null;
-    RandomAccessFile raf = new RandomAccessFile(new File(fileName), "r");
-    if(raf.length() < 1){
-      raf.close();
-      return null;
-    }
-    FileChannel fc = raf.getChannel();
-    ByteBuffer bb = ByteBuffer.allocate((int) raf.length());
+    Path p = Paths.get(fileName);
+    if(!Files.exists(p)) return null;
+    FileChannel fc = FileChannel.open(p, StandardOpenOption.READ);
+    ByteBuffer bb = ByteBuffer.allocate((int) fc.size());
     fc.read(bb);
     fc.close();
-    raf.close();
     return bb;
   }
 
@@ -102,12 +98,9 @@ public class StorableFile {
    */
   private static void writeFileAsByteBuffer(String fileName, ByteBuffer bb)
       throws IOException {
-    RandomAccessFile raf = new RandomAccessFile(new File(fileName), "rwd");
-    raf.setLength(0);
-    FileChannel fc = raf.getChannel();
+    Path p = Paths.get(fileName);
+    FileChannel fc = FileChannel.open(p, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING);
     fc.write(bb);
-    fc.force(true);
     fc.close();
-    raf.close();
   }
 }

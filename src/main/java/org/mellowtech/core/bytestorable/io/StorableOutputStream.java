@@ -22,11 +22,11 @@ import java.nio.channels.Channels;
 import org.mellowtech.core.bytestorable.BStorable;
 
 /**
- * Writes ByteStorables to a given output stream. Internally it uses a
+ * Writes BStorables to a given output stream. Internally it uses a
  * StorableWriteChannel
  * 
- * @author Martin Svensson
- * @version 1.0
+ * @author Martin Svensson {@literal <msvens@gmail.com>}
+ * @since 3.0.1
  * @see StorableWriteChannel
  */
 public class StorableOutputStream {
@@ -34,7 +34,7 @@ public class StorableOutputStream {
   private StorableWriteChannel mChannel;
 
   /**
-   * Initialize to write ByteStorables to a given output.
+   * Initialize to write BStorables to a given output.
    * 
    * @param os
    *          stream to write to
@@ -46,10 +46,10 @@ public class StorableOutputStream {
   }
 
   /**
-   * Write a ByteStorable to the stream.
+   * Write a BStorable to the stream.
    * 
    * @param bs
-   *          the next ByteStorable to write
+   *          the next BStorable to write
    * @exception IOException
    *              if an error occurs
    */

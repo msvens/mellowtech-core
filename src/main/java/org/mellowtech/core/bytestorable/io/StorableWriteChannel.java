@@ -22,10 +22,10 @@ import java.nio.channels.WritableByteChannel;
 import org.mellowtech.core.bytestorable.BStorable;
 
 /**
- * Writes ByteStorables to a given output channel.
+ * Writes BStorables to a given output channel.
  * 
- * @author Martin Svensson
- * @version 1.0
+ * @author Martin Svensson {@literal <msvens@gmail.com>}
+ * @since 3.0.1
  */
 public class StorableWriteChannel {
 
@@ -58,7 +58,7 @@ public class StorableWriteChannel {
   }
 
   /**
-   * Write a ByteStorable to the stream.
+   * Write a BStorable to the stream.
    * 
    * @param tmp
    *          a <code>ByteStorable</code> value

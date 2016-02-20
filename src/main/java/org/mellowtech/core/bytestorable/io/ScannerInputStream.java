@@ -25,14 +25,14 @@ import java.util.Scanner;
 import org.mellowtech.core.bytestorable.CBString;
 
 /**
- * Stream that emits ByteStorables from tokens pulled from a scanner
+ * Stream that emits BStorables from tokens pulled from a scanner
  * @author msvens
  *
  */
+@Deprecated
 public class ScannerInputStream extends InputStream {
 
   ByteBuffer bb = ByteBuffer.allocate(1024);
-  //CBString temp = new CBString();
   
   private boolean closed = false;
   

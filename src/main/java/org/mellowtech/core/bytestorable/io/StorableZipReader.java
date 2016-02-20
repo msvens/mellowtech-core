@@ -27,39 +27,55 @@ import org.mellowtech.core.CoreLog;
 import org.mellowtech.core.bytestorable.BStorable;
 
 /**
- * Reads ByteStorable objects from a ZIP file.
- * 
- * @author rickard.coster@asimus.se
- * @version 1.0
+ * Reads BStorable objects from a ZIP file. Each BStorable object
+ * is stored in its own zip entry.
+ *
+ * @param <A> Wrapped BStorable class
+ * @param <B> BStorable class
+ *
+ * @author Rickard Cöster {@literal rickcos@gmail.com}
+ * @since 3.0.1
  */
-public class StorableZipReader <A,E extends BStorable <A,E>> {
+public class StorableZipReader <A,B extends BStorable <A,B>> {
 
   ZipFile zipFile;
-  E template;
+  B template;
   Enumeration <? extends ZipEntry> en;
 
-  public StorableZipReader(String fileName, E template)
+  /**
+   * Create a new reader using the given template
+   * @param fileName path to zip file
+   * @param template BStorable template
+   * @throws IOException
+   */
+  public StorableZipReader(String fileName, B template)
       throws IOException {
     zipFile = new ZipFile(new File(fileName));
     this.template = template;
     reset();
   }
 
-  public E get(String name) throws IOException {
+  /**
+   * Read the BStorable object at entry
+   * @param name entry name
+   * @return BStorable object
+   * @throws IOException if an exception occurs
+   */
+  public B get(String name) throws IOException {
     ZipEntry ze = zipFile.getEntry(name);
     if (ze == null)
       return null;
     return get(ze);
   }
 
-  protected E get(ZipEntry ze) throws IOException {
+  protected B get(ZipEntry ze) throws IOException {
     InputStream is = zipFile.getInputStream(ze);
     byte[] ba = new byte[(int) ze.getSize()];
     int c, offset = 0;
     while ((c = is.read()) != -1)
       ba[offset++] = (byte) c;
 
-    E bs = null;
+    B bs = null;
     try {
       bs = template.from(ba, 0);
     }
@@ -70,20 +86,32 @@ public class StorableZipReader <A,E extends BStorable <A,E>> {
     return bs;
   }
 
-  public E next() throws IOException {
+  /**
+   * Read the next BStorable from this zip files entries
+   * @return BStorable object or null if no more entries are found
+   * @throws IOException if an exception occurs
+   */
+  public B next() throws IOException {
     if (!en.hasMoreElements())
       return null;
     ZipEntry ze = (ZipEntry) en.nextElement();
     return get(ze);
   }
 
+  /**
+   * Reset this reader to point to the first entry in the file
+   * @throws IOException if an exception occurs
+   */
   public void reset() throws IOException {
     en = zipFile.entries();
   }
 
+  /**
+   * Close this reader
+   * @throws IOException if an exception occurs while closing the underlying zip file
+   */
   public void close() throws IOException {
     zipFile.close();
   }
-
-} // StorableZipReader
+}
 
