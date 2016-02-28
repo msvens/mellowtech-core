@@ -19,27 +19,42 @@ package org.mellowtech.core.bytestorable;
 import java.nio.ByteBuffer;
 
 /**
- * Wraps an long value as a ByteStorable
- * 
- * @author Martin Svensson
- * @version 1.0
+ * BComparable wrapper for long
+ *
+ * @author Martin Svensson {@literal <msvens@gmail.com>}
+ * @since 3.0.1
  */
 public class CBLong implements BComparable <Long,CBLong>{
   
   private final long value;
-  
-  public CBLong() {value = 0l;}
 
+  /**
+   * Initialize to 0
+   */
+  public CBLong() {value = 0L;}
+
+  /**
+   * Initialize to long
+   * @param value long to set
+   */
   public CBLong(long value) {this.value = value;}
-  
+
+  /**
+   * Initialize to long
+   * @param value Long to set
+   */
   public CBLong(Long value) {this.value = value;}
   
   @Override
   public CBLong create(Long value) {return new CBLong(value);}
 
   @Override
-  public Long get(){return Long.valueOf(value);}
-  
+  public Long get(){return value;}
+
+  /**
+   * Get the primitive long value
+   * @return value
+   */
   public long value(){return value;}
   
   @Override
@@ -74,9 +89,7 @@ public class CBLong implements BComparable <Long,CBLong>{
 
   @Override
   public boolean equals(Object other) {
-    if(other instanceof CBLong)
-      return compareTo((CBLong) other) == 0;
-    return false;
+    return other instanceof CBLong && compareTo((CBLong) other) == 0;
   }
   
   @Override

@@ -19,13 +19,33 @@ package org.mellowtech.core.bytestorable;
 import java.nio.ByteBuffer;
 
 /**
- * @author msvens
+ * An extension to BStorable that adds ordering to BStorables. Notably implementing
+ * classes can implement methods for comparing serialized objects.
+ *
+ * <p>
+ * Typically a user of this library would use any of the predefined BComparables and
+ * not implement this interface directly
+ * </p>
+ * @author Martin Svensson {@literal <msvens@gmail.com>}
+ * @since 3.0.1
+ *
+ * @param <A> type of value
+ * @param <B> self type
+ * @see BStorable
  *
  */
 public interface BComparable <A,B extends BComparable<A,B>> extends BStorable <A,B>, Comparable <B> {
 
   /**
-   * Default implentation of compareTo casts the values and compares them
+   * Default implementation of compareTo casts the value to a Comparable
+   * and compares them
+   * <pre>
+   * {@code
+   *  Comparable <? super A> cmp = (Comparable <? super A>) this.get();
+   *  return cmp.compareTo(other.get)
+   * }
+   * </pre>
+   *
    * @param other - object to compare to
    * @return see Comparable
    */
@@ -37,9 +57,12 @@ public interface BComparable <A,B extends BComparable<A,B>> extends BStorable <A
   }
   
   /**
-   * Compares two objects that are represented as bytes in a ByteBuffer. Calls:
-   * byteCompare(offset1, bb, offset2, bb);
-   * 
+   * Compares two objects that are represented as bytes in a ByteBuffer. calls
+   * <pre>
+   * {@code
+   *  return byteCompare(offset1, bb, offset2, bb);
+   * }
+   * </pre>
    * @param offset1
    *          the offset in the buffer for the first object
    * @param offset2
@@ -56,8 +79,9 @@ public interface BComparable <A,B extends BComparable<A,B>> extends BStorable <A
   /**
    * Compares two objects that are represented as bytes in a ByteBuffers.
    * Default implementation reads the objects and call their compareTo method.
-   * Subclasses should override
-   * 
+   * <p>
+   * <b>Subclasses should override this</b>
+   * </p>
    * @param offset1
    *          the offset in the buffer for the first object
    * @param bb1
@@ -80,7 +104,10 @@ public interface BComparable <A,B extends BComparable<A,B>> extends BStorable <A
 
   /**
    * Compares two objects that are represented as bytes in a byte array. Default implementation
-   * calls byteCompare(offset1, b, offset2, b)
+   * calls
+   * <pre>
+   * {@code return byteCompare(offset1, b, offset2, b);}
+   * </pre>
    * 
    * @param offset1
    *          the offset in the buffer for the first object
@@ -98,8 +125,9 @@ public interface BComparable <A,B extends BComparable<A,B>> extends BStorable <A
   /**
    * Compares two objects that are represented as bytes in a byte arrays.
    * Default implementation wraps the byte arrays to ByteBuffers and calls
-   * byteCompare(offset1, ByteBuffer.wrap(b1), offset2,
-   * ByteBuffer.wrap(b2)
+   * <pre>
+   *   {@code return byteCompare(offset1, ByteBuffer.wrap(b1), offset2, ByteBuffer.wrap(b2)}
+   * </pre>
    * 
    * @param offset1
    *          the offset in the buffer for the first object
@@ -117,10 +145,34 @@ public interface BComparable <A,B extends BComparable<A,B>> extends BStorable <A
         .wrap(b2));
   }
 
+  /**
+   * Compares two object thar are represented as bytes
+   * Default implementation calls
+   * <pre>
+   *   {@code return byteCompare(offset1, ByteBuffer.wrap(b1), offset2, bb2);}
+   * </pre>
+   * @param offset1 offset in the array for the first object
+   * @param b1 array that holds the first object
+   * @param offset2 offset int the buffer for the second object
+   * @param bb2 buffer that holds the second object
+   * @return a negative integer, zero, ora a positive integer
+   */
   default int byteCompare(int offset1, byte[] b1, int offset2, ByteBuffer bb2) {
     return byteCompare(offset1, ByteBuffer.wrap(b1), offset2, bb2);
   }
 
+  /**
+   * Compares two object thar are represented as bytes
+   * Default implementation calls
+   * <pre>
+   *   {@code return byteCompare(offset1, bb1, offset2, ByteBuffer.wrap(b2));}
+   * </pre>
+   * @param offset1 offset in the buffer for the first object
+   * @param bb1 buffer that holds the first object
+   * @param offset2 offset int the array for the second object
+   * @param b2 array that holds the second object
+   * @return a negative integer, zero, ora a positive integer
+   */
   default int byteCompare(int offset1, ByteBuffer bb1, int offset2, byte[] b2) {
     return byteCompare(offset1, bb1, offset2, ByteBuffer.wrap(b2));
   }

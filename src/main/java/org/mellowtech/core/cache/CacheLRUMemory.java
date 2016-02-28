@@ -22,18 +22,33 @@ import org.mellowtech.core.bytestorable.BStorable;
 import com.google.common.cache.*;
 
 /**
- * Date: 2012-11-02
- * Time: 10:45
+ * Simple cache that use the least recently used scheme. When the cache limit is
+ * reached and an item has to be unloaded the cache chooses the item that was
+ * accessed longest ago. put, get, and remove all work in log(n) time.
+ * <p>
+ * Cache size is based on memory footprint rather than number of items
+ * </p>
  *
- * @author Martin Svensson
+ * @param <A> wrapped key type
+ * @param <B> bstorable key type
+ * @param <C> wrapped value type
+ * @param <D> bstorable value type
+ *
+ * @author Martin Svensson {@literal <msvens@gmail.com>}
+ * @since 3.0.1
  */
 public class CacheLRUMemory <A,B extends BStorable <A,B>,C,D extends BStorable <C,D>> extends CacheLRU <B,D> {
 
    private long memoryFootPrint;
-   //private BSMapping <?> keyMapping = null;
-   //private BSMapping <?> valueMapping = null;
 
 
+  /**
+   * Create a new cache with a remover and loader
+   * @param remover remover object or null
+   * @param loader loader object
+   * @param size maximum bytes for cache
+   * @param countMemoryFootPrint if true count the current memory foot print
+   */
   public CacheLRUMemory(Remover<B, D> remover, Loader<B, D> loader, long size,
                         boolean countMemoryFootPrint) {
     setRemover(remover);
@@ -43,6 +58,10 @@ public class CacheLRUMemory <A,B extends BStorable <A,B>,C,D extends BStorable <
     lru = this.buildCache();
   }
 
+  /**
+   * Get the current memory footprint
+   * @return footprint in bytes
+   */
   public long getMemoryFootPrint(){
     return this.memoryFootPrint;
   }

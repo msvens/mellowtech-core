@@ -15,14 +15,30 @@
  */
 package org.mellowtech.core.cache;
 
+/**
+ * A Holder of a cache value where a value can be marked as dirty/changed.
+ *
+ * @author Martin Svensson {@literal <msvens@gmail.com>}
+ * @since 3.0.1
+ * @param <V> type of value
+ */
 public class CacheValue <V> {
-  V value = null;
-  boolean dirty = false;
+  private V value = null;
+  private boolean dirty = false;
 
+  /**
+   * Create a new cache value that is not dirty
+   * @param value value object
+   */
   public CacheValue(V value) {
     this(value, false);
   }
 
+  /**
+   * Creat a new cache value
+   * @param value value object
+   * @param dirty true if value should be marked as dirty
+   */
   public CacheValue(V value, boolean dirty){
    this.value = value;
     this.dirty = dirty;
@@ -45,6 +61,10 @@ public class CacheValue <V> {
     dirty = true;
   }
 
+  /**
+   * Mark this value as dirty or not dirty
+   * @param dirty true if dirty
+   */
   public void setDirty(boolean dirty) {
     this.dirty = dirty;
   }
@@ -53,7 +73,7 @@ public class CacheValue <V> {
    * Get the value. If the isDirty returns false it should be safe to do nothing
    * with the value, i.e. it has not changed since it entered the cache.
    * 
-   * @return a value of type 'Object'
+   * @return the value this cachevalue holds
    */
   public V getValue() {
     return value;

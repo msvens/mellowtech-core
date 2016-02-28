@@ -25,11 +25,28 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Iterator;
 
-import org.mellowtech.core.bytestorable.io.BCBlock.PtrType;
 
 /**
- * @author msvens
- * @since 08/01/16
+ * The BCBuffer keeps a sorted byte array of BComparables. The buffer
+ * into two sections, the first section is the pointers
+ * to the actual keys stored in the array. All sorting, searching, rearranging is
+ * done in the pointers section. Thus, keys does not have to be physically
+ * sorted in the block, it is only the pointers that are sorted. The SortedBlock
+ * do not have to be defragmented. Whenever keys are deleted the SortedBlock
+ * automatically move that space to the unused space section. So using very long
+ * keys with heavy insert/delete can reduce performance.
+ * <p>
+ * The overhead for using the buffer depends on the pointer size. It can
+ * either be 4, 2, 1 byte extra for each key stored in the sorted block.
+ * </p>
+ * <p><strong>Observe</strong> that this class always assume the underlying
+ * ByteBuffer starts at position 0. So if you want to use this class over a larger
+ * buffer you need to use the split/submap operations in ByteBuffer
+ * </p>
+ * @author Martin Svensson {@literal <msvens@gmail.com>}
+ * @since 3.0.4
+ * @param <A> type of value
+ * @param <B> BComparable type
  */
 public class BCBuffer<A, B extends BComparable<A, B>> implements RangeIterable<B, B> {
 
@@ -37,46 +54,86 @@ public class BCBuffer<A, B extends BComparable<A, B>> implements RangeIterable<B
   private ByteBuffer block;
   private B keyType;
   private PtrType ptrType;
+  //TODO: maybe remove tmpArr. Unnecessary optimization?
   private byte[] tmpArr = new byte[128];
   private int high;
   private int bytesWritten;
   private short reservedSpace;
   private byte ptrSize;
   private int headerSize;
-  //private int offset;
   private int capacity;
 
   /**
-   * Open an existing block
+   * Open an existing buffer
    *
    * @param block data
-   * @param template bytecomparable template
+   * @param template BComparable template
    */
   public BCBuffer(ByteBuffer block, B template) {
     this(block, template, false, null, (short) -1);
   }
 
+  /**
+   * Creates a new buffer
+   * @param blockSize the size of the buffer
+   * @param template BComparable template
+   * @param ptrType size of the pointer
+   * @param reservedSpace allocate some reserved space in the beginning of the buffer
+   */
   public BCBuffer(int blockSize, B template, PtrType ptrType, short reservedSpace) {
     this(ByteBuffer.allocate(blockSize), template, true, ptrType, reservedSpace);
   }
 
+  /**
+   * Creates a new buffer with no reserved space
+   * @param blockSize the size of the buffer
+   * @param template BComparable template
+   * @param ptrType ptr type
+   */
   public BCBuffer(int blockSize, B template, PtrType ptrType) {
     this(ByteBuffer.allocate(blockSize), template, true, ptrType, (short) 0);
   }
 
+  /**
+   * Create a ByteBuffer with no resvered space
+   * @param block byte array to wrap
+   * @param template BComparable template
+   * @param ptrType ptr type
+   */
   public BCBuffer(byte[] block, B template, PtrType ptrType){
     this(ByteBuffer.wrap(block), template, ptrType, (short) 0);
   }
 
+  /**
+   * Create a ByteBuffer with reserved space
+   * @param block buffer to use
+   * @param template BComparable template
+   * @param ptrType ptr type
+   * @param reservedSpace bytes to reserve
+   */
   public BCBuffer(ByteBuffer block, B template, PtrType ptrType, short reservedSpace) {
     this(block, template, true, ptrType, reservedSpace);
   }
 
+  /**
+   * Create a ByteBuffer with no reserved space
+   * @param block buffer to use
+   * @param template BComparable template
+   * @param ptrType ptr type
+   */
   public BCBuffer(ByteBuffer block, B template, PtrType ptrType){
     this(block, template, ptrType, (short) 0);
   }
 
 
+  /**
+   * Internal costructor. Either create or open a buffer
+   * @param block buffer to use
+   * @param template BComparable template
+   * @param newBlock true if new block
+   * @param ptrType pointer type
+   * @param reservedSpace number of bytes to reserve
+   */
   protected BCBuffer(ByteBuffer block, B template, boolean newBlock,
                      PtrType ptrType, short reservedSpace) {
     try {
@@ -87,10 +144,17 @@ public class BCBuffer<A, B extends BComparable<A, B>> implements RangeIterable<B
     }
   }
 
-  public static int bytesNeeded(int maxElements, byte ptrSize) {
+  /**
+   * Calculates how many extra bytes will be required to store a number of
+   * elements (not including the elements themselves)
+   * @param maxElements maximum number of elements
+   * @param ptrType ptr type
+   * @return number of bytes
+   */
+  public static int bytesNeeded(int maxElements, PtrType ptrType) {
     int bytes = 2; //resservedSpace length
-    bytes += 1 + (ptrSize * 2); //headerSize ptrSize, numElements, bytesWritten
-    bytes += ptrSize * maxElements;
+    bytes += 1 + (ptrType.size() * 2); //headerSize ptrSize, numElements, bytesWritten
+    bytes += ptrType.size() * maxElements;
     return bytes;
   }
 
@@ -146,9 +210,9 @@ public class BCBuffer<A, B extends BComparable<A, B>> implements RangeIterable<B
   /**
    * Redistribute the keys in a number of blocks as evenly as possible.
    *
-   * @param blocks An array of sorted blocks that should be redistributed.
-   * @param <A> wrapped class
-   * @param <B> bytecomparable class
+   * @param blocks An array of BCBuffers that should be redistributed.
+   * @param <A> value type
+   * @param <B> BComparable type
    */
   public static <A, B extends BComparable<A, B>> void redistribute(BCBuffer<A, B>[] blocks) {
     // first the total num bytes written and calculate the
@@ -171,7 +235,7 @@ public class BCBuffer<A, B extends BComparable<A, B>> implements RangeIterable<B
   }
 
   /**
-   * Clear this block from elements
+   * Clear this buffer from elements
    */
   public void clear() {
     high = 0;
@@ -181,43 +245,43 @@ public class BCBuffer<A, B extends BComparable<A, B>> implements RangeIterable<B
   }
 
   /**
-   * Returns true if this block cotains the given key.
+   * Check if this buffer contains the given element
    *
-   * @param key the key to search for.
-   * @return true if the key was found
+   * @param element the element to search for.
+   * @return true if found
    */
-  public boolean contains(B key) {
-    return search(key) >= 0;
+  public boolean contains(B element) {
+    return search(element) >= 0;
   }
 
   /**
-   * Deletes a key from this block.
+   * Deletes an element from this buffer
    *
-   * @param key The key to delete
-   * @return The deleted key read from this block.
+   * @param element The element to delete
+   * @return The deleted element or null
    */
-  public B delete(B key) {
-    return delete(search(key));
+  public B delete(B element) {
+    return delete(search(element));
   }
 
   /**
-   * Remove a key at a given position
+   * Delete element at index.
    *
-   * @param pos position
-   * @return the deleted key
+   * @param idx index
+   * @return the deleted key or null if no such idx
    */
-  public B delete(int pos) {
-    if (pos >= high || pos < 0)
+  public B delete(int idx) {
+    if (idx >= high || idx < 0)
       return null;
 
     // read the physical position:
-    int pPos = getPhysicalPos(pos);
+    int pPos = getPhysicalPos(idx);
     block.position(pPos);
     B toDelete = keyType.from(block);
     int firstPos = capacity - bytesWritten;
     int byteSize = toDelete.byteSize();
-    if (pos < high - 1) { // we have to compact the array:
-      byteBufferCopy(getIndexPos(pos + 1), getIndexPos(pos), (high - 1 - pos)
+    if (idx < high - 1) { // we have to compact the array:
+      byteBufferCopy(getIndexPos(idx + 1), getIndexPos(idx), (high - 1 - idx)
           * ptrSize);
     }
     // now compact the data:
@@ -239,22 +303,22 @@ public class BCBuffer<A, B extends BComparable<A, B>> implements RangeIterable<B
   }
 
   /**
-   * Check if this block has room for an additional key.
+   * Check if this buffer has room for an additional element
    *
-   * @param key the key to check
-   * @return True if the key can be stored in this block.
+   * @param element the element to check
+   * @return True if element can be stored.
    */
-  public boolean fits(B key) {
+  public boolean fits(B element) {
     return reservedSpace + headerSize + bytesWritten + ((high + 1) * ptrSize)
-        + key.byteSize() <= capacity;
+        + element.byteSize() <= capacity;
   }
 
   /**
-   * Checks if this block can fit all keys in other block. Will not exclude any
+   * Checks if this buffer can fit all elements in another buffer. Will not exclude any
    * duplicates.
    *
-   * @param other the block to merge with.
-   * @return true if the two blocks can be merged.
+   * @param other buffer to check.
+   * @return true if the two buffers can be merged.
    */
   public boolean fits(BCBuffer<A, B> other) {
     int totDataBytes = other.getDataBytes() + getDataBytes();
@@ -265,12 +329,12 @@ public class BCBuffer<A, B extends BComparable<A, B>> implements RangeIterable<B
   }
 
   /**
-   * Checks if this block can fit all keys in block and an additional key. Will not exclude any
+   * Checks if this buffer can fit all elements in another buffer plus an additional elements. Will not exclude any
    * duplicates.
    *
-   * @param other      the block to merge with.
-   * @param additional a <code>ByteStorable</code> value
-   * @return true if the two blocks can be merged.
+   * @param other      the buffer to merge with.
+   * @param additional additional element
+   * @return true if the the buffers and element can be merged.
    */
   public boolean fits(BCBuffer<A, B> other, B additional) {
     int totDataBytes = other.getDataBytes() + getDataBytes()
@@ -280,43 +344,41 @@ public class BCBuffer<A, B extends BComparable<A, B>> implements RangeIterable<B
   }
 
   /**
-   * Key at position index.
+   * Element at index.
    *
-   * @param index positon of key
-   * @return null if the block did not contain the key or the index was out of
-   * range
+   * @param idx index of element
+   * @return element or null if the index was out of range
    */
-  public B get(int index) {
-    if (index >= high || index < 0)
+  public B get(int idx) {
+    if (idx >= high || idx < 0)
       return null;
-    block.position(getPhysicalPos(index));
+    block.position(getPhysicalPos(idx));
     return keyType.from(block);
   }
 
   /**
-   * Binary search to find a key
+   * Find an element in this buffer. This method triggers a binary search
    *
-   * @param key Key to search for
-   * @return the key read from the current block
+   * @param element Element to find
+   * @return element or null if not found
    */
-  public B get(B key) {
-    return get(search(key));
+  public B get(B element) {
+    return get(search(element));
   }
 
   /**
-   * Return the current block. Be careful to manipulate a block directly (and
-   * not via SortedBlock) since the sorted block stores pointers in each block.
+   * Get the underlying ByteBuffer.
    *
-   * @return ByteBuffer of bytes containing the keys.
+   * @return underlying ByteBuffer.
    */
   public ByteBuffer getBlock() {
     return block;
   }
 
   /**
-   * Return the current block as an array. In case the ByteBuffer is not backed
+   * Return the current buffer as an array. In case the ByteBuffer is not backed
    * by an array the returned array will be a copy of this block
-   * @return array of bytes containg the keys stored in this block
+   * @return array of bytes containing the keys stored in this block
    */
   public byte[] getArray() {
     if(block.hasArray())
@@ -330,54 +392,60 @@ public class BCBuffer<A, B extends BComparable<A, B>> implements RangeIterable<B
   }
 
   /**
-   * Number of bytes actually written in this block. Including the reserved
-   * space
-   *
-   * @return number of bytes
+   * Check if this buffer is backed by a byte[]
+   * @return true if backed by byte[]
+   */
+  public boolean hasArray(){
+    return block.hasArray();
+  }
+
+  /**
+   * Number of bytes written in this Buffer including any reserved space.
+   * @return bytes written
    */
   public int getBytesWritten() {
     return reservedSpace + headerSize + bytesWritten + (high * ptrSize);
   }
 
   /**
-   * Number of databytes and pointer bytes written in this file.
+   * Number of data bytes and pointer bytes written in this file.
    *
-   * @return number of bytes
+   * @return bytes written
    */
   public int getDataAndPointersBytes() {
     return bytesWritten + (high * ptrSize);
   }
 
   /**
-   * Number of bytes used to store the actual keys in this block (excluding
+   * Number of bytes used to store the elements in this block (excluding
    * pointers).
    *
-   * @return number of bytes used
+   * @return bytes written
    */
   public int getDataBytes() {
     return bytesWritten;
   }
 
   /**
-   * The first key in this block.
+   * Get the first (smallest) element in this buffer
    *
-   * @return null if the block is empty
+   * @return element or null if buffer is empty
    */
   public B getFirst() {
     return get(0);
   }
 
   /**
-   * The last key in this block.
+   * Get the last (largest) element in this buffer
    *
-   * @return null if the block is empty
+   * @return element or null if buffer is empty
    */
   public B getLast() {
     return get(high - 1);
   }
 
   /**
-   * Number of keys in this block.
+   * Number of elements in this buffer
    *
    * @return number of elements
    */
@@ -386,7 +454,7 @@ public class BCBuffer<A, B extends BComparable<A, B>> implements RangeIterable<B
   }
 
   /**
-   * The pointer type in this block, i.e 4 for integer size pointers
+   * PtrType used in this buffer
    *
    * @return pointer type
    */
@@ -395,45 +463,51 @@ public class BCBuffer<A, B extends BComparable<A, B>> implements RangeIterable<B
   }
 
   /**
-   * Returns the number of bytes that has been reserved in this block.
+   * Get the size of the resevered space
    *
-   * @return an <code>int</code> value
+   * @return number of bytes
    */
   public int getReservedSpace() {
     return reservedSpace - 2;
   }
 
   /**
-   * This returns the start position of the reserved space in this sorted block.
-   * Be careful to read/write from the reserved space since the sorted block has
-   * no control over this.
+   * Get the start position of the reserved space in this buffer. To read the
+   * reserved space to an array
+   * <pre>
+   * {@code
+   *  byte[] space = new byte[myBuffer.getReservedSpace()];
+   *  ByteBuffer buffer = myBuffer.getBlock();
+   *  buffer.position(myBuffer.getReservedSpaceStart());
+   *  buffer.get(space);
+   * }
+   * </pre>
    *
-   * @return an <code>int</code> value
+   * @return position in buffer
    */
   public int getReservedSpaceStart() {
     return 2;
   }
 
   /**
-   * Inserts a key in this block. Performs a binary search to find the correct
+   * Inserts an element in this block. Performs a binary search to find the correct
    * position.
    *
-   * @param key The key to insert.
+   * @param element The element to insert.
    * @return the index if successful, -1 otherwise.
-   * @see SortedBlock#insertKeyUnsorted
    */
-  public int insert(B key) {
+  public int insert(B element) {
     // check if it can be inserted here:
-    if (!fits(key))
+    if (!fits(element))
       return -1;
-    int pos = search(key);
+    int pos = search(element);
     if (pos >= 0)
       return -1;
     pos++;
     pos = Math.abs(pos);
 
     // calculate physical position:
-    int pPos = capacity - bytesWritten - key.byteSize();
+    int pPos = capacity - bytesWritten - element.byteSize();
 
     // shift all the elments to the right of pos to fit the pPos (e.g. a short)
     if (pos < high)
@@ -443,34 +517,38 @@ public class BCBuffer<A, B extends BComparable<A, B>> implements RangeIterable<B
     setPhysicalPos(pos, pPos);
     high++;
     writeNumElements(high);
-    bytesWritten += key.byteSize();
+    bytesWritten += element.byteSize();
     writeBytesWritten(bytesWritten);
     block.position(pPos);
-    key.to(block);
+    element.to(block);
     return pos;
   }
 
   /**
-   * Appends a key to this block. Note that this method does not guarantee that
-   * the block stays sorted.
+   * Inserts an element at the end of this buffer. Observe that
+   * this will not guarantee that the block stays sorted
    *
-   * @param key Key to insert
-   * @return true if the insert was successfull
+   * @param element element to insert
+   * @return true if the element was inserted
    */
-  public boolean insertUnsorted(B key) {
-    if (!fits(key))
+  public boolean insertUnsorted(B element) {
+    if (!fits(element))
       return false;
-    int pPos = capacity - bytesWritten - key.byteSize();
+    int pPos = capacity - bytesWritten - element.byteSize();
     setPhysicalPos(high, pPos);
     high++;
     writeNumElements(high);
-    bytesWritten += key.byteSize();
+    bytesWritten += element.byteSize();
     writeBytesWritten(bytesWritten);
     block.position(pPos);
-    key.to(block);
+    element.to(block);
     return true;
   }
 
+  /**
+   * Check if this buffer is empty
+   * @return true if buffer is empty
+   */
   public boolean isEmpty() {
     return getNumberOfElements() == 0;
   }
@@ -481,6 +559,11 @@ public class BCBuffer<A, B extends BComparable<A, B>> implements RangeIterable<B
         new BCBufferIter(this, from, fromInclusive, to, toInclusive);
   }
 
+  /**
+   * Merge this buffer with another buffer
+   * @param other buffer to merge with
+   * @return this buffer
+   */
   public BCBuffer<A, B> merge(BCBuffer<A, B> other) {
     //rewrite needs to always copy to this buffer
     if(other.isEmpty()) return this;
@@ -499,13 +582,13 @@ public class BCBuffer<A, B extends BComparable<A, B>> implements RangeIterable<B
   }
 
   /**
-   * Binary search. Works in the same fashion as Arrays.binarySearch.
+   * Binary search for element. Same contract as Arrays.binarySearch
    *
-   * @param key The key to search for
-   * @return position
-   * @see java.util.Arrays
+   * @param element The element to search for
+   * @return index
+   * @see java.util.Arrays#binarySearch(Object[], Object)
    */
-  public int search(B key) {
+  public int search(B element) {
     int highSearch = high - 1;
     int low = 0, mid;
     B current;
@@ -513,7 +596,7 @@ public class BCBuffer<A, B extends BComparable<A, B>> implements RangeIterable<B
       mid = (low + highSearch) / 2;
       block.position(getPhysicalPos(mid));
       current = keyType.from(block);
-      int cmp = current.compareTo(key);
+      int cmp = current.compareTo(element);
       if (cmp < 0)
         low = mid + 1;
       else if (cmp > 0)
@@ -524,14 +607,21 @@ public class BCBuffer<A, B extends BComparable<A, B>> implements RangeIterable<B
     return -(low + 1);
   }
 
-  public int searchBC(B key) {
+  /**
+   * Binary search for element by using byte level comparison. Same contract as Arrays.binarySearch
+   *
+   * @param element The element to search for
+   * @return index
+   * @see java.util.Arrays#binarySearch(Object[], Object)
+   */
+  public int searchBC(B element) {
     int low = 0;
     int highSearch = high - 1, mid;
-    ByteBuffer bbKey = key.to();
+    ByteBuffer bbKey = element.to();
     while (low <= highSearch) {
       mid = (low + highSearch) / 2;
       int midValOffset = getPhysicalPos(mid);
-      int cmp = key.byteCompare(midValOffset, block, 0, bbKey);
+      int cmp = element.byteCompare(midValOffset, block, 0, bbKey);
       if (cmp < 0)
         low = mid + 1;
       else if (cmp > 0)
@@ -543,18 +633,18 @@ public class BCBuffer<A, B extends BComparable<A, B>> implements RangeIterable<B
   }
 
   /**
-   * If the keys in this block has been inserted unsorted use sort to sort the
+   * If the elements in this buffer has been inserted unsorted use sort to sort the
    * contents. This method works as follows:<br>
-   * it reads in every key into an CBytalbe[], and then either calls Arrays.sort
-   * or sort.<br>
+   * it reads in every element into an Bcomarable[], and then calls either
+   * Arrays.sort or Arrays.parallelSort.
+   * <p>
    * If you are reading in many keys at once it is a good idea to first store
    * them in an array than call sort, and then insert them using insertUnsorted
    * into this block.
+   * </p>
    *
    * @param parallelSort If true use Arrays.parallelSort, otherwise use Arrays.sort
-   * @see SortedBlock#sort
-   * @see SortedBlock#insertKeyUnsorted
-   * @return this buffer sorted
+   * @return this buffer
    */
   public BCBuffer<A, B> sort(boolean parallelSort) {
     BComparable toSort[] = new BComparable[high];
@@ -573,12 +663,22 @@ public class BCBuffer<A, B extends BComparable<A, B>> implements RangeIterable<B
     return this;
   }
 
+  /**
+   * Split this buffer in to. The returned buffer will contain
+   * the larger elements and contain a copy of the reserved space
+   * @return buffer with larger elements
+   */
   public BCBuffer<A, B> split() {
     return split(new BCBuffer<>(capacity, keyType, ptrType, (short) (reservedSpace - 2)));
   }
 
+  /**
+   * Split this buffer in to. The returned buffer will contain
+   * the larger elements and contain a copy of the reserved space
+   * @param other buffer to split to
+   * @return buffer with larger elements
+   */
   public BCBuffer<A, B> split(BCBuffer<A, B> other) {
-    //BCBlock<A, B> other = new BCBuffer<>(block.length, keyType, ptrType, (short) (reservedSpace - 2));
     int half = bytesWritten / 2;
     B lastKey;
     int numWritten = 0;
@@ -604,8 +704,8 @@ public class BCBuffer<A, B extends BComparable<A, B>> implements RangeIterable<B
   }
 
   /**
-   * The actual storage capacity of this sortedblock. Remember that Each key
-   * stored will have an additional number of bytes for its pointer.
+   * The actual storage capacity of this buffer. Observe that each element
+   * will store an additional number of bytes for its pointer.
    *
    * @return storage in bytes
    */
@@ -613,6 +713,7 @@ public class BCBuffer<A, B extends BComparable<A, B>> implements RangeIterable<B
     return capacity - headerSize - reservedSpace;
   }
 
+  @Override
   public String toString() {
 
     StringBuffer sbuff = new StringBuffer();
@@ -635,16 +736,16 @@ public class BCBuffer<A, B extends BComparable<A, B>> implements RangeIterable<B
   }
 
   /**
-   * This will update a previously stored key. Use with caution since it will
-   * just overwrite the current data at the given index. Thus, the keySize
+   * This will update a previously stored element. Use with caution since it will
+   * just overwrite the current data at the given index. Thus, the element size
    * cannot be changed.
    *
-   * @param key   a value of type 'ByteStorable'
-   * @param index a value of type 'int'
+   * @param element   element to update
+   * @param idx position of element
    */
-  public void update(B key, int index) {
-    block.position(getPhysicalPos(index));
-    key.to(block);
+  public void update(B element, int idx) {
+    block.position(getPhysicalPos(idx));
+    element.to(block);
   }
 
   private void byteBufferCopy(int srcPos, int destPos, int length) {
@@ -773,6 +874,49 @@ public class BCBuffer<A, B extends BComparable<A, B>> implements RangeIterable<B
     } else {
       pos += 2;
       return Math.abs(pos);
+    }
+  }
+
+  /**
+   * Size of element pointer. The larger the size the larger the buffer one can have
+   */
+  public enum PtrType {
+    /**
+     * BIG has 4 byte pointer meaning it can address 2 gb buffers
+     */
+    BIG,
+    /**
+     * Normal is a 2 byte pointer and can address 32kb buffers
+     */
+    NORMAL,
+    /**
+     * Small is a 1 byte pointer and can address 128b buffers
+     */
+    TINY;
+
+    public static PtrType from(byte b) {
+      switch (b) {
+        case 4:
+          return BIG;
+        case 2:
+          return NORMAL;
+        case 1:
+          return TINY;
+        default:
+          throw new Error("unknown pointer size");
+      }
+    }
+
+    public byte size() {
+      switch (this) {
+        case BIG:
+          return 4;
+        case NORMAL:
+          return 2;
+        case TINY:
+          return 1;
+      }
+      throw new Error("error");
     }
   }
 }

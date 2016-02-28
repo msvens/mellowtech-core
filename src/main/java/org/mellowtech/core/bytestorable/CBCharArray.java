@@ -23,18 +23,23 @@ import org.mellowtech.core.CoreLog;
 import org.mellowtech.core.util.CompiledLocale;
 
 /**
+ * BComparable wrapper for char[]
+ * <p>
  * CBChars is binary compatible with CBString, that is, it encodes its chars
  * to utf8. CBChars allows for comparison on a byte level, i.e. directly comparing the UTF-8
  * encoded characters. The main difference between CBChars and CBString is that
- * CBChars stores it's in-memory characters directly as a string which increase
+ * CBString stores it's in-memory characters directly as a string which increase
  * performance in certain situations when doing heavy sorting that relies on
  * compareTo
+ * </p>
  * <p>
  * The CBChars can be used with a CompiledLocale to get correct comparison of
  * Strings at a language specific level.
  * 
  * @author Martin Svensson, msvens@gmail.com
  * @version 1.0
+ * @see CBString
+ * @see UtfUtil
  */
 public class CBCharArray extends BStorableImp <char[], CBCharArray> implements BComparable<char[], CBCharArray>, CharSequence{
 
@@ -106,9 +111,16 @@ public class CBCharArray extends BStorableImp <char[], CBCharArray> implements B
   private static char[] charMap = null;
 
   private static Locale locale = null;
-  
+
+  /**
+   * Initialize to the zero sized char[]
+   */
   public CBCharArray(){super(new char[0]);}
-  
+
+  /**
+   * Initialize to given char[]
+   * @param chars the value to set
+   */
   public CBCharArray(char[] chars){super(chars);}
   
   public CBCharArray(CharSequence str){super(toChars(str));}
@@ -119,8 +131,6 @@ public class CBCharArray extends BStorableImp <char[], CBCharArray> implements B
     return charMap == null ? UtfUtil.compare(b1, offset1, b2, offset2) :
       UtfUtil.compare(b1, offset1, b2, offset2, charMap);
   }
-  
-  
 
   @Override
   public int byteCompare(int offset1, ByteBuffer bb1, int offset2,
@@ -129,31 +139,26 @@ public class CBCharArray extends BStorableImp <char[], CBCharArray> implements B
       UtfUtil.compare(bb1, offset1, bb2, offset2, charMap);
   }
 
-
   @Override
   public int byteCompare(int offset1, int offset2, byte[] b) {
     return charMap == null ? UtfUtil.compare(b, offset1, b, offset2) :
       UtfUtil.compare(b, offset1, b, offset2, charMap);
   }
 
-
   @Override
   public int byteSize() {
     return CBUtil.byteSize(UtfUtil.utfLength(value), true);
   }
-
 
   @Override
   public int byteSize(ByteBuffer bb) {
     return CBUtil.peekSize(bb, true);
   }
 
-
   @Override
   public char charAt(int index) {
     return value[index];
   }
-
 
   @Override
   public int compareTo(CBCharArray other) {
@@ -182,19 +187,16 @@ public class CBCharArray extends BStorableImp <char[], CBCharArray> implements B
 
 
   /**
-   * Uses the string's equals method.
+   * Different from ordinary arrays equals check if the
+   * content is the same. Calls compareTo
    * 
-   * @param o
-   *          an <code>Object</code> to compare with
-   * @return true if the Strings are equal
-   * @see String#equals(Object)
+   * @param o Object to compare with
+   * @return true if the char[]s has the same content
    */
   @Override
   public boolean equals(Object o) {
-    System.out.println("executing equals");
     if(o instanceof CBCharArray) {
       int ret =  compareTo((CBCharArray) o);
-      System.out.println(this+" "+(CBCharArray)o +" "+ ret);
       return ret == 0;
     }
     return false;

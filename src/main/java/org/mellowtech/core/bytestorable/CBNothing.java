@@ -20,7 +20,11 @@ package org.mellowtech.core.bytestorable;
 import java.nio.ByteBuffer;
 
 /**
- * Created by msvens on 01/11/15.
+ * BStorable that represents "nothing". Experimental and should
+ * not be used in production
+ *
+ * @author Martin Svensson {@literal <msvens@gmail.com>}
+ * @since 3.0.4
  */
 public final class CBNothing implements BStorable<Object, CBNothing> {
 

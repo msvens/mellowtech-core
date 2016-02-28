@@ -20,15 +20,41 @@ import java.nio.ByteBuffer;
 
 
 /**
- * Date: 2013-04-16
- * Time: 21:25
+ * CBAuto allows a developer to create their own BStorables without
+ * having to implement serialization/deserialization - that is handled
+ * automatically by CBAuto. The only restriction is that one can only
+ * use primitive types as defined in PrimitiveType
+ * <p>
+ *   CBAuto relies on BSField annotations to find which fields to serialize
+ * </p>
+ * <pre>
+ *   {@code
+ *   public class MyCBAuto extends CBAuto<MyCBAuto> {
+ *    BSField(1) public String f1;
  *
- * @author Martin Svensson
+ *    //subclass needs to implement empty constructor
+ *    public MyCBAuto(){
+ *      super();
+ *    }
+ *    public MyCBAuto(String field){
+ *      this();
+ *      this.f1 = field;
+ *    }
+ *   }
+ *   }
+ * </pre>
+ * @author Martin Svensson {@literal <msvens@gmail.com>}
+ * @since 3.0.1
+ * @param <A> self type
+ * @see BSField
+ * @see PrimitiveType
  */
-public abstract class CBAuto <T extends CBAuto<T>> implements BStorable <T, T>{
+public abstract class CBAuto <A extends CBAuto<A>> implements BStorable <A, A>{
 
   /**
-   * subclasses should always call this method
+   * Default constructor parses this class using AutoBytes. Subclasses
+   * always needs to make sure to have a default constructor that calls
+   * this constructor
    */
   public CBAuto(){
     AutoBytes.I().parseClass(getClass());
@@ -36,10 +62,10 @@ public abstract class CBAuto <T extends CBAuto<T>> implements BStorable <T, T>{
 
 
   @Override
-  public T from(ByteBuffer bb) {
+  public A from(ByteBuffer bb) {
     try{
       Class clazz = getClass();
-      T toRet =  (T) clazz.newInstance();
+      A toRet =  (A) clazz.newInstance();
       CBUtil.getSize(bb, true);
       short elements = bb.getShort();
       PrimitiveObject po = new PrimitiveObject();
@@ -81,7 +107,7 @@ public abstract class CBAuto <T extends CBAuto<T>> implements BStorable <T, T>{
   
   private int internalSize() {
     int size = 4; //size + num elements;
-    Class <T> clazz = (Class<T>) getClass();
+    Class <A> clazz = (Class<A>) getClass();
     for(Integer i : AutoBytes.I().getFieldIndexes(clazz)){
       Object toStore = AutoBytes.I().getField(clazz, i, this);
       if(toStore != null){
@@ -98,5 +124,5 @@ public abstract class CBAuto <T extends CBAuto<T>> implements BStorable <T, T>{
   }
 
   @Override
-  public T get(){return (T) this;}
+  public A get(){return (A) this;}
 }

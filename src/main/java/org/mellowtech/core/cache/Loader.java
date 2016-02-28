@@ -16,19 +16,18 @@
 package org.mellowtech.core.cache;
 
 /**
- * The Remover is used as the remover function when the various caches
- * remove a key/value from their cache.
- * @param <A> key
- * @param <B> value
- * 
- * @author Martin Svensson
- * @version 1.0
+ * The Loader is used to load values into a cache
+ * @param <A> key type
+ * @param <B> value type
+ *
+ * @author Martin Svensson {@literal <msvens@gmail.com>}
+ * @since 3.0.1
  */
 public interface Loader<A, B> {
 
 
   /**
-   * Load a key from backend.
+   * Load a value.
    * @param key the key
    * @return value
    * @throws NoSuchValueException if key is not found

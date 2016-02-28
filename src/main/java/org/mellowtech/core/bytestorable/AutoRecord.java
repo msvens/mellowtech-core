@@ -18,9 +18,28 @@
 package org.mellowtech.core.bytestorable;
 
 /**
- * @author msvens
+ * Subclasses of CBRecord should let their "record" implement
+ * this interface. and annotate whatever fields that should
+ * be included int the serialization of the record
  *
+ * <p>
+ * To create a record with two fields you would simply implement
+ * AutoRecord and add your annotated fields
+ * </p>
+ * <pre style="code">
+ * public class ARecord implements AutoRecord {
+ *   ...
+ *   {@literal @}BSField(1) public Integer f1;
+ *   {@literal @}BSField(2) public String f2;
+ *   ...
+ * }
+ * </pre>
+ *
+ * @author Martin Svensson {@literal <msvens@gmail.com>}
+ * @since 3.0.1
+ * @see CBRecord
  */
+
 public interface AutoRecord {
 
 }

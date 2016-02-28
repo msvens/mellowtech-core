@@ -20,20 +20,23 @@ import java.nio.ByteBuffer;
 import java.util.BitSet;
 
 /**
- * <code>CBBitSet</code> is a BitSet that is suitable for file storage since
- * it extends ByteStorable. This bitSet is wrapper for an ordinary
- * java.util.BitSet.
+ * BStorable wrapper for BitSet
  * 
- * @author rickard.coster@asimus.se, msvens@gmail.com
- * @version 2.0
+ * @author Rickard Cöster {@literal <rickard.coster@asimus.se>}, Martin Svensson {@literal <msvens@gmail.com>}
+ * @since 3.0.1
  * @see java.util.BitSet
  */
 public class CBBitSet extends BStorableImp <BitSet, CBBitSet> {
 
-  //private BitSet mSet;
-
+  /**
+   * Initialize this CBBitSet with an empty BitSet
+   */
   public CBBitSet() { super(new BitSet());}
 
+  /**
+   * Initialize this CBBitSet with an existing BitSet
+   * @param set BitSet to initialize with
+   */
   public CBBitSet(BitSet set) {super(set);}
 
   /**
@@ -47,14 +50,17 @@ public class CBBitSet extends BStorableImp <BitSet, CBBitSet> {
     value.set(n);
   }
 
+  @Override
   public int byteSize() {
     return CBUtil.byteSize(4 + (value.size() / 8), false);
   }
 
+  @Override
   public int byteSize(ByteBuffer bb) {
     return CBUtil.peekSize(bb, false);
   }
 
+  @Override
   public void to(ByteBuffer bb) {
     CBUtil.putSize(4 + (value.size() / 8), bb, false);
     long[] bits = value.toLongArray();
@@ -63,6 +69,7 @@ public class CBBitSet extends BStorableImp <BitSet, CBBitSet> {
       bb.putLong(bits[i]);
   }
 
+  @Override
   public CBBitSet from(ByteBuffer bb) {
     CBUtil.getSize(bb, false);
     int numLongs = bb.getInt();

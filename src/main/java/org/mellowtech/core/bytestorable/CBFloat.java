@@ -18,27 +18,42 @@ package org.mellowtech.core.bytestorable;
 import java.nio.ByteBuffer;
 
 /**
- * Wraps a flot value as a ByteStorable
- * 
- * @author Martin Svensson
- * @version 1.0
+ * BComparable wrapper for float
+ *
+ * @author Martin Svensson {@literal <msvens@gmail.com>}
+ * @since 3.0.1
  */
 public class CBFloat implements BComparable<Float,CBFloat> {
 
   private final float value;
-  
+
+  /**
+   * Initialize to 0.0f
+   */
   public CBFloat() {value = 0.0f;}
 
+  /**
+   * Initialize to float
+   * @param value float to set
+   */
   public CBFloat(float value) {this.value = value;}
-  
+
+  /**
+   * Initialize to Float
+   * @param value Float to set
+   */
   public CBFloat(Float value) {this.value = value;}
-  
+
   @Override
   public CBFloat create(Float value) {return new CBFloat(value);}
   
   @Override
-  public Float get(){return Float.valueOf(value);}
-  
+  public Float get(){return value;}
+
+  /**
+   * Get the primitive float value
+   * @return value
+   */
   public Float value(){return value;}
 
   @Override
@@ -73,9 +88,7 @@ public class CBFloat implements BComparable<Float,CBFloat> {
 
   @Override
   public boolean equals(Object other) {
-    if(other instanceof CBFloat)
-      return compareTo((CBFloat) other) == 0;
-    return false;
+    return other instanceof CBFloat && compareTo((CBFloat) other) == 0;
   }
   
   @Override

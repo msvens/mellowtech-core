@@ -19,24 +19,40 @@ import java.nio.ByteBuffer;
 
 
 /**
- * @author Martin Svensson
+ * BComparable wrapper for bytes
+ *
+ * @author Martin Svensson {@literal <msvens@gmail.com>}
+ * @since 3.0.1
  */
 
 public class CBByte implements BComparable <Byte, CBByte> {
 
   private final byte value;
+
   /**
-   * Default constructor is needed to create a new byte from a byte buffer.
+   * Initialize to 0
    */
   public CBByte() {value = (byte) 0;}
 
+  /**
+   * Initialize to value
+   * @param value value to set
+   */
   public CBByte(byte value) {this.value = value;}
-  
+
+  /**
+   * Initialize to value
+   * @param value value to set
+   */
   public CBByte(Byte value) {this.value = value;}
   
   @Override
   public Byte get() {return Byte.valueOf(value);}
 
+  /**
+   * Get the value as the primitive type
+   * @return the value
+   */
   public byte value() {return value;}
   
   @Override

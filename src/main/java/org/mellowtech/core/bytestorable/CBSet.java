@@ -25,13 +25,27 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * @author msvens
+ * BStorable wrapper for Set. Elements needs to be of
+ * a supported type defined in PrimitiveType.
+ *
+ * @author Martin Svensson {@literal <msvens@gmail.com>}
+ * @since 3.0.1
+ * @see PrimitiveType
+ * @param <E> element type
  *
  */
 public class CBSet<E> extends BStorableImp <Set<E>, CBSet<E>> implements Set <E>{
 
 
+  /**
+   * Initialize this CBSet with an empty HashSet
+   */
   public CBSet (){ super(new HashSet <E> ());}
+
+  /**
+   * Initialize this CBSet with a provided set
+   * @param set value to set
+   */
   public CBSet (Set <E> set) {super(set);}
 
   @Override

@@ -18,27 +18,42 @@ package org.mellowtech.core.bytestorable;
 import java.nio.ByteBuffer;
 
 /**
- * Wraps an int value as a ByteStorable
- * 
- * @author Martin Svensson
- * @version 1.0
+ * BComparable wrapper for int
+ *
+ * @author Martin Svensson {@literal <msvens@gmail.com>}
+ * @since 3.0.1
  */
 public class CBInt implements BComparable<Integer,CBInt> {
   
   private final int value;
 
+  /**
+   * Initialize to 0
+   */
   public CBInt() {value = 0;}
 
+  /**
+   * Initialize to int
+   * @param value int to set
+   */
   public CBInt(int value) {this.value = value;}
-  
+
+  /**
+   * Initialize to Integer
+   * @param value Integer to set
+   */
   public CBInt(Integer value) {this.value = value;}
   
   @Override
   public CBInt create(Integer value) {return new CBInt(value);}
   
   @Override
-  public Integer get() {return Integer.valueOf(value);}
-  
+  public Integer get() {return value;}
+
+  /**
+   * Get the primitive int value
+   * @return value
+   */
   public int value(){return value;}
 
   @Override
@@ -73,9 +88,7 @@ public class CBInt implements BComparable<Integer,CBInt> {
 
   @Override
   public boolean equals(Object other) {
-    if(other instanceof CBInt)
-      return value == ((CBInt)other).value;
-    return false;
+    return other instanceof CBInt && value == ((CBInt) other).value;
   }
   
   @Override

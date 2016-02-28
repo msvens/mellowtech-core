@@ -22,17 +22,21 @@ import org.mellowtech.core.CoreLog;
 import org.mellowtech.core.util.CompiledLocale;
 
 /**
+ * BComparable wrapper for String
+ * <p>
  * String that can be represented as bytes in conformance with the ByteStorable
  * definition. It represents itself as an UTF-8 encoded string. The CBString
  * also allows for comparison on a byte level, i.e. directly comparing the UTF-8
  * encoded strings.
+ * </p>
  * <p>
  * The CBString can be used with a CompiledLocale to get correct comparison of
  * Strings at a language specific level.
  * </p>
  * 
- * @author Martin Svensson, msvens@gmail.com
+ * @author Martin Svensson {@literal <msvens@gmail.com>}
  * @version 2.0 (total rewrite)
+ * @see UtfUtil
  */
 public class CBString extends BComparableImp<String, CBString>{
 
@@ -97,9 +101,16 @@ public class CBString extends BComparableImp<String, CBString>{
       setLocale();
     return CBString.locale;
   }
-  
-  public CBString(String str){super(str);}
-  
+
+  /**
+   * Initialize this CBString with the provided String
+   * @param str string to set
+   */
+  public CBString(String str){super(str == null ? "" : str);}
+
+  /**
+   * Initialize this CBString with the empty String
+   */
   public CBString(){super("");}
 
   @Override
@@ -172,14 +183,7 @@ public class CBString extends BComparableImp<String, CBString>{
     return CBUtil.peekSize(bb, true);
   }
 
-  /**
-   * Uses the string's equals method.
-   * 
-   * @param o
-   *          an <code>Object</code> to compare with
-   * @return true if the Strings are equal
-   * @see String#equals(Object)
-   */
+  @Override
   public boolean equals(Object o) {
     if(o instanceof CBString)
       return compareTo((CBString)o) == 0 ? true : false;

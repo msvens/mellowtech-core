@@ -19,19 +19,22 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 /**
- * Implements a byte array (byte[]) as a ByteStorable for easy storage and
- * retrieval of byte arrays.
+ * BComparable wrapper for byte[]
+ *
+ * @author Martin Svensson {@literal <msvens@gmail.com>}
+ * @since 3.0.1
+ *
  */
 
 public class CBByteArray extends BStorableImp <byte[], CBByteArray> implements BComparable <byte[], CBByteArray> {
 
   /**
-   * Empty constructor.
+   * Initialize to zero sized byte[]
    */
   public CBByteArray() {super(new byte[0]);}
 
   /**
-   * Creates a new CBByteArray which points to the supplied array.
+   * Initialize to given byte[]
    * 
    * @param byteArray
    *          the byte array
@@ -59,12 +62,13 @@ public class CBByteArray extends BStorableImp <byte[], CBByteArray> implements B
   /**
    * Gets the array length, or 0 if it is null
    * 
-   * @return the array length, or 0 if it is null
+   * @return array length, or 0 if it is null
    */
   public int getArrayLength() {
     return value.length;
   } // getArrayLength
 
+  @Override
   public CBByteArray from(ByteBuffer bb) {
 	  int nBytes = CBUtil.getSize(bb, true);
 	  byte[] tmp = new byte[nBytes];
@@ -72,15 +76,18 @@ public class CBByteArray extends BStorableImp <byte[], CBByteArray> implements B
 	  return new CBByteArray(tmp);
   }
 
+  @Override
   public void to(ByteBuffer bb) {
     CBUtil.putSize(value.length, bb, true);
     bb.put(value);
   }
 
+  @Override
   public int byteSize() {
     return CBUtil.byteSize(value.length, true);
   }
 
+  @Override
   public int byteSize(ByteBuffer bb) {
     return CBUtil.peekSize(bb, true);
   }

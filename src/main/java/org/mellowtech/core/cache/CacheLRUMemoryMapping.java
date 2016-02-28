@@ -15,16 +15,29 @@
  */
 
 package org.mellowtech.core.cache;
-
 import org.mellowtech.core.bytestorable.BStorable;
 
 import com.google.common.cache.*;
 
 /**
- * Date: 2012-11-02
- * Time: 10:45
+ * Simple cache that use the least recently used scheme. When the cache limit is
+ * reached and an item has to be unloaded the cache chooses the item that was
+ * accessed longest ago. put, get, and remove all work in log(n) time.
+ * <p>
+ * Cache size is based on memory footprint rather than number of items
+ * </p>
+ * <p>
+ * This cache works exactly in the same way as CacheLRUMemory with the differenc
+ * that you put and get the wrapped types instead of BStorables
+ * </p>
  *
- * @author Martin Svensson
+ * @param <A> wrapped key type
+ * @param <B> bstorable key type
+ * @param <C> wrapped value type
+ * @param <D> bstorable value type
+ *
+ * @author Martin Svensson {@literal <msvens@gmail.com>}
+ * @since 3.0.1
  */
 public class CacheLRUMemoryMapping <A,B extends BStorable <A,B>,C,D extends BStorable <C,D>> extends CacheLRU <A,C> {
   
@@ -32,12 +45,24 @@ public class CacheLRUMemoryMapping <A,B extends BStorable <A,B>,C,D extends BSto
    private final B keyMapping;
    private final D valueMapping;
 
-
+  /**
+   * Create a new cache
+   * @param remover remover object or null
+   * @param loader loader object
+   * @param size max bytes of cache
+   * @param countMemoryFootPrint if true keep track of memory footprint
+   * @param keyType BStorable template for keys
+   * @param valueType BStorable template for values
+   */
   public CacheLRUMemoryMapping(Remover<A, C> remover, Loader<A, C> loader, long size,
                                boolean countMemoryFootPrint, Class <B> keyType,
-                               Class <D> valueType) throws Exception{
-    this.keyMapping = keyType.newInstance();
-    this.valueMapping = valueType.newInstance();
+                               Class <D> valueType){
+    try {
+      this.keyMapping = keyType.newInstance();
+      this.valueMapping = valueType.newInstance();
+    } catch(Exception e){
+      throw new Error(e);
+    }
     setRemover(remover);
     setSize(size);
     setLoader(loader);
@@ -45,6 +70,10 @@ public class CacheLRUMemoryMapping <A,B extends BStorable <A,B>,C,D extends BSto
     lru = this.buildCache();
   }
 
+  /**
+   * Get the current memory footprint
+   * @return footprint in bytes
+   */
   public long getMemoryFootPrint(){
     return this.memoryFootPrint;
   }

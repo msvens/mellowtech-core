@@ -17,15 +17,12 @@
 package org.mellowtech.core.cache;
 
 /**
- * Date: 2012-11-02
- * Time: 09:21
+ * Exception to indicate that no value found given a specific key
  *
- * @author Martin Svensson
+ * @author Martin Svensson {@literal <msvens@gmail.com>}
+ * @since 3.0.1
  */
 public class NoSuchValueException extends Exception {
 
-  /**
-   * 
-   */
   private static final long serialVersionUID = 771745418162666416L;
 }

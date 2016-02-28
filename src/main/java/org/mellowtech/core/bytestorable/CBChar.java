@@ -18,22 +18,30 @@ package org.mellowtech.core.bytestorable;
 import java.nio.ByteBuffer;
 
 /**
- * Wraps a char value as a ByteStorable
- * 
- * @author Martin Svensson
- * @version 1.0
+ * BComparable wrapper for char
+ *
+ * @author Martin Svensson {@literal <msvens@gmail.com>}
+ * @since 3.0.1
  */
 public class CBChar implements BComparable <Character, CBChar> {
 
   private final char value;
   /**
-   * Default constructor is needed to create a new inte from a byte buffer.
+   * Initialize to {@literal '\u0000'}
    *
    */
   public CBChar() {value = '\u0000';}
 
+  /**
+   * Initialize to value
+   * @param value value to set
+   */
   public CBChar(char value) {this.value = value;}
-  
+
+  /**
+   * Initialize to value
+   * @param value value to set
+   */
   public CBChar(Character value) {this.value = value;}
 
   @Override
@@ -45,10 +53,13 @@ public class CBChar implements BComparable <Character, CBChar> {
   public Character get(){
     return value;
   }
-  
+
+  /**
+   * Get the value as a the primitive type
+   * @return char value
+   */
   public char value(){return value;}
 
-  // ***********OVERWRITTEN BYTESTORABLE****************
   @Override
   public int byteSize() {
     return 2;
@@ -59,9 +70,6 @@ public class CBChar implements BComparable <Character, CBChar> {
     return 2;
   }
 
-  /*
-   * public int byteSize(byte[] b, int offset){ return 4; }
-   */
   @Override
   public void to(ByteBuffer bb) {
     bb.putChar(value);
@@ -79,9 +87,7 @@ public class CBChar implements BComparable <Character, CBChar> {
 
   @Override
   public boolean equals(Object other) {
-    if(other instanceof CBChar)
-      return value == ((CBChar) other).value;
-    return false;
+    return other instanceof CBChar && value == ((CBChar) other).value;
   }
 
   @Override

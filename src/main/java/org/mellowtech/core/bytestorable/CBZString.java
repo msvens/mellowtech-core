@@ -19,11 +19,19 @@ package org.mellowtech.core.bytestorable;
 import net.jpountz.lz4.LZ4Compressor;
 import net.jpountz.lz4.LZ4Factory;
 import net.jpountz.lz4.LZ4FastDecompressor;
+
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
+
 /**
- * Created by msvens on 26/12/15.
+ * BStorable wrapper for String that compresses the data using LZ4. This
+ * is useful when serializing very large Strings. The string is compressed
+ * at initialization so every call to get will uncompress the data
+ *
+ * @author Martin Svensson {@literal <msvens@gmail.com>}
+ * @version 3.0.4
+ * @see CBString
  */
 public class CBZString implements BStorable<String, CBZString> {
 
@@ -34,19 +42,31 @@ public class CBZString implements BStorable<String, CBZString> {
   protected int compressLength = 0;
   protected int origLength;
 
+  /**
+   * Initialize this CBZString with null. Useful when using this as a
+   * template instance
+   */
   public CBZString() {
-    this((String)null);
+    this((String) null);
   }
 
-  public CBZString(char[] str){
-    if(str == null || str.length == 0){
+  /**
+   * Initialize this CBZString with char array
+   * @param str array to compress
+   */
+  public CBZString(char[] str) {
+    if (str == null || str.length == 0) {
       return;
     }
-    setData(UtfUtil.toBytes(str));
+    setData(UtfUtil.encode(str));
 
 
   }
 
+  /**
+   * Initialize this CBZString with string
+   * @param str string to compress
+   */
   public CBZString(String str) {
 
     if (str == null || str.isEmpty()) {
@@ -56,26 +76,21 @@ public class CBZString implements BStorable<String, CBZString> {
 
   }
 
-  private void setData(byte[] data){
-    origLength = data.length;
-    comp = new byte[compressor.maxCompressedLength(origLength)];
-    compressLength = compressor.compress(data, comp);
-  }
-
   private CBZString(byte[] compressed, int origLength) {
     this.comp = compressed;
     this.origLength = origLength;
     this.compressLength = compressed.length;
   }
 
+  //size indicator + uncompressed length + compressedBytes.length
   @Override
-  public String get() {
+  public int byteSize() {
+    return CBUtil.byteSize(4 + compressLength, true);
+  }
 
-    if (comp == null) return null;
-    byte[] dest = new byte[origLength];
-    decompressor.decompress(comp, dest);
-    return new String(dest, StandardCharsets.UTF_8);
-
+  @Override
+  public int byteSize(ByteBuffer bb) {
+    return CBUtil.peekSize(bb, true);
   }
 
   @Override
@@ -89,20 +104,28 @@ public class CBZString implements BStorable<String, CBZString> {
   }
 
   @Override
+  public String get() {
+
+    if (comp == null) return null;
+    byte[] dest = new byte[origLength];
+    decompressor.decompress(comp, dest);
+    try {
+      return UtfUtil.decode(dest);
+    } catch(Exception e){
+      throw new Error(e);
+    }
+  }
+
+  @Override
   public void to(ByteBuffer bb) {
     CBUtil.putSize(4 + compressLength, bb, true);
     bb.putInt(origLength);
     bb.put(comp, 0, compressLength);
   }
 
-  //size indicator + uncompressed length + compressedBytes.length
-  @Override
-  public int byteSize() {
-    return CBUtil.byteSize(4 + compressLength, true);
-  }
-
-  @Override
-  public int byteSize(ByteBuffer bb) {
-    return CBUtil.peekSize(bb, true);
+  private void setData(byte[] data) {
+    origLength = data.length;
+    comp = new byte[compressor.maxCompressedLength(origLength)];
+    compressLength = compressor.compress(data, comp);
   }
 }

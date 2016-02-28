@@ -19,19 +19,29 @@ import java.nio.ByteBuffer;
 import java.util.Date;
 
 /**
- * Wraps an long value as a ByteStorable
- * 
- * @author Martin Svensson
- * @version 1.0
+ * BComparable wrapper for Date
+ *
+ * @author Martin Svensson {@literal <msvens@gmail.com>}
+ * @since 3.0.1
  */
 public class CBDate extends BStorableImp <Date, CBDate> implements BComparable<Date, CBDate>{
 
 
-
+  /**
+   * Initialize to Now
+   */
   public CBDate() {super(new Date(System.currentTimeMillis()));}
 
+  /**
+   * Initialize to date
+   * @param value date to set
+   */
   public CBDate(Date value) {super(value);}
 
+  /**
+   * Initialize to time millis
+   * @param time date to set
+   */
   public CBDate(long time){super(new Date(time));}
 
   @Override

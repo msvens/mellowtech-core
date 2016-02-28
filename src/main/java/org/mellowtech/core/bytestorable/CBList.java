@@ -20,17 +20,25 @@ import java.nio.ByteBuffer;
 import java.util.*;
 
 /**
- * List with primitive objects (various)
- * Date: 2013-02-17
- * Time: 12:58
+ * BStorable wrapper for List. Elements needs to be of
+ * a supported type defined in PrimitiveType.
  *
- * @author Martin Svensson
+ * @author Martin Svensson {@literal <msvens@gmail.com>}
+ * @since 3.0.1
+ * @see PrimitiveType
+ * @param <E> type of element in this list needs to be a supported one
  */
 public class CBList <E> extends BStorableImp <List<E>, CBList<E>> implements List<E> {
 
-  //private List <E> list;
-
+  /**
+   * Initialize to the empty list
+   */
   public CBList(){super(new ArrayList <E> ());}
+
+  /**
+   * Initialize to the given list
+   * @param elems list to set
+   */
   public CBList(List <E> elems){super(elems);}
 
   @Override
@@ -38,21 +46,22 @@ public class CBList <E> extends BStorableImp <List<E>, CBList<E>> implements Lis
 
     CBUtil.getSize(bb, false);
     int numElems = bb.getInt();
-    if(numElems < 1) return new CBList <E> ();
+    if(numElems < 1) return new CBList <> ();
     
     //unpack elements:
     ArrayList <E> elems = new ArrayList <> (numElems);
     PrimitiveType pt = PrimitiveType.fromOrdinal(bb.get());
+    @SuppressWarnings("unchecked")
     BStorable <E,?> template = PrimitiveType.fromType(pt);
     for(int i = 0; i < numElems; i++){
       elems.add(template.from(bb).get());
     }
     
-    return new CBList <E> (elems);
+    return new CBList <> (elems);
   }
   
   @Override
-  public CBList <E> create(List <E> elems) {return new CBList <E> (elems);}
+  public CBList <E> create(List <E> elems) {return new CBList <> (elems);}
 
   @Override
   public void to(ByteBuffer bb) {
@@ -118,7 +127,7 @@ public class CBList <E> extends BStorableImp <List<E>, CBList<E>> implements Lis
 
   @Override
   public <T> T[] toArray(T[] a) {
-    return value.toArray(a);
+    return value.<T>toArray(a);
   }
 
   @Override
@@ -143,7 +152,7 @@ public class CBList <E> extends BStorableImp <List<E>, CBList<E>> implements Lis
 
   @Override
   public boolean addAll(int index, Collection<? extends E> c) {
-    return addAll(index, c);
+    return value.addAll(index, c);
   }
 
   @Override
@@ -204,6 +213,6 @@ public class CBList <E> extends BStorableImp <List<E>, CBList<E>> implements Lis
   @Override
   public List<E> subList(int fromIndex, int toIndex) {
     ArrayList <E> sub = (ArrayList <E>) value.subList(fromIndex, toIndex);
-    return new CBList <E> (sub);
+    return new CBList <> (sub);
   }
 }

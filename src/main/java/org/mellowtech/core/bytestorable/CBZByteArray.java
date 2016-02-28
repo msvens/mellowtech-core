@@ -24,7 +24,13 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
 /**
- * Created by msvens on 26/12/15.
+ * BStorable wrapper for byte[] that compresses the data using LZ4. This
+ * is useful when serializing very large byte arrays. The array is compressed
+ * at initialization so every call to get will uncompress the data
+ *
+ * @author Martin Svensson {@literal <msvens@gmail.com>}
+ * @version 3.0.4
+ * @see CBString
  */
 public class CBZByteArray implements BStorable<byte[], CBZByteArray> {
 
@@ -35,11 +41,18 @@ public class CBZByteArray implements BStorable<byte[], CBZByteArray> {
   protected int compressLength = 0;
   protected int origLength;
 
+  /**
+   * Initialize with null. Useful when using this as
+   * a template object
+   */
   public CBZByteArray() {
     this(null);
   }
 
-
+  /**
+   * Initialize with bytes
+   * @param bytes array to compress
+   */
   public CBZByteArray(byte[] bytes) {
 
     if (bytes == null || bytes.length == 0) {

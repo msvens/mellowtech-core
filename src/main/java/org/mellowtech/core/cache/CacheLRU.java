@@ -26,9 +26,19 @@ import org.mellowtech.core.CoreLog;
 import org.mellowtech.core.collections.DiscMap;
 
 /**
- * Simple cache that use the least resently used scheme. When the cache limit is
+ * Simple cache that use the least recently used scheme. When the cache limit is
  * reached and an item has to be unloaded the cache chooses the item that was
  * accessed longest ago. put, get, and remove all work in log(n) time.
+ *
+ * Backed by a LoadingCache
+ *
+ * @param <K> key type
+ * @param <V> value type
+ *
+ * @author Martin Svensson {@literal <msvens@gmail.com>}
+ * @since 3.0.1
+ * @see com.google.common.cache.LoadingCache
+ *
  */
 public class CacheLRU <K, V> extends AbstractCache <K,V> {
 
@@ -40,19 +50,27 @@ public class CacheLRU <K, V> extends AbstractCache <K,V> {
     ;
   }
 
-  public CacheLRU(Remover<K,V> remover, Loader<K,V> loader, long size) {
+  /**
+   * Create a new cache with a remover and loader
+   * @param remover Remover object or null
+   * @param loader Loader object
+   * @param maxSize maximum number of elements
+   */
+  public CacheLRU(Remover<K,V> remover, Loader<K,V> loader, long maxSize) {
     setRemover(remover);
-    setSize(size);
+    setSize(maxSize);
     setLoader(loader);
     lru = this.buildCache();
   }
 
+  @Override
   public void clearCache() {
     lru.asMap().clear();
   }
 
+  @Override
   public void dirty(K key, V value){
-    CacheValue <V> cv = null;
+    CacheValue <V> cv;
     //try {
       cv = lru.getIfPresent(key);
       if(cv == null){
@@ -64,8 +82,9 @@ public class CacheLRU <K, V> extends AbstractCache <K,V> {
       }
   }
 
+  @Override
   public void notDirty(K key) {
-    CacheValue <V> cv = null;
+    CacheValue <V> cv;
     try {
       cv = lru.get(key);
       if (cv == null)
@@ -76,6 +95,7 @@ public class CacheLRU <K, V> extends AbstractCache <K,V> {
     }
   }
 
+  @Override
   public V get(K key) throws NoSuchValueException{
     try{
       return lru.get(key).getValue();
@@ -83,15 +103,6 @@ public class CacheLRU <K, V> extends AbstractCache <K,V> {
     catch(ExecutionException ee){
       throw new NoSuchValueException();
     }
-  }
-
-  @Override
-  public V getIfPresent(K key) {
-    CacheValue <V> v = lru.getIfPresent(key);
-    if(v != null)
-      return v.getValue();
-    else
-      return null;
   }
 
   @Override
@@ -106,6 +117,7 @@ public class CacheLRU <K, V> extends AbstractCache <K,V> {
     return lru.asMap().entrySet().iterator();
   }
 
+  @Override
   public void put(K key, V value){
     lru.put(key, new CacheValue<V>(value, true));
   }
@@ -115,6 +127,7 @@ public class CacheLRU <K, V> extends AbstractCache <K,V> {
     lru.refresh(key);
   }
 
+  @Override
   public void remove(K key){
     lru.invalidate(key);
   }
@@ -124,17 +137,9 @@ public class CacheLRU <K, V> extends AbstractCache <K,V> {
     lru.invalidateAll();
   }
 
+  @Override
   public void setSize(long size) {
     maxSize = size;
-    /*if (lru != null) {
-      Map.CompResult entry;
-      for (Iterator it = iterator(); it.hasNext();) {
-        entry = (Map.CompResult) it.next();
-        remover.remove(entry.getKey(), entry.getValue());
-      }
-    }
-    lru = new LRUCache(size, 1.0f, true);
-    */
   }
 
   @Override
@@ -153,25 +158,20 @@ public class CacheLRU <K, V> extends AbstractCache <K,V> {
             new CacheLoader<K, CacheValue<V>>() {
               public CacheValue<V> load(K key) throws Exception {
                 V value = loader.get(key);
-                return new CacheValue<V>(value);
+                return new CacheValue<>(value);
               }
             });
 
     }
     else {
       RemovalListener<K, CacheValue <V>> rl =
-              new RemovalListener<K, CacheValue <V>>() {
-                @Override
-                public void onRemoval(RemovalNotification<K, CacheValue <V>> notification) {
-                  remover.remove(notification.getKey(), notification.getValue());
-                }
-              };
+          notification -> remover.remove(notification.getKey(), notification.getValue());
       return CacheBuilder.newBuilder().maximumSize(maxSize).
               removalListener(rl).build(
               new CacheLoader<K, CacheValue<V>>() {
                 public CacheValue<V> load(K key) throws Exception {
                   V value = loader.get(key);
-                  return new CacheValue<V>(value);
+                  return new CacheValue<>(value);
                 }
               });
     }

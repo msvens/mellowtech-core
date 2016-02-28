@@ -18,8 +18,13 @@ package org.mellowtech.core.bytestorable;
 
 import java.nio.ByteBuffer;
 
+//TODO: Simpliy or deprecate
 /**
- * @author msvens
+ * Reading and Writing various arrays to and from ByteBuffers.
+ *
+ * @author Rickard Cöster {@literal <rickard.coster@asimus.se>}, Martin Svensson {@literal <msvens@gmail.com>}
+ * @since 3.0.1
+ * @see java.util.BitSet
  *
  */
 public class StorableArrays {

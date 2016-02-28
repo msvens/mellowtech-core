@@ -22,18 +22,32 @@ import java.nio.charset.Charset;
 import java.util.Arrays;
 
 /**
- * @author msvens
+ * Utility methods for UTF-8 based strings. These methods are generally implemented
+ * for both Strings and char[]
+ *
+ * @author Martin Svensson {@literal <msvens@gmail.com>}
+ * @since 3.0.1
  *
  */
 public class UtfUtil {
 
-  public static byte[] toBytes(char[] chars){
+  /**
+   * Convert an array of chars to an utf-8 encoded byte array
+   * @param chars array to convert
+   * @return utf8 encoded byte array
+   */
+  /*public static byte[] toBytes(char[] chars){
     ByteBuffer bb = Charset.forName("UTF-8").encode(CharBuffer.wrap(chars));
     byte[] b = new byte[bb.remaining()];
     bb.get(b);
     return b;
-  }
+  }*/
 
+  /**
+   * Calculate the size in bytes of an utf8 encoded string
+   * @param str String to encode
+   * @return size
+   */
   public static int utfLength(final String str) {
     int len = str.length();
     int c;
@@ -50,11 +64,23 @@ public class UtfUtil {
     }
     return utflen;
   }
-  
+
+  /**
+   * Calculate the size in bytes of an utf8 encoded String
+   * @param str char array to encode
+   * @return size
+   */
   public static int utfLength(final char[] str){
     return utfLength(str, 0, str.length);
   }
 
+  /**
+   * Calculate the size in bytes of an utf8 encoded String
+   * @param str char array to encode
+   * @param offset offset in array
+   * @param length number of chars to read
+   * @return size
+   */
   public static int utfLength(final char[] str, int offset, int length) {
     int c;
     int utflen = 0;
@@ -71,18 +97,35 @@ public class UtfUtil {
     return utflen;
   }
 
+  /**
+   * Utf8 encode a String
+   * @param str string to encode
+   * @return byte array
+   */
   public static byte[] encode(final String str) {
     byte b[] = new byte[utfLength(str)];
     encode(str, b, 0);
     return b;
   }
-  
+
+  /**
+   * Utf8 encode a String
+   * @param str char array to encode
+   * @return byte array
+   */
   public static byte[] encode(final char[] str) {
     byte b[] = new byte[utfLength(str)];
     encode(str, b, 0);
     return b;
   }
 
+  /**
+   * Utf8 encode a String
+   * @param str string to encode
+   * @param b destination array
+   * @param offset offset in array
+   * @return bytes written
+   */
   public static int encode(final String str, final byte[] b,
       final int offset) {
     int len = str.length();
@@ -113,7 +156,14 @@ public class UtfUtil {
     }
     return count - offset;
   }
-  
+
+  /**
+   * Utf8 encode a string
+   * @param str array to encode
+   * @param b destination array
+   * @param offset offset in destination array
+   * @return number of bytes written
+   */
   public static int encode(final char[] str, final byte[] b,
       final int offset) {
     int len = str.length;
@@ -144,7 +194,12 @@ public class UtfUtil {
     }
     return count - offset;
   }
-  
+
+  /**
+   * Utf8 encode a string
+   * @param str string to encode
+   * @param b destination buffer
+   */
   public static void encode(final String str, final ByteBuffer b) {
     /*if(b.hasArray()){
       b.position(b.position()+encode(str, b.array(), b.position()));
@@ -177,7 +232,12 @@ public class UtfUtil {
       }
     }
   }
-  
+
+  /**
+   * Utf8 encode a string
+   * @param str char array to encode
+   * @param b destination buffer
+   */
   public static void encode(final char[] str, final ByteBuffer b) {
     /*if(b.hasArray()){
       encode(str, b.array(), b.position());
@@ -210,15 +270,32 @@ public class UtfUtil {
       }
     }
   }
-  
-  public static String decode(final byte[] b) throws Exception{
+
+  /**
+   * Decode an utf8 encoded string
+   * @param b source array
+   * @return string value
+   */
+  public static String decode(final byte[] b){
     return decode(b, 0, b.length);
   }
-  
-  public static char[] decodeChars(final byte[] b) throws Exception{
+
+  /**
+   * Decode an utf8 encoded string
+   * @param b source array
+   * @return char array value
+   */
+  public static char[] decodeChars(final byte[] b){
     return decodeChars(b, 0, b.length);
   }
 
+  /**
+   * Decode an utf8 encoded string
+   * @param b source array
+   * @param offset offset in array
+   * @param length number of bytes to read
+   * @return string value
+   */
   public static String decode(final byte[] b, int offset, int length){
     int count = offset, c_count = 0;
     int c, char2, char3;
@@ -282,7 +359,14 @@ public class UtfUtil {
     // The number of chars produced may be less than length
     return new String(arr, 0, c_count);
   }
-  
+
+  /**
+   * Decode an utf8 encoded string
+   * @param b source array
+   * @param offset offset in array
+   * @param length number of bytes to read
+   * @return char array value
+   */
   public static char[] decodeChars(final byte[] b, int offset, int length){
     int count = offset, c_count = 0;
     int c, char2, char3;
@@ -346,7 +430,14 @@ public class UtfUtil {
     // The number of chars produced may be less than length
     return Arrays.copyOfRange(arr, 0, c_count);
   }
-  
+
+
+  /**
+   * Decode an utf8 encoded string
+   * @param b source buffer
+   * @param length bytes to read
+   * @return string value
+   */
   public static String decode(final ByteBuffer b, int length){
     /*if(b.hasArray()){
       String toRet = decode(b.array(), b.position(), length);
@@ -418,7 +509,13 @@ public class UtfUtil {
     // The number of chars produced may be less than length
     return new String(arr, 0, c_count);
   }
-  
+
+  /**
+   * Decode an utf8 encoded string
+   * @param b source buffer
+   * @param length bytes to read
+   * @return char array value
+   */
   public static char[] decodeChars(final ByteBuffer b, int length){
     if(b.hasArray()){
       return decodeChars(b.array(), b.position(), length);
@@ -486,8 +583,17 @@ public class UtfUtil {
     // The number of chars produced may be less than length
     return Arrays.copyOfRange(arr, 0, c_count);
   }
-  
-  //compare
+
+  /**
+   * Compare two utf8 encoded strings. This method assumes that a size indicator
+   * is stored first in each array as defined in CBUtil
+   * @param b1 first array
+   * @param o1 first array offset
+   * @param b2 second array
+   * @param o2 second array offset
+   * @return a negative integer, zero, or a positive integer as b1 is less than, equal to, or greater than b2.
+   * @see CBUtil#encodeInt(int, byte[], int)
+   */
   public static int compare(byte[] b1, int o1, byte[] b2, int o2){
     int length1, length2, c1,c2, num = 0, i = 0;
     
@@ -616,7 +722,17 @@ public class UtfUtil {
     //the string starts the same (or are actually the same)
     return length1 - length2;
   }
-  
+
+  /**
+   * Compare two utf8 encoded strings. This method assumes that a size indicator
+   * is stored first in each array as defined in CBUtil
+   * @param b1 first buffer
+   * @param o1 first buffer offset
+   * @param b2 second buffer
+   * @param o2 second buffer offset
+   * @return a negative integer, zero, or a positive integer as b1 is less than, equal to, or greater than b2.
+   * @see CBUtil#encodeInt(int, byte[], int)
+   */
   public static int compare(ByteBuffer b1, int o1, ByteBuffer b2, int o2){
     /*if(b1.hasArray() && b2.hasArray()){
       return compare(b1.array(), o1, b2.array(), o2);
@@ -749,7 +865,19 @@ public class UtfUtil {
     //the string starts the same (or are actually the same)
     return length1 - length2;
   }
-  
+
+  /**
+   * Compare two utf8 encoded strings. This method assumes that a size indicator
+   * is stored first in each array as defined in CBUtil
+   * @param b1 first array
+   * @param o1 first array offset
+   * @param b2 second array
+   * @param o2 second array offset
+   * @param map char map for localized comapre
+   * @return a negative integer, zero, or a positive integer as b1 is less than, equal to, or greater than b2.
+   * @see CBUtil#encodeInt(int, byte[], int)
+   * @see org.mellowtech.core.util.CompiledLocale
+   */
   public static int compare(byte[] b1, int o1, byte[] b2, int o2, char[] map){
     int length1, length2, c1,c2, num = 0, i = 0;
     
@@ -878,7 +1006,19 @@ public class UtfUtil {
     //the string starts the same (or are actually the same)
     return length1 - length2;
   }
-  
+
+  /**
+   * Compare two utf8 encoded strings. This method assumes that a size indicator
+   * is stored first in each array as defined in CBUtil
+   * @param b1 first buffer
+   * @param o1 first buffer offset
+   * @param b2 second buffer
+   * @param o2 second buffer offset
+   * @param map char map for localized comapre
+   * @return a negative integer, zero, or a positive integer as b1 is less than, equal to, or greater than b2.
+   * @see CBUtil#encodeInt(int, byte[], int)
+   * @see org.mellowtech.core.util.CompiledLocale
+   */
   public static int compare(ByteBuffer b1, int o1, ByteBuffer b2, int o2, char[] map){
     /*if(b1.hasArray() && b2.hasArray()){
       return compare(b1.array(), o1, b2.array(), o2, map);

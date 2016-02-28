@@ -24,21 +24,32 @@ import java.util.Optional;
 import java.util.Set;
 
 /**
- * Date: 2013-04-16
- * Time: 20:12
+ * BStorable wrapper for Map. Keys and values needs to be of
+ * a supported type defined in PrimitiveType.
  *
- * @author Martin Svensson
+ * @author Martin Svensson {@literal <msvens@gmail.com>}
+ * @since 3.0.1
+ * @see PrimitiveType
+ * @param <K> key type
+ * @param <V> value type
  */
 public class CBMap <K,V> extends BStorableImp <Map<K,V>, CBMap<K,V>> implements Map<K,V> {
 
+  /**
+   * Instantiate with an empty HashMap
+   */
   public CBMap (){
    super(new HashMap<>());
   }
-  
+
+  /**
+   * Instantiate with the given map
+   * @param map map to set
+   */
   public CBMap(Map <K,V> map){
     super(map);
   }
-  
+
   @Override
   public CBMap <K,V> create(Map <K,V> map) {return new CBMap <> (map);}
   

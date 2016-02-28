@@ -21,10 +21,12 @@ import java.lang.reflect.Method;
 import java.util.*;
 
 /**
- * Date: 2013-04-16
- * Time: 21:54
+ * Class that holds information for fast parsing of
+ * CBAuto classes. The class is internal to the package
+ * and should not be used externally
  *
- * @author Martin Svensson
+ * @author Martin Svensson {@literal <msvens@gmail.com>}
+ * @since 3.0.1
  */
 class AutoBytes {
   

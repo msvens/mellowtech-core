@@ -24,10 +24,12 @@ import java.util.Map;
  * that the remover function should only be called if the value of the key has
  * been changed. A key that has been "put" into the cache more than one time
  * (i.e. the key/value pair is update) is considered to be changed.
- * 
- * @author Martin Svensson
- * @version 1.0
- * @see Remover
+ *
+ * @param <K> key type
+ * @param <V> value type
+ *
+ * @author Martin Svensson {@literal <msvens@gmail.com>}
+ * @since 3.0.1
  */
 public abstract class AbstractCache <K, V>{
 
@@ -57,18 +59,15 @@ public abstract class AbstractCache <K, V>{
   public abstract void dirty(K key, V value);
 
   /**
-   * Describe <code>notDirty</code> method here.
+   * Marks the value for a key as not changed
    * 
-   * @param key
-   *          an <code>Object</code> value
+   * @param key the key to find
    */
   public abstract void notDirty(K key);
 
   /**
-   * Describe <code>setRemover</code> method here.
-   * 
-   * @param remover
-   *          a <code>Remover</code> value
+   * Set the remover for cache
+   * @param remover a Remover object
    */
   public void setRemover(Remover<K, V> remover) {
     this.remover = remover;
@@ -79,7 +78,7 @@ public abstract class AbstractCache <K, V>{
   }
 
   /**
-   * Empty the cache. For each item in the cache the Callback function will be
+   * Empty the cache. For each item in the cache the Remover.remove function will be
    * called.
    */
   public void emptyCache() {
@@ -103,20 +102,16 @@ public abstract class AbstractCache <K, V>{
    */
   public abstract V get(K key) throws NoSuchValueException;
 
-  public abstract V getIfPresent(K key);
-
   /**
-   * Returns the value only if it is present in the cache
-   * @param key find
-   * @return value or null
+   * Get a value only if it is present in the cache
+   * @param key key to find
+   * @return value associated with key in this cache, or null if there is no cached value for key
    */
   public abstract V getFromCache(K key);
 
-
-  //Todo: check if this is a good approach
   /**
-   * Checks if this cache is readOnly by checking if it does
-   * not have a remover function
+   * Checks if this cache is readOnly. Default implement checks
+   * if this cache has remover
    * @return true if read only
    */
   public boolean isReadOnly(){
@@ -127,15 +122,14 @@ public abstract class AbstractCache <K, V>{
    * Return an iterator over the cache. The iterator is sorted over keys. The
    * returned objects are Map.CompResult objects.
    * 
-   * @return a value of type 'Iterator'
+   * @return an iterator over this cache
    * @see java.util.Map.Entry
    */
   public abstract Iterator <Map.Entry<K,CacheValue <V>>> iterator();
 
   /**
    * Put a key/value pair directly into the cache (bypassing any loaded value).
-   * If the value was previously in the cache
-   * its dirty bit should be set to true.
+   * If the value was previously in the cache the value will be set to dirty.
    * 
    * @param key
    *          the key
@@ -168,6 +162,10 @@ public abstract class AbstractCache <K, V>{
    */
   public abstract void setSize(long size);
 
+  /**
+   * Approximate number of elements in this cache
+   * @return number of elements
+   */
   public abstract long getCurrentSize();
 
   /**
@@ -180,11 +178,7 @@ public abstract class AbstractCache <K, V>{
     return maxSize;
   }
 
-  /**
-   * Prints each key/value pair in the cache by iterating over it.
-   * 
-   * @return a value of type 'String'
-   */
+  @Override
   public String toString() {
     StringBuffer sb = new StringBuffer();
     Map.Entry<K, CacheValue<V>> entry;

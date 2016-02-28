@@ -19,10 +19,11 @@ package org.mellowtech.core.bytestorable;
 import java.util.*;
 
 /**
- * Date: 2013-02-17
- * Time: 18:07
+ * Enum for all java types that can be automatically
+ * serialized/deserialized using BStorable wrappers
  *
- * @author Martin Svensson
+ * @author Martin Svensson {@literal <msvens@gmail.com>}
+ * @since 3.0.1
  */
 public enum PrimitiveType {
 
@@ -31,7 +32,12 @@ public enum PrimitiveType {
   CharObject, BooleanObject, ByteArrayObject, DateObject,
   ListObject, MapObject, SortedMapObject, BitSetObject, SetObject;
 
-  public static final BStorable fromType(PrimitiveType pt){
+  /**
+   * Create an empty BStorable for a PrimitiveType
+   * @param pt primitive type
+   * @return empty BStorable
+   */
+  public static BStorable fromType(PrimitiveType pt){
     switch(pt){
       case StringObject:
         return new CBString();
@@ -68,8 +74,14 @@ public enum PrimitiveType {
     }
     return null;
   }
-  
-  public static final BStorable fromType(PrimitiveType pt, Object o){
+
+  /**
+   * Create a BStorable with a value from PrimitiveType
+   * @param pt primitive type
+   * @param o value to set
+   * @return BStorable with value
+   */
+  public static BStorable fromType(PrimitiveType pt, Object o){
     switch(pt){
       case StringObject:
         return new CBString((String)o);
@@ -106,16 +118,30 @@ public enum PrimitiveType {
     }
     return null;
   }
-  
-  public static final <A,B extends BStorable<A,B>> BStorable <A,B> get(Object obj) {
+
+  /**
+   * Wrap an object in a BStorable
+   * @param obj object to wrap
+   * @param <A> Wrapped type
+   * @param <B> BStorable type
+   * @return BStorable
+   */
+  public static <A,B extends BStorable<A,B>> BStorable <A,B> get(A obj) {
     PrimitiveType t = type(obj);
     return fromType(t);
     
   }
 
-  public static final PrimitiveType type(Object obj){
+  /**
+   * Get the PrimitiveType for an object. You can either pass an object instance
+   * or a class instance
+   * @param obj object
+   * @param <A> object type
+   * @return a PrimitiveType or null if no PrimitiveType is found
+   */
+  public static <A> PrimitiveType type(A obj){
     if(obj instanceof Class)
-      return typeClass((Class) obj);
+      return typeClass((Class<A>) obj);
     if(obj instanceof String)
       return PrimitiveType.StringObject;
     else if(obj instanceof Byte)
@@ -150,8 +176,13 @@ public enum PrimitiveType {
       return PrimitiveType.SetObject;
     return null;
   }
-  
-  public static final PrimitiveType typeStorable(BStorable<?,?> obj){
+
+  /**
+   * Get the PrimitiveType for an object wrapped in a ByteStorable
+   * @param obj BStorable object to test
+   * @return PrimitiveType of null if no PrimitiveType is found
+   */
+  public static PrimitiveType typeStorable(BStorable<?,?> obj){
     if(obj instanceof CBString)
       return PrimitiveType.StringObject;
     else if(obj instanceof CBByte)
@@ -187,7 +218,13 @@ public enum PrimitiveType {
     return null;
   }
 
-  public static final PrimitiveType typeClass(Class clazz){
+  /**
+   * Get the PrimitiveType for a class
+   * @param clazz the clazz to find
+   * @param <A> type of class
+   * @return PrimitiveType of null if none is found
+   */
+  public static final <A> PrimitiveType typeClass(Class <A> clazz){
     if(clazz == String.class)
       return StringObject;
     else if(clazz == Byte.class || clazz == byte.class)
@@ -223,7 +260,12 @@ public enum PrimitiveType {
     return null;
   }
 
-  public static final PrimitiveType fromOrdinal(int ordinal){
+  /**
+   * Get the PrimitiveType from the ordinal value
+   * @param ordinal ordinal value
+   * @return PrimitiveType of null if no PrimitiveType for the ordinal
+   */
+  public static PrimitiveType fromOrdinal(int ordinal){
     if(ordinal == StringObject.ordinal())
       return StringObject;
     else if(ordinal == IntObject.ordinal())
@@ -260,6 +302,10 @@ public enum PrimitiveType {
       return null;
   }
 
+  /**
+   * Get ordinal value as a byte
+   * @return ordinal value
+   */
   public byte getByte(){
     return (byte) this.ordinal();
   }

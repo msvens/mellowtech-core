@@ -17,29 +17,31 @@
 package org.mellowtech.core.bytestorable;
 
 /**
- * Date: 2013-02-17
- * Time: 09:40
+ * General runtime exception for BStorables
  *
- * @author Martin Svensson
+ * @author Martin Svensson {@literal <msvens@gmail.com>}
+ * @since 3.0.1
+ * @see RuntimeException
  */
 public class ByteStorableException extends RuntimeException {
+
   public ByteStorableException() {
-    super();    //To change body of overridden methods use File | Settings | File Templates.
+    super();
   }
 
   public ByteStorableException(String message) {
-    super(message);    //To change body of overridden methods use File | Settings | File Templates.
+    super(message);
   }
 
   public ByteStorableException(String message, Throwable cause) {
-    super(message, cause);    //To change body of overridden methods use File | Settings | File Templates.
+    super(message, cause);
   }
 
   public ByteStorableException(Throwable cause) {
-    super(cause);    //To change body of overridden methods use File | Settings | File Templates.
+    super(cause);
   }
 
   protected ByteStorableException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
-    super(message, cause, enableSuppression, writableStackTrace);    //To change body of overridden methods use File | Settings | File Templates.
+    super(message, cause, enableSuppression, writableStackTrace);
   }
 }

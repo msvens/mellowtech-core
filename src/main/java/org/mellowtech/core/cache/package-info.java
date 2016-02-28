@@ -14,29 +14,10 @@
  * limitations under the License.
  */
 
-package org.mellowtech.core.bytestorable;
-
-import java.lang.annotation.Retention;
-
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
-
 /**
- * Annotation used to indicate that a field should be
- * included in automatic serialization for CBAuto and CBRecord.
- *
+ * Extension to Guava cache classes to enable setting values in a cache to dirty. A dirty
+ * value would mean that it has changed since uploaded to the cache
  * @author Martin Svensson {@literal <msvens@gmail.com>}
- * @since 2013-04-16
- * @see CBAuto CBRecord
+ * @since 3.0.4
  */
-@Retention(RUNTIME)
-public @interface BSField {
-
-  /**
-   * Specify the this fields index in the serialized record. This has
-   * to be set so that deserialization knows which field to set
-   * for a specific value
-   *
-   */
-  int value() default -1;
-
-}
+package org.mellowtech.core.cache;

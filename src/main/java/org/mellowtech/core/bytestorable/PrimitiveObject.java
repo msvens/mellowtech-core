@@ -21,18 +21,25 @@ import java.nio.ByteBuffer;
 /**
  * ByteStorable that can store any of our primitive type;
  * Allows for storing null values
- * Date: 2013-02-17
- * Time: 09:28
- *
- * @author Martin Svensson
+ * @author Martin Svensson {@literal <msvens@gmail.com>}
+ * @since 3.0.1
+ * @see PrimitiveType
+ * @param <T> wrapped type
  */
 public class PrimitiveObject <T> extends BStorableImp <T, PrimitiveObject<T>> {
 
   private PrimitiveType pt;
-  
+
+  /**
+   * Initialize this primitive object with a null value
+   */
   public PrimitiveObject(){super(null);}
 
-  public PrimitiveObject(T value) throws ByteStorableException{
+  /**
+   * Initialize this primitive object with a specific value
+   * @param value value to set
+   */
+  public PrimitiveObject(T value){
     super(value);
     if(value != null)
       pt = PrimitiveType.type(value);

@@ -17,11 +17,19 @@
 package org.mellowtech.core.bytestorable;
 
 /**
- * @author msvens
+ * Template for implementing BStorable. Adds a holder for the value,
+ * default constructor, toString and hashCode methods
  *
+ * @author Martin Svensson {@literal <msvens@gmail.com>}
+ * @since 3.0.1
+ * @param <A> type of value
+ * @param <B> self type
  */
 public abstract class BStorableImp <A,B extends BStorable<A,B>> implements BStorable <A,B>{
-  
+
+  /**
+   * Wrapped value
+   */
   protected A value;
   
   public BStorableImp(A value){

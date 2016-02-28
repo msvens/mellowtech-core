@@ -18,42 +18,72 @@ package org.mellowtech.core.bytestorable;
 
 import java.nio.ByteBuffer;
 
+//TODO: Add Type informaiton
 /**
- * Date: 2013-02-17
- * Time: 18:04
+ * ByteStorable that can store any of our primitive type. Different from PrimitiveObject
+ * this class also stores an index value. Allows for storing null values
+ * @author Martin Svensson {@literal <msvens@gmail.com>}
+ * @since 3.0.1
+ * @see PrimitiveType
  *
- * @author Martin Svensson
  */
 public class PrimitiveIndexedObject extends BStorableImp <PrimitiveIndexedObject.Entry, PrimitiveIndexedObject>{
 
+  /**
+   * Entry containing index, object and type
+   */
   public static class Entry {
     public int index = -1;
     @SuppressWarnings("rawtypes")
     public BStorable primObject = null;
     public PrimitiveType objectType;
   }
-  
-  
-  
+
+  /**
+   * Initialize with an empty entry. Useful when using
+   * as a template instance
+   */
   public PrimitiveIndexedObject(){super(new Entry());}
 
-  public PrimitiveIndexedObject(Object obj, int index) throws ByteStorableException {
+  /**
+   * Initialize with a value and index
+   * @param obj the value
+   * @param index the indx
+   */
+  public PrimitiveIndexedObject(Object obj, int index){
     this();
     set(obj, index);
   }
 
+  /**
+   * Get the object this instance holds. Effectively calls
+   * {@code return value.primObject != null ? value.primObject.get() : null}
+   * @return value or null
+   */
   public Object getPrimitiveObject(){
     return value.primObject != null ? value.primObject.get() : null;
   }
 
+  /**
+   * Get the index this object holds
+   * @return index or -1 if not set
+   */
   public int getIndex(){
     return value.index;
   }
 
+  /**
+   * Sets the value of this instance to null
+   */
   public void setNull(){
     value.primObject = null;
   }
 
+  /**
+   * Set the value and index of this instance
+   * @param o value
+   * @param index index
+   */
   public void set(Object o, int index){
     value.objectType = PrimitiveType.type(o);
     value.index = index;

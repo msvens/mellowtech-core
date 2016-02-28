@@ -19,7 +19,10 @@ import java.nio.ByteBuffer;
 
 
 /**
- * @author Martin Svensson
+ * BComparable wrapper for booleans
+ *
+ * @author Martin Svensson {@literal <msvens@gmail.com>}
+ * @since 3.0.1
  */
 
 public class CBBoolean implements BComparable <Boolean, CBBoolean> {
@@ -27,20 +30,27 @@ public class CBBoolean implements BComparable <Boolean, CBBoolean> {
   private final boolean value;
   
   /**
-   * Default constructor is needed to create a new byte from a byte buffer.
+   * Initialize this CBBoolean to false
    */
   public CBBoolean() {value = false;}
 
   /**
-   * Initialize with a value
+   * Initialize to true or false
    *
    * @param value the value
    */
   public CBBoolean(boolean value) {this.value = value;}
-  
-  public CBBoolean(Boolean value) {this.value = value;}
-  
 
+  /**
+   * Initialize to true or false
+   * @param value the value
+   */
+  public CBBoolean(Boolean value) {this.value = value;}
+
+  /**
+   * Initialize to true or false
+   * @param b if b is zero initialize to false otherwise true
+   */
   public CBBoolean(byte b){this(b == 0 ? false : true);}
   
   @Override

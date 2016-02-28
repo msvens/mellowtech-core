@@ -18,19 +18,30 @@ package org.mellowtech.core.bytestorable;
 import java.nio.ByteBuffer;
 
 /**
- * Wraps a short value as a ByteStorable
- * 
- * @author Martin Svensson
- * @version 1.0
+ * BComparable wrapper for short
+ *
+ * @author Martin Svensson {@literal <msvens@gmail.com>}
+ * @since 3.0.1
  */
 public class CBShort implements BComparable<Short,CBShort>{
 
   private final short value;
-  
+
+  /**
+   * Initialize this CBShort to 0
+   */
   public CBShort() {value = (short)0;}
 
+  /**
+   * Initialize this CBShort to provided value
+   * @param value short to set
+   */
   public CBShort(short value) {this.value = value;}
-  
+
+  /**
+   * Initialize this CBShort to provided value
+   * @param value Short to set
+   */
   public CBShort(Short value) {this.value = value;}
   
   @Override
@@ -40,7 +51,11 @@ public class CBShort implements BComparable<Short,CBShort>{
   public Short get(){
     return Short.valueOf(value);
   }
-  
+
+  /**
+   * Get the primitive value this CBShort holds
+   * @return the value
+   */
   public short value(){return value;}
   
   @Override

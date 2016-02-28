@@ -20,28 +20,60 @@ import java.nio.ByteBuffer;
 
 
 /**
- * Date: 2013-04-16
- * Time: 21:25
+ * Template class for creating an automatically generated
+ * BStorable that wraps and AutoRecord. Useful when you
+ * need to serialize/deserialize a record rather than a
+ * single value
+ * <p>Example code:</p>
+ * <pre style="code">
+ *   public class MyContainer extends CBRecord {@literal <}MyContainer.Record, MyContainer{@literal >} {
+ *     static class Record implements AutoRecord {
+ *       {@literal @}BSField(2) public Integer f1;
+ *       {@literal @}BSField(1) public String f2;
+ *     }
  *
- * @author Martin Svensson
+ *     {@literal @}Override
+ *     protected Record newA() {
+ *       return new Record();
+ *     }
+ *   }
+ * </pre>
+ * @author Martin Svensson {@literal <msvens@gmail.com>}
+ * @since 3.0.4
  */
 public abstract class CBRecord <A extends AutoRecord,
   B extends CBRecord<A,B>> extends BStorableImp <A, B> {
-  
+
+  /**
+   * Create a new value that this CBRecord holds. This method
+   * is called from the default constructor and should be implemented
+   * by subclasses
+   * @return a new value
+   */
   protected abstract A newA();
   
   /**
-   * subclasses should always call this method
+   * Instantiate this CBRecord. Will call newA. Subclasses
+   * that override the default constructor should always call this
    */
   public CBRecord(){
     super(null);
     AutoBytes.I().parseClass(newA().getClass());
     value = newA();
   }
-  
+
+  /**
+   * Instantiate this CBRecord with a value. If value is null a new
+   * one will be created. Subclasses that override this method should
+   * always call this
+   * @param value record to set
+   */
   public CBRecord(A value){
     super(value);
     AutoBytes.I().parseClass(value.getClass());
+    if(value == null){
+      this.value = newA();
+    }
   }
 
   @Override

@@ -22,17 +22,23 @@ import java.util.logging.Level;
 import org.mellowtech.core.CoreLog;
 
 /**
- * @author msvens
+ * BStorable wrapper for Class
  *
+ * @author Martin Svensson {@literal <msvens@gmail.com>}
+ * @since 3.0.1
  */
 @SuppressWarnings("rawtypes")
 public class CBClass extends BStorableImp <Class, CBClass> implements Comparable <CBClass> {
 
   /**
-   * 
+   * Initalize to a value of null
    */
   public CBClass() {super(null);}
-  
+
+  /**
+   * Initialize to class
+   * @param c class to set
+   */
   public CBClass(Class c){super(c);}
 
   @Override

@@ -20,23 +20,31 @@ import java.nio.ByteBuffer;
 import java.util.*;
 
 /**
- * List with primitive objects (various)
- * Date: 2013-02-17
- * Time: 12:58
+ * BStorable wrapper for a list of objects of different types. Objects needs to be of
+ * a supported type defined in PrimitiveType.
  *
- * @author Martin Svensson
+ * @author Martin Svensson {@literal <msvens@gmail.com>}
+ * @since 3.0.1
+ * @see PrimitiveType
  */
 public class CBMixedList extends BStorableImp <List <Object>, CBMixedList> implements List<Object> {
 
 
+  /**
+   * Initialize the to the empty list
+   */
   public CBMixedList(){
     super(new ArrayList <Object> ());
   }
-  
+
+  /**
+   * Initialize to list
+   * @param elems list of elements
+   */
   public CBMixedList(List <Object> elems){
     super(elems);
   }
-  
+
   @Override
   public CBMixedList create(List <Object> elems){return new CBMixedList(elems);}
 

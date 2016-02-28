@@ -46,7 +46,7 @@ public class StorableZipReader <A,B extends BStorable <A,B>> {
    * Create a new reader using the given template
    * @param fileName path to zip file
    * @param template BStorable template
-   * @throws IOException
+   * @throws IOException if an exception occurs
    */
   public StorableZipReader(String fileName, B template)
       throws IOException {

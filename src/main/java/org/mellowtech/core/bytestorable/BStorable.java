@@ -26,36 +26,86 @@ import java.nio.channels.WritableByteChannel;
 /**
  * Interface that defines base functionality for objects that can be
  * transformed to and from bytes.
- * 
- * @author Martin Svensson
+ *
+ * @author Martin Svensson {@literal <msvens@gmail.com>}
+ * @since 3.0.1
  *
  * @param <A> type of value
  * @param <B> self type
  */
 public interface BStorable <A, B extends BStorable<A,B>> {
-  
-  
-  A get();
-  
-  B from(ByteBuffer bb);
-  
-  default B create(A t){
+
+  /**
+   * Size of serialized instance (including any size indicators)
+   * @return size in bytes
+   */
+  int byteSize();
+
+  /**
+   * Size of serialized instance stored in buffer. A maixmum of
+   * 4 bytes should be needed to determine the size.
+   * <p>
+   *   <b>Note: </b>any buffer position needs to be reset before
+   *   returning
+   * </p>
+   * @param bb buffer to read from
+   * @return size in bytes
+   */
+  int byteSize(ByteBuffer bb);
+
+  /**
+   * Create a new instance of this type
+   * @param a valut to instantiate with
+   * @return new instance
+   */
+  default B create(A a){
     try {
       @SuppressWarnings("unchecked")
-      Constructor <B> c = (Constructor<B>) this.getClass().getConstructor(t.getClass());
-      return c.newInstance(t);
+      Constructor <B> c = (Constructor<B>) this.getClass().getConstructor(a.getClass());
+      return c.newInstance(a);
     }
     catch(Exception e){
       throw new ByteStorableException("no such constructor method");
     }
   }
-  
+
+  /**
+   * Deep copy of this instance
+   * @return new instance
+   */
+  default B deepCopy(){
+    ByteBuffer bb = to();
+    bb.flip();
+    return from(bb);
+  }
+
+  /**
+   * Deserialize and return a new instance of
+   * this type
+   * @param bb buffer to read from
+   * @return new instance
+   */
+  B from(ByteBuffer bb);
+
+  /**
+   * Deserialize and return a new instance of
+   * this type
+   * @param b byte array to read from
+   * @param offset offset in the array
+   * @return new instance
+   */
   default B from(byte[] b, int offset) {
     ByteBuffer bb = ByteBuffer.wrap(b);
     bb.position(offset);
     return from(bb);
   }
-  
+
+  /**
+   * Deserialize and return a new instance of this type
+   * @param is stream to read from
+   * @return new instance
+   * @throws IOException if unexpected end of stream
+   */
   default B from(InputStream is) throws IOException{
       ByteBuffer bb = ByteBuffer.allocate(4);
       int b;
@@ -79,7 +129,13 @@ public interface BStorable <A, B extends BStorable<A,B>> {
       bb1.flip();
       return this.from(bb1);
   }
-  
+
+  /**
+   * Deserialize and return a new instance of this type
+   * @param rbc channel to read from
+   * @return new instance
+   * @throws IOException if underlying channel throws exception
+   */
   default B from(ReadableByteChannel rbc) throws IOException{
     ByteBuffer bb = ByteBuffer.allocate(4);
     ByteBuffer one = ByteBuffer.allocate(1);
@@ -100,31 +156,70 @@ public interface BStorable <A, B extends BStorable<A,B>> {
     bb1.flip();
     return this.from(bb1);
   }
-  
+
+  /**
+   * Get the value that this BStorable holds
+   * @return the value
+   */
+  A get();
+
+  /**
+   * Indicate if the byte size of this type (e.g. integers) is fixed, defaults
+   * to false
+   * @return true if the byte size is fixed
+   */
+  default boolean isFixed() {return false;}
+
+  /**
+   * Serialize this instance to buffer starting at
+   * current position
+   * @param bb buffer to write to
+   */
   void to(ByteBuffer bb);
-  
+
+  /**
+   * Serialize this instance to a new buffer
+   * @return new ByteBuffer
+   */
   default ByteBuffer to() {
     ByteBuffer bb = ByteBuffer.allocate(byteSize());
     to(bb);
     return bb;
   }
-  
+
+  /**
+   * Serialize this instance to byte array
+   * @param b array to write to
+   * @param offset start offset
+   * @return bytes written
+   */
   default int to(byte[] b, int offset) {
     ByteBuffer bb = ByteBuffer.wrap(b);
     bb.position(offset);
     to(bb);
     return bb.position() - offset;
   }
-  
+
+  /**
+   * Serialize this instance to stream
+   * @param os stream to write to
+   * @return bytes written
+   * @throws IOException if underlying stream throws an exception
+   */
   default int to(OutputStream os) throws IOException{
     int byteSize = byteSize();
     byte[] b = new byte[byteSize];
     to(b, 0);
-    for(int i = 0; i < b.length; i++)
-      os.write(b[i]);
+    for (byte aB : b) os.write(aB);
     return byteSize;
   }
-  
+
+  /**
+   * Serialize this instance to channel
+   * @param wbc channel to write to
+   * @return bytes written
+   * @throws IOException if the underlying channel throws an exception
+   */
   default int to(WritableByteChannel wbc) throws IOException {
     int byteSize = byteSize();
     ByteBuffer bb = ByteBuffer.allocate(byteSize);
@@ -133,16 +228,5 @@ public interface BStorable <A, B extends BStorable<A,B>> {
     wbc.write(bb);
     return byteSize;
   }
-  
-  int byteSize();
-  int byteSize(ByteBuffer bb);
-  
-  default B deepCopy(){
-    ByteBuffer bb = to();
-    bb.flip();
-    return from(bb);
-  }
-  
-  default boolean isFixed() {return false;}
 
 }
