@@ -233,7 +233,7 @@ abstract class AbstractBlockFile implements RecordFile {
   }
 
   protected long getOffset(int record) {
-    return blocksOffset() + (record * (blockSize));
+    return blocksOffset() + ((long)record * (blockSize));
   }
 
   protected long headerOffset() {
