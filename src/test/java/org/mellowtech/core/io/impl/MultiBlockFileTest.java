@@ -42,13 +42,13 @@ public class MultiBlockFileTest extends RecordFileTemplate {
 
   @Override
   public RecordFile init(int blockSize, int reserve, int maxBlocks, String fname) throws Exception {
-    return new MultiBlockFile(blockSize*2, blockSize, Paths.get(fname));
+    return new MultiBlockFile(blockSize*2, blockSize, reserve, Paths.get(fname));
     //return new MemBlockFile(Paths.get(fname), blockSize, maxBlocks, reserve);
   }
 
   @Override
   public RecordFile reopen(String fname) throws Exception {
-    return new MultiBlockFile(blockSize*2, blockSize, Paths.get(fname));
+    return new MultiBlockFile(blockSize*2, blockSize, reserve, Paths.get(fname));
   }
 
   /****overwritten tests****/
@@ -102,7 +102,6 @@ public class MultiBlockFileTest extends RecordFileTemplate {
   }
 
   @Override
-  @Test(expected = UnsupportedOperationException.class)
   public void reserveSize() throws IOException{
     Assert.assertEquals(reserve, rf.getReserve().length);
   }

@@ -45,14 +45,21 @@ public class MultiBlockFile implements RecordFile {
   private final int blockSize;
   private final int blocksPerFile;
   private boolean opened = false;
+  private final int reserve;
+  private FileChannel fc = null;
 
-  public MultiBlockFile(int fileSize, int blockSize, Path name) throws IOException{
+  public MultiBlockFile(int blockSize, Path name) throws IOException {
+    this(DEFAULT_FILE_SIZE, blockSize, 0, name);
+  }
+
+  public MultiBlockFile(int fileSize, int blockSize, int reserve, Path name) throws IOException{
     files = new TreeMap <> ();
     this.dir = name.getParent();
     this.name = name.getFileName().toString();
     this.fileSize = fileSize;
     this.blockSize = blockSize;
     this.blocksPerFile = fileSize / blockSize;
+    this.reserve = reserve < 0 ? 0 : reserve;
     open();
   }
 
@@ -100,6 +107,10 @@ public class MultiBlockFile implements RecordFile {
       fr.delete();
     }
     files.clear();
+    if(fc != null) {
+      fc.close();
+      Files.delete(dir.resolve(name));
+    }
     opened = false;
   }
 
@@ -149,7 +160,10 @@ public class MultiBlockFile implements RecordFile {
 
   @Override
   public byte[] getReserve() throws IOException, UnsupportedOperationException {
-    throw new UnsupportedOperationException("does not support reserve");
+    if(reserve < 1) return null;
+    ByteBuffer bb = ByteBuffer.allocate(reserve);
+    fc.read(bb,0);
+    return bb.array();
   }
 
   @Override
@@ -193,7 +207,7 @@ public class MultiBlockFile implements RecordFile {
 
   @Override
   public MappedByteBuffer mapReserve() throws IOException, UnsupportedOperationException {
-    throw new UnsupportedOperationException("reserved space not supported");
+    return fc.map(FileChannel.MapMode.READ_WRITE, 0, reserve);
   }
 
   @Override
@@ -242,6 +256,12 @@ public class MultiBlockFile implements RecordFile {
     } else if(Files.isRegularFile(dir)){
       throw new IOException(dir+" is not a directory");
     }
+    if(reserve > 0){
+      fc = FileChannel.open(dir.resolve(name), StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE);
+      if(fc.size() == 0){
+        fc.write(ByteBuffer.allocate(1),reserve-1);
+      }
+    }
     try (DirectoryStream<Path> ds = Files.newDirectoryStream(dir, "*-"+name)) {
       for(Path p : ds){
         String fname = p.getFileName().toString();
@@ -267,9 +287,7 @@ public class MultiBlockFile implements RecordFile {
     high = lastFile + lastBlock;
   }
 
-  private void openReserve(){
 
-  }
 
   private int getLastBlockInDataFile(FileRecord fr) throws IOException {
     MappedByteBuffer bb = fr.get();
