@@ -14,33 +14,29 @@
  * limitations under the License.
  */
 
-package org.mellowtech.core.io;
-
+package org.mellowtech.core.io.impl;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 
 /**
- * Date: 2013-03-11
- * Time: 08:24
- *
  * @author Martin Svensson
  */
-public class BlockFile extends AbstractBlockFile {
+public class SplitBlockFile extends AbstractSplitBlockFile {
 
-
-  public BlockFile(Path p) throws IOException {
-    super(p);
+  public SplitBlockFile(Path path) throws IOException {
+    super(path);
   }
 
-
-  public BlockFile(Path p, int blockSize, int maxBlocks, int reserve) throws IOException {
-    super(p, blockSize, maxBlocks, reserve);
+  public SplitBlockFile(Path path, int blockSize, int maxBlocks,
+                        int reserve, int mappedMaxBlocks, int mappedBlockSize) throws IOException {
+    super(path, blockSize, maxBlocks, reserve, mappedMaxBlocks, mappedBlockSize);
+    //System.out.println(mappedMaxBlocks+" "+maxBlocks);
   }
 
   @Override
-  public void clear() throws IOException{
+  public void clear() throws IOException {
     super.clear();
     truncate();
   }
@@ -57,32 +53,37 @@ public class BlockFile extends AbstractBlockFile {
   }
 
   @Override
+  public void insert(int record, byte[] bytes, int offset, int length) throws IOException {
+    if (record >= maxBlocks)
+      throw new IOException("record out of bounce");
+    bitSet.set(record, true);
+    saveBitSet(bitSet, bitBuffer);
+    update(record, bytes, offset, length);
+  }
+
+  @Override
   public int insert(byte[] bytes, int offset, int length) throws IOException {
     if (getFreeBlocks() < 1) throw new IOException("no free blocks");
     int index = bitSet.nextClearBit(0);
+    if (index >= maxBlocks)
+      throw new IOException("no blocks left");
+    if (bytes != null && length > 0) {
+      long off = getOffset(index);
+      ByteBuffer data = ByteBuffer.wrap(bytes, offset, length > getBlockSize() ? getBlockSize() : length);
+      fc.write(data, off);
+    }
     bitSet.set(index, true);
-    update(index, bytes, offset, length);
-    saveBitSet();
+    saveBitSet(bitSet, bitBuffer);
     return index;
   }
 
   @Override
-  public void insert(int record, byte[] bytes) throws IOException {
-    if (record >= maxBlocks) throw new IOException("record out of block range");
-    bitSet.set(record, true);
-    update(record, bytes);
-    saveBitSet();
-  }
-
-  @Override
   public boolean update(int record, byte[] bytes, int offset, int length) throws IOException {
-    if (bitSet.get(record) && bytes != null && bytes.length > 0) {
-      long off = getOffset(record);
-      ByteBuffer bb = ByteBuffer.wrap(bytes, offset, length > getBlockSize() ? getBlockSize() : length);
-      fc.write(bb, off);
-      return true;
-    }
-    return false;
+    if (!bitSet.get(record)) return false;
+    long off = getOffset(record);
+    ByteBuffer bb = ByteBuffer.wrap(bytes, offset, length > getBlockSize() ? getBlockSize() : length);
+    fc.write(bb, off);
+    return true;
   }
 
 }

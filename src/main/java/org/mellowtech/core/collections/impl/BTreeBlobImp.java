@@ -230,15 +230,15 @@ public class BTreeBlobImp<A,B extends BComparable<A,B>,C,D extends BStorable<C,D
   }
 
   @Override
-  public void createIndex() throws IOException {
-    tree.createIndex();
+  public void rebuildIndex() throws IOException {
+    tree.rebuildIndex();
   }
 
   @Override
-  public void createIndex(Iterator<KeyValue<B,D>> iterator) throws IOException {
+  public void createTree(Iterator<KeyValue<B,D>> iterator) throws IOException {
     blobs.truncate(0);
     BlobMapCreateIterator <B,D> iter = new BlobMapCreateIterator <> (iterator,blobs);
-    tree.createIndex(iter);
+    tree.createTree(iter);
   }
 
 }

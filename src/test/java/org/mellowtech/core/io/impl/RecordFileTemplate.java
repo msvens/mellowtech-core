@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-package org.mellowtech.core.io;
+package org.mellowtech.core.io.impl;
 
 import org.junit.*;
 import org.mellowtech.core.TestUtils;
 import org.mellowtech.core.bytestorable.*;
+import org.mellowtech.core.io.*;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -71,8 +72,9 @@ public abstract class RecordFileTemplate {
 
   @After
   public void after() throws Exception{
-    rf.close();
-    TestUtils.getTempFile(dir,fname()).delete();
+    rf.remove();
+    //rf.close();
+    //TestUtils.getTempFile(dir,fname()).delete();
   }
 
   /**COMMON TEST CASES**/
@@ -94,7 +96,7 @@ public abstract class RecordFileTemplate {
 
   @Test
   public void zeroFree(){
-    Assert.assertEquals(maxBlocks, rf.getFreeBlocks());
+    Assert.assertTrue(maxBlocks <= rf.getFreeBlocks());
   }
 
   @Test
@@ -168,7 +170,7 @@ public abstract class RecordFileTemplate {
   @Test
   public void oneFree() throws Exception{
     rf.insert(testBlock);
-    Assert.assertEquals(maxBlocks - 1, rf.getFreeBlocks());
+    Assert.assertTrue(maxBlocks - 1 <= rf.getFreeBlocks());
   }
 
   @Test
@@ -335,7 +337,7 @@ public abstract class RecordFileTemplate {
     Assert.assertEquals(0, rf.size());
   }
 
-  private void fillFile() throws Exception {
+  protected void fillFile() throws Exception {
     for(int i = 0; i < maxBlocks; i++)
       rf.insert(testBlock);
   }
@@ -356,7 +358,7 @@ public abstract class RecordFileTemplate {
   public void allIterator() throws Exception{
     fillFile();
     int i = 0;
-    Iterator<Record> iter = rf.iterator();
+    Iterator<org.mellowtech.core.io.Record> iter = rf.iterator();
     while(iter.hasNext()){
       i++;
       iter.next();

@@ -17,7 +17,6 @@
 package org.mellowtech.core.collections;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.util.Iterator;
 
 import org.mellowtech.core.bytestorable.BComparable;
@@ -25,24 +24,34 @@ import org.mellowtech.core.bytestorable.BStorable;
 import org.mellowtech.core.util.RangeIterable;
 
 /**
- * Representation of a file based sorted tree
- * Date: 2013-03-22
- * Time: 07:06
+ * Interface for of a file based sorted tree
  *
  * @param <A> Wrapped BComparable key class
  * @param <B> BComparable key class
  * @param <C> Wrapped BStorable value class
  * @param <D> BStorable value class
- * @author Martin Svensson
+ *
+ * @author Martin Svensson {@literal <msvens@gmail.com>}
+ * @since 3.0.1
  */
 public interface BTree <A,B extends BComparable<A,B>, C, D extends BStorable<C,D>> 
   extends BMap <A,B,C,D>, RangeIterable<KeyValue<B,D>, B>{
 
-  
-  //bulk creation:
-  void createIndex(Iterator<KeyValue <B,D>> iterator) throws IOException;
 
-  default void createIndex() throws IOException, UnsupportedOperationException{
+  /**
+   * Create a sorted tree from an iterator of sorted key-value pairs
+   * @param iterator iterator with key-values
+   * @throws IOException if an exception occurs
+   */
+  void createTree(Iterator<KeyValue <B,D>> iterator) throws IOException;
+
+  /**
+   * Rebuild any index structure for this sorted tree using existing
+   * key values
+   * @throws IOException if the index cannot be rebuilt
+   * @throws UnsupportedOperationException if this sorted tree does not support the operation
+   */
+  default void rebuildIndex() throws IOException, UnsupportedOperationException{
     throw new UnsupportedOperationException();
   }
 
@@ -82,28 +91,6 @@ public interface BTree <A,B extends BComparable<A,B>, C, D extends BStorable<C,D
   default Iterator<KeyValue<B,D>> iterator(){
     return iterator(false, null, false, null, false);
   }
-
-  //Iterator<KeyValue <B, D>> iterator();
-  /*
-  Iterator<KeyValue <B, D>> iterator(boolean descending, B from, boolean fromInclusive, B to, boolean toInclusive);
-
-
-  default Iterator<KeyValue<B,D>> iterator() {
-    return iterator(false, null, false, null, false);
-  }
-
-  default Iterator <KeyValue<B,D>> iterator(B from){
-    return iterator(false, from, true, null, false);
-  }
-
-  default Iterator <KeyValue<B,D>> iterator(boolean descending){
-    return iterator(descending, null, false, null, false);
-  }
-
-  default Iterator <KeyValue<B,D>> iterator(boolean descending, B from){
-    return iterator(descending, from, true, null, false);
-  }
-  */
 
 
 

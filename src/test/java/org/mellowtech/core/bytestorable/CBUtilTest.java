@@ -139,13 +139,13 @@ public class CBUtilTest {
     Assert.assertEquals(i + 2, CBUtil.byteSize(i, true));
   }
   
-  @Test(expected=ByteStorableException.class)
+  @Test(expected=IllegalArgumentException.class)
   public void encodedByteSizeMAX(){
     int i = Integer.MAX_VALUE;
     CBUtil.byteSize(i, true);
   }
   
-  @Test(expected=ByteStorableException.class)
+  @Test(expected=IllegalArgumentException.class)
   public void encodedByteSizeNegative(){
     int i = -1;
     CBUtil.byteSize(i, true);
@@ -172,7 +172,7 @@ public class CBUtilTest {
     Assert.assertEquals(CBUtil.encodeLength(i), CBUtil.encodeInt(i, bb));
   }
   
-  @Test(expected = ByteStorableException.class)
+  @Test(expected = IllegalArgumentException.class)
   public void encodeIntMin(){
     int i = Integer.MIN_VALUE;
     ByteBuffer bb = ByteBuffer.allocate(CBUtil.encodeLength(i));
@@ -207,7 +207,7 @@ public class CBUtilTest {
     Assert.assertEquals(CBUtil.encodeLength(i), CBUtil.encodeLong(i, bb));
   }
   
-  @Test(expected = ByteStorableException.class)
+  @Test(expected = IllegalArgumentException.class)
   public void encodeLongMin(){
     long i = Long.MIN_VALUE;
     ByteBuffer bb = ByteBuffer.allocate(CBUtil.encodeLength(i));
@@ -248,7 +248,7 @@ public class CBUtilTest {
     Assert.assertEquals(i, CBUtil.decodeInt(bb));
   }
   
-  @Test(expected = ByteStorableException.class)
+  @Test(expected = IllegalArgumentException.class)
   public void decodeIntMin(){
     int i = Integer.MIN_VALUE;
     ByteBuffer bb = ByteBuffer.allocate(CBUtil.encodeLength(i));
@@ -291,7 +291,7 @@ public class CBUtilTest {
     Assert.assertEquals(i, CBUtil.decodeLong(bb));
   }
   
-  @Test(expected = ByteStorableException.class)
+  @Test(expected = IllegalArgumentException.class)
   public void decodeLongMin(){
     long i = Long.MIN_VALUE;
     ByteBuffer bb = ByteBuffer.allocate(CBUtil.encodeLength(i));

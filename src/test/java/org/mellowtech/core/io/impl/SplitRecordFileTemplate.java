@@ -14,10 +14,12 @@
  * limitations under the License.
  */
 
-package org.mellowtech.core.io;
+package org.mellowtech.core.io.impl;
 
 import org.junit.*;
 import org.mellowtech.core.TestUtils;
+import org.mellowtech.core.io.Record;
+import org.mellowtech.core.io.SplitRecordFile;
 
 import java.nio.ByteBuffer;
 import java.util.Iterator;

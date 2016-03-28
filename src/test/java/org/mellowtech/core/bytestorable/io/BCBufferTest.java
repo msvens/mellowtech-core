@@ -53,7 +53,7 @@ public class BCBufferTest {
       len += str.byteSize();
     }
     wordLen = len;
-    blockSize = len + BCBlock.bytesNeeded(10, BCBlock.PtrType.NORMAL.size());
+    blockSize = len + BCBuffer.bytesNeeded(10, BCBuffer.PtrType.NORMAL);
   }
 
   BCBuffer<String, CBString> sb;
@@ -64,7 +64,7 @@ public class BCBufferTest {
     ByteBuffer bb = ByteBuffer.allocate(blockSize+100);
     bb.position(50);
     bb.limit(bb.position()+blockSize);
-    return new BCBuffer<String, CBString>(bb.slice(), new CBString(), BCBlock.PtrType.NORMAL, (short) 0);
+    return new BCBuffer<String, CBString>(bb.slice(), new CBString(), BCBuffer.PtrType.NORMAL, (short) 0);
   }
 
   @Before
@@ -75,7 +75,7 @@ public class BCBufferTest {
   //common tests
   @Test
   public void testPointerType() {
-    Assert.assertEquals(BCBlock.PtrType.NORMAL, sb.getPointerType());
+    Assert.assertEquals(BCBuffer.PtrType.NORMAL, sb.getPointerType());
   }
 
   @Test
@@ -102,7 +102,7 @@ public class BCBufferTest {
 
   @Test
   public void testStorageCapacity(){
-    Assert.assertEquals(sb.storageCapacity(), wordLen + (BCBlock.PtrType.NORMAL.size() * words.length));
+    Assert.assertEquals(sb.storageCapacity(), wordLen + (BCBuffer.PtrType.NORMAL.size() * words.length));
   }
 
   //Tests on empty block:

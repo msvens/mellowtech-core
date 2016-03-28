@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.mellowtech.core.io;
+package org.mellowtech.core.io.impl;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;

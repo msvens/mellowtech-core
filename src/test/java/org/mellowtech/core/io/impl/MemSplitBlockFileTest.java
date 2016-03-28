@@ -14,21 +14,12 @@
  * limitations under the License.
  */
 
-package org.mellowtech.core.io;
+package org.mellowtech.core.io.impl;
 
-import jdk.nashorn.internal.ir.Block;
-import junit.framework.Assert;
-
-import org.junit.Test;
-import org.mellowtech.core.bytestorable.CBString;
-import org.mellowtech.core.io.BlockFile;
-import org.mellowtech.core.io.Record;
 import org.mellowtech.core.io.RecordFile;
-import org.mellowtech.core.util.Platform;
+import org.mellowtech.core.io.SplitRecordFile;
 
-import java.io.File;
 import java.nio.file.Paths;
-import java.util.Iterator;
 
 /**
  * Date: 2013-03-11
@@ -36,26 +27,24 @@ import java.util.Iterator;
  *
  * @author Martin Svensson
  */
-public class BlockFileTest extends RecordFileTemplate {
-
-
+public class MemSplitBlockFileTest extends SplitRecordFileTemplate{
 
   @Override
-  public String fname() {return "blockFileTest.blf";}
+  public String fname() {return "memSplitBlockFileTest.blf";}
 
   @Override
   public long blocksOffset() {
-    return ((BlockFile) rf).blocksOffset();
+    return ((MemSplitBlockFile) rf).blocksOffset();
+  }
+
+  @Override
+  public SplitRecordFile init(int blockSize, int reserve, int maxBlocks, String fname) throws Exception {
+    return new MemSplitBlockFile(Paths.get(fname), blockSize, maxBlocks, reserve, maxBlocks, blockSize);
   }
 
   @Override
   public RecordFile reopen(String fname) throws Exception {
-    return new BlockFile(Paths.get(fname));
+    return new MemSplitBlockFile(Paths.get(fname));
   }
-  @Override
-  public RecordFile init(int blockSize, int reserve, int maxBlocks, String fname) throws Exception {
-    return new BlockFile(Paths.get(fname), blockSize, maxBlocks, reserve);
-  }
-
 
 }

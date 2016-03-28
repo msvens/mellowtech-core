@@ -15,10 +15,12 @@
  * limitations under the License.
  */
 
-package org.mellowtech.core.io;
+package org.mellowtech.core.io.impl;
 
 import com.google.common.base.Objects;
 import org.mellowtech.core.CoreLog;
+import org.mellowtech.core.io.Record;
+import org.mellowtech.core.io.RecordFile;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -85,6 +87,7 @@ abstract class AbstractBlockFile implements RecordFile {
   @Override
   public void clear() throws IOException {
     bitSet.clear();
+    saveBitSet();
   }
 
   @Override
@@ -116,11 +119,11 @@ abstract class AbstractBlockFile implements RecordFile {
       return false;
   }
 
-  @Override
+  /*@Override
   public void deleteAll() throws IOException {
     bitSet.clear();
     saveBitSet();
-  }
+  }*/
 
 
   @Override
@@ -171,10 +174,17 @@ abstract class AbstractBlockFile implements RecordFile {
   }
 
   @Override
+  public void remove() throws IOException {
+    Path pp = p;
+    close();
+    Files.delete(p);
+  }
+
+  @Override
   public boolean save() throws IOException {
     ByteBuffer bb = ByteBuffer.allocate(headerSize());
     bb.put(MAGIC.getBytes());
-    bb.putInt(BlockFile.FILE_VERSION);
+    bb.putInt(FILE_VERSION);
     bb.putInt(blockSize);
     bb.putInt(maxBlocks);
     bb.putInt(reserve);

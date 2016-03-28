@@ -21,7 +21,6 @@ import org.mellowtech.core.bytestorable.BComparable;
 import org.mellowtech.core.bytestorable.BStorable;
 import org.mellowtech.core.bytestorable.CBBoolean;
 import org.mellowtech.core.bytestorable.CBUtil;
-import org.mellowtech.core.bytestorable.io.BCBlock;
 import org.mellowtech.core.bytestorable.io.BCBuffer;
 import org.mellowtech.core.collections.BTree;
 import org.mellowtech.core.collections.KeyValue;
@@ -29,7 +28,6 @@ import org.mellowtech.core.collections.TreePosition;
 import org.mellowtech.core.io.*;
 import org.mellowtech.core.util.MapEntry;
 
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -211,21 +209,21 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
   }
 
   @Override
-  public void createIndex() throws IOException {
+  public void rebuildIndex() throws IOException {
     //just return if there are no value blocks
     if (valueFile.size() == 0) {
       truncate();
       return;
     }
 
-    BCBlock<KeyValue.KV<B, D>, KeyValue<B, D>> tmp;
+    BCBuffer<KeyValue.KV<B, D>, KeyValue<B, D>> tmp;
     SmallLarge<B>[] blocks = new SmallLarge[valueFile.size()];
     Iterator<Record> iter = valueFile.iterator();
     int i = 0;
     int s = 0;
     while (iter.hasNext()) {
       Record r = iter.next();
-      tmp = new BCBlock<KeyValue.KV<B, D>, KeyValue<B, D>>(r.data, this.keyValues);
+      tmp = new BCBuffer<KeyValue.KV<B, D>, KeyValue<B, D>>(ByteBuffer.wrap(r.data), this.keyValues);
       KeyValue<B, D> first = tmp.getFirst();
       KeyValue<B, D> last = tmp.getLast();
       SmallLarge sl = new SmallLarge<>(first.getKey(), last.getKey(), r.record);
@@ -243,7 +241,7 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
     if (oneFileTree)
       idxValueFile.deleteAllRegion();
     else
-      idxFile.deleteAll();
+      idxFile.clear();
 
     IdxBlock<B>[] levels = (IdxBlock<B>[]) new IdxBlock<?>[20];
     for (i = 0; i < blocks.length - 1; i++) {
@@ -267,7 +265,7 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
    * @throws java.io.IOException if an error occurs
    */
   @Override
-  public void createIndex(Iterator<KeyValue<B, D>> iterator) throws IOException {
+  public void createTree(Iterator<KeyValue<B, D>> iterator) throws IOException {
     if (!iterator.hasNext()) {
       truncate();
       return;
@@ -941,24 +939,6 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
     return sb.get(pos).get().leftNode;
   }
 
-
-  /*protected final BCBuffer<BTreeKey.Entry<B>, BTreeKey<B>> newIBlock(){
-    int blockSize = oneFileTree ? idxValueFile.getBlockSizeRegion() : idxFile.getBlockSize();
-    return new BCBuffer<>(blockSize, indexKeys, BCBlock.PtrType.NORMAL, (short) 4);
-  }*/
-
-  /*protected final BCBuffer<KeyValue.KV<B, D>,KeyValue<B, D>> newVBlock(){
-    return new BCBuffer<>(valueFile.getBlockSize(), keyValues, BCBlock.PtrType.NORMAL);
-  }
-
-  protected final BCBuffer<KeyValue.KV<B, D>,KeyValue<B, D>> newVBlock(byte[] b){
-    return newVBlock(ByteBuffer.wrap(b));
-  }
-
-  protected final BCBuffer<KeyValue.KV<B, D>,KeyValue<B, D>> newVBlock(ByteBuffer b){
-    return new BCBuffer<>(b, keyValues, BCBlock.PtrType.NORMAL);
-  }*/
-
   /**
    * Position of the previous key given a search
    *
@@ -1316,17 +1296,17 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
     if (oneFileTree) {
       bNo = idxValueFile.insertRegion(null);
       if (useMappedIdx) {
-        buff = new BCBuffer<>(idxValueFile.getRegionMapped(bNo), indexKeys, BCBlock.PtrType.NORMAL, (short) 4);
+        buff = new BCBuffer<>(idxValueFile.getRegionMapped(bNo), indexKeys, BCBuffer.PtrType.NORMAL, (short) 4);
       } else {
-        buff = new BCBuffer<>(blockSize, indexKeys, BCBlock.PtrType.NORMAL, (short) 4);
+        buff = new BCBuffer<>(blockSize, indexKeys, BCBuffer.PtrType.NORMAL, (short) 4);
         updateIndexBlock(bNo, buff);
       }
     } else {
       bNo = idxFile.insert(null);
       if (useMappedIdx) {
-        buff = new BCBuffer<>(idxFile.getMapped(bNo), indexKeys, BCBlock.PtrType.NORMAL, (short) 4);
+        buff = new BCBuffer<>(idxFile.getMapped(bNo), indexKeys, BCBuffer.PtrType.NORMAL, (short) 4);
       } else {
-        buff = new BCBuffer<>(blockSize, indexKeys, BCBlock.PtrType.NORMAL, (short) 4);
+        buff = new BCBuffer<>(blockSize, indexKeys, BCBuffer.PtrType.NORMAL, (short) 4);
         updateIndexBlock(bNo, buff);
       }
     }
@@ -1338,9 +1318,9 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
     BCBuffer<KeyValue.KV<B, D>, KeyValue<B, D>> buff;
     if (useMappedValue) {
       bNo = valueFile.insert(null);
-      buff = new BCBuffer<>(valueFile.getMapped(bNo), keyValues, BCBlock.PtrType.NORMAL);
+      buff = new BCBuffer<>(valueFile.getMapped(bNo), keyValues, BCBuffer.PtrType.NORMAL);
     } else {
-      buff = new BCBuffer<>(valueFile.getBlockSize(), keyValues, BCBlock.PtrType.NORMAL);
+      buff = new BCBuffer<>(valueFile.getBlockSize(), keyValues, BCBuffer.PtrType.NORMAL);
       bNo = valueFile.insert(buff.getArray());
     }
     return new ValueBlock<>(buff, bNo);

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.mellowtech.core.io;
+package org.mellowtech.core.io.impl;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -124,10 +124,10 @@ public class CachedRecordFile extends AbstractBlockFile {
   }
 
   @Override
-  public void insert(int record, byte[] bytes) throws IOException {
+  public void insert(int record, byte[] bytes, int offset, int length) throws IOException {
     if (record >= maxBlocks) throw new IOException("record out of block range");
     bitSet.set(record, true);
-    update(record, bytes);
+    update(record, bytes, offset, length);
     saveBitSet();
   }
 

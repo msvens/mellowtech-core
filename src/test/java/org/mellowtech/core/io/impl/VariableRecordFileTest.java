@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-package org.mellowtech.core.io;
+package org.mellowtech.core.io.impl;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.mellowtech.core.io.RecordFile;
 
 import java.nio.file.Paths;
 

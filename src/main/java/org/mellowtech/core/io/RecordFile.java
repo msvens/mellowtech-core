@@ -45,7 +45,7 @@ public interface RecordFile {
 
   boolean delete(int record) throws IOException;
 
-  void deleteAll() throws IOException;
+  //void deleteAll() throws IOException;
 
   default void forEach(Consumer<Record> action){
     Iterator <Record> iter = iterator();
@@ -77,7 +77,11 @@ public interface RecordFile {
 
   int insert(byte[] bytes, int offset, int length) throws IOException;
 
-  void insert(int record, byte[] bytes) throws IOException;
+  default void insert(int record, byte[] bytes) throws IOException{
+    insert(record, bytes, 0, bytes.length);
+  }
+
+  void insert(int record, byte[] bytes, int offset, int length) throws IOException;
 
   boolean isOpen();
 
@@ -86,6 +90,12 @@ public interface RecordFile {
   Iterator<Record> iterator(int record) throws UnsupportedOperationException;
 
   MappedByteBuffer mapReserve() throws IOException, UnsupportedOperationException;
+
+  /**
+   * Removes this record file from disc. After a call to this method
+   * @throws IOException if an error occurs
+   */
+  void remove() throws IOException;
 
   boolean save() throws IOException;
 

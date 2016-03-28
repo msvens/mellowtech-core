@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 
-package org.mellowtech.core.io;
+package org.mellowtech.core.io.impl;
+
+import org.mellowtech.core.io.RecordFile;
 
 import java.nio.file.Paths;
 
@@ -24,24 +26,24 @@ import java.nio.file.Paths;
  *
  * @author Martin Svensson
  */
-public class MemSplitBlockFileTest extends SplitRecordFileTemplate{
+public class CachedRecordFileTest extends RecordFileTemplate {
 
   @Override
-  public String fname() {return "memSplitBlockFileTest.blf";}
+  public String fname() {return "cachedRecordFileTest.blf";}
 
   @Override
   public long blocksOffset() {
-    return ((MemSplitBlockFile) rf).blocksOffset();
-  }
-
-  @Override
-  public SplitRecordFile init(int blockSize, int reserve, int maxBlocks, String fname) throws Exception {
-    return new MemSplitBlockFile(Paths.get(fname), blockSize, maxBlocks, reserve, maxBlocks, blockSize);
+    return ((CachedRecordFile)rf).blocksOffset();
   }
 
   @Override
   public RecordFile reopen(String fname) throws Exception {
-    return new MemSplitBlockFile(Paths.get(fname));
+    return new CachedRecordFile(Paths.get(fname), maxBlocks);
   }
+  @Override
+  public RecordFile init(int blockSize, int reserve, int maxBlocks, String fname) throws Exception {
+    return new CachedRecordFile(Paths.get(fname), blockSize, maxBlocks, reserve, maxBlocks);
+  }
+
 
 }

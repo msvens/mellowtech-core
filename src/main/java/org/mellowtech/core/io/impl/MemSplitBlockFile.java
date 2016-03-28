@@ -14,36 +14,39 @@
  * limitations under the License.
  */
 
-package org.mellowtech.core.io;
+package org.mellowtech.core.io.impl;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.file.Path;
 
-
 /**
+ * Same as SplitBlockFile but with the difference that
+ * the second portion of the file is also memory mapped.
+ * The file will increase in regular intervals
  * @author Martin Svensson
  */
-public class MemBlockFile extends AbstractBlockFile {
+public class MemSplitBlockFile extends AbstractSplitBlockFile {
 
   private BlockMapper bmap;
 
-
-  public MemBlockFile(Path p) throws IOException {
-    super(p);
+  public MemSplitBlockFile(Path path) throws IOException{
+    super(path);
     bmap = new BlockMapper(fc, blocksOffset(), getBlockSize(), maxBlocks);
     bmap.map(fc.size());
   }
 
-  public MemBlockFile(Path p, int blockSize, int maxBlocks, int reserve) throws IOException {
-    super(p, blockSize, maxBlocks, reserve);
-    bmap = new BlockMapper(fc, blocksOffset(), blockSize, maxBlocks);
+  public MemSplitBlockFile(Path path, int blockSize, int maxBlocks,
+                           int reserve, int mappedMaxBlocks, int mappedBlockSize) throws IOException{
+    super(path, blockSize, maxBlocks, reserve, mappedMaxBlocks, mappedBlockSize);
+    bmap = new BlockMapper(fc, blocksOffset(), getBlockSize(), maxBlocks);
     bmap.map(fc.size());
+
   }
 
   @Override
-  public void clear() throws IOException{
+  public void clear() throws IOException {
     super.clear();
     bmap = null;
     truncate();
@@ -52,24 +55,41 @@ public class MemBlockFile extends AbstractBlockFile {
   }
 
   @Override
-  public MappedByteBuffer getMapped(int record){
-    return bitSet.get(record) ? bmap.slice(record) : null;
+  public boolean delete(int record) throws IOException {
+    if (super.delete(record)) {
+      bmap.shrink(getLastRecord());
+      return true;
+    }
+    return false;
   }
 
   @Override
-  public boolean get(int record, byte[] buffer) throws IOException {
-    if (bitSet.get(record)) {
-      //ByteBuffer bb = findBuffer(record);
+  public boolean get(int record, byte[] buffer) throws IOException{
+    if(bitSet.get(record)){
       ByteBuffer bb = bmap.find(record);
       record = bmap.truncate(record);
       bb.position(record * getBlockSize());
-      if (buffer.length > getBlockSize())
+      if(buffer.length > getBlockSize()){
         bb.get(buffer, 0, getBlockSize());
+      }
       else
         bb.get(buffer);
       return true;
     }
     return false;
+  }
+
+  @Override
+  public MappedByteBuffer getMapped(int record){
+    return bitSet.get(record) ? bmap.slice(record) : null;
+  }
+
+  public int getLastMappedRecord(){
+    return mappedBitSet.length() - 1;
+  }
+
+  public int getLastRecord(){
+    return bitSet.length() - 1;
   }
 
   @Override
@@ -88,21 +108,31 @@ public class MemBlockFile extends AbstractBlockFile {
       bb.put(bytes, offset, length > getBlockSize() ? getBlockSize() : length);
     }
     bitSet.set(index, true);
-    saveBitSet();
+    saveBitSet(bitSet, bitBuffer);
     return index;
+
   }
 
   @Override
-  public void insert(int record, byte[] bytes) throws IOException {
+  public void insert(int record, byte[] bytes, int offset, int length) throws IOException {
     if (record >= maxBlocks)
       throw new IOException("record out of range");
     bmap.maybeExpand(record);
 
     bitSet.set(record, true);
-    saveBitSet();
-    update(record, bytes);
+    saveBitSet(bitSet, bitBuffer);
+    update(record, bytes, offset, length);
 
   }
+
+
+  @Override
+  public boolean save() throws IOException{
+    if (bmap != null) bmap.force();
+    super.save();
+    return true;
+  }
+
 
   @Override
   public boolean update(int record, byte[] bytes, int offset, int length) throws IOException {
@@ -113,26 +143,5 @@ public class MemBlockFile extends AbstractBlockFile {
     bb.put(bytes, offset, length > getBlockSize() ? getBlockSize() : length);
     return true;
   }
-
-  @Override
-  public boolean save() throws IOException {
-    if (bmap != null) bmap.force();
-    super.save();
-    return true;
-  }
-
-  @Override
-  public boolean delete(int record) throws IOException {
-    if (super.delete(record)) {
-      bmap.shrink(getLastRecord());
-      return true;
-    }
-    return false;
-  }
-
-  protected int getLastRecord() {
-    return bitSet.length() - 1;
-  }
-
 
 }

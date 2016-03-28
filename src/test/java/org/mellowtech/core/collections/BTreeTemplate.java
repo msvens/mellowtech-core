@@ -508,7 +508,7 @@ public abstract class BTreeTemplate {
     putMany();
     tree.save();
     try{
-      tree.createIndex();
+      tree.rebuildIndex();
     } catch(UnsupportedOperationException uoe){
       return;
     }

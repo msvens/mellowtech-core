@@ -15,10 +15,12 @@
  * limitations under the License.
  */
 
-package org.mellowtech.core.io;
+package org.mellowtech.core.io.impl;
 
 import com.google.common.base.Objects;
 import org.mellowtech.core.CoreLog;
+import org.mellowtech.core.io.Record;
+import org.mellowtech.core.io.SplitRecordFile;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -98,6 +100,8 @@ abstract class AbstractSplitBlockFile implements SplitRecordFile {
   public void clear() throws IOException {
     bitSet.clear();
     mappedBitSet.clear();
+    saveBitSet(bitSet, bitBuffer);
+    saveBitSet(mappedBitSet, mappedBitBuffer);
   }
 
   protected void truncate() throws IOException {
@@ -252,13 +256,13 @@ abstract class AbstractSplitBlockFile implements SplitRecordFile {
   }
 
   @Override
-  public void insertRegion(int record, byte[] bytes) throws IOException {
+  public void insertRegion(int record, byte[] bytes, int offset, int length) throws IOException {
     if (record > mappedMaxBlocks)
       throw new IOException("record out of bounce");
 
     mappedBitSet.set(record, true);
     saveBitSet(mappedBitSet, mappedBitBuffer);
-    updateRegion(record, bytes);
+    updateRegion(record, bytes, offset, length);
   }
 
   @Override
@@ -284,6 +288,13 @@ abstract class AbstractSplitBlockFile implements SplitRecordFile {
   @Override
   public MappedByteBuffer mapReserve() throws IOException {
     return fc.map(FileChannel.MapMode.READ_WRITE, reservedOffset(), reservedSize());
+  }
+
+  @Override
+  public void remove() throws IOException {
+    Path pp = p;
+    close();
+    Files.delete(p);
   }
 
   @Override

@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 
-package org.mellowtech.core.io;
+package org.mellowtech.core.io.impl;
+
+import org.mellowtech.core.io.RecordFile;
 
 import java.nio.file.Paths;
 
@@ -24,25 +26,25 @@ import java.nio.file.Paths;
  *
  * @author Martin Svensson
  */
-public class MemBlockFileTest extends RecordFileTemplate {
+public class BlockFileTest extends RecordFileTemplate {
+
 
 
   @Override
-  public String fname() {return "memBlockFileTest.blf";}
+  public String fname() {return "blockFileTest.blf";}
 
   @Override
   public long blocksOffset() {
-    return ((MemBlockFile)rf).blocksOffset();
-  }
-
-  @Override
-  public RecordFile init(int blockSize, int reserve, int maxBlocks, String fname) throws Exception {
-    return new MemBlockFile(Paths.get(fname), blockSize, maxBlocks, reserve);
+    return ((BlockFile) rf).blocksOffset();
   }
 
   @Override
   public RecordFile reopen(String fname) throws Exception {
-    return new MemBlockFile(Paths.get(fname));
+    return new BlockFile(Paths.get(fname));
+  }
+  @Override
+  public RecordFile init(int blockSize, int reserve, int maxBlocks, String fname) throws Exception {
+    return new BlockFile(Paths.get(fname), blockSize, maxBlocks, reserve);
   }
 
 
