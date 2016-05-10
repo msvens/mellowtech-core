@@ -21,6 +21,7 @@ import com.google.common.base.Objects;
 import org.mellowtech.core.CoreLog;
 import org.mellowtech.core.io.Record;
 import org.mellowtech.core.io.SplitRecordFile;
+import org.mellowtech.core.util.MappedBitSet;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -62,8 +63,8 @@ abstract class AbstractSplitBlockFile implements SplitRecordFile {
   protected FileChannel fc;
   protected int maxBlocks;
   protected int mappedMaxBlocks;
-  protected BitSet bitSet;
-  protected BitSet mappedBitSet;
+  protected MappedBitSet bitSet;
+  protected MappedBitSet mappedBitSet;
   protected MappedByteBuffer bitBuffer;
   protected MappedByteBuffer mappedBitBuffer;
   protected MappedByteBuffer mappedBlocks;
@@ -100,8 +101,9 @@ abstract class AbstractSplitBlockFile implements SplitRecordFile {
   public void clear() throws IOException {
     bitSet.clear();
     mappedBitSet.clear();
-    saveBitSet(bitSet, bitBuffer);
+    /*saveBitSet(bitSet, bitBuffer);
     saveBitSet(mappedBitSet, mappedBitBuffer);
+    */
   }
 
   protected void truncate() throws IOException {
@@ -128,19 +130,19 @@ abstract class AbstractSplitBlockFile implements SplitRecordFile {
 
   @Override
   public boolean contains(int record) {
-    return bitSet.get(record);
+    return bitSet.contains(record);
   }
 
   @Override
   public boolean containsRegion(int record) {
-    return mappedBitSet.get(record);
+    return mappedBitSet.contains(record);
   }
 
   @Override
   public boolean delete(int record) throws IOException {
-    if (bitSet.get(record)) {
+    if (bitSet.contains(record)) {
       bitSet.flip(record);
-      saveBitSet(bitSet, bitBuffer);
+      //saveBitSet(bitSet, bitBuffer);
       return true;
     }
     return false;
@@ -149,14 +151,14 @@ abstract class AbstractSplitBlockFile implements SplitRecordFile {
   @Override
   public void deleteAll() throws IOException {
     bitSet.clear();
-    saveBitSet(bitSet, bitBuffer);
+    //saveBitSet(bitSet, bitBuffer);
   }
 
   @Override
   public boolean deleteRegion(int record) throws IOException {
-    if (mappedBitSet.get(record)) {
+    if (mappedBitSet.contains(record)) {
       mappedBitSet.flip(record);
-      saveBitSet(mappedBitSet, mappedBitBuffer);
+      //saveBitSet(mappedBitSet, mappedBitBuffer);
       return true;
     }
     return false;
@@ -165,7 +167,7 @@ abstract class AbstractSplitBlockFile implements SplitRecordFile {
   @Override
   public void deleteAllRegion() throws IOException {
     mappedBitSet.clear();
-    saveBitSet(mappedBitSet, mappedBitBuffer);
+    //saveBitSet(mappedBitSet, mappedBitBuffer);
   }
 
   @Override
@@ -210,7 +212,7 @@ abstract class AbstractSplitBlockFile implements SplitRecordFile {
 
   @Override
   public boolean getRegion(int record, byte[] buffer) throws IOException {
-    if (mappedBitSet.get(record)) {
+    if (mappedBitSet.contains(record)) {
       mappedBlocks.position(record * getBlockSizeRegion());
       if (buffer.length > getBlockSizeRegion()) {
         mappedBlocks.get(buffer, 0, getBlockSizeRegion());
@@ -223,7 +225,7 @@ abstract class AbstractSplitBlockFile implements SplitRecordFile {
 
   @Override
   public MappedByteBuffer getRegionMapped(int record){
-    if(mappedBitSet.get(record)){
+    if(mappedBitSet.contains(record)){
       MappedByteBuffer bb = (MappedByteBuffer) mappedBlocks.duplicate();
       bb.position(record * getBlockSizeRegion());
       bb.limit(bb.position()+getBlockSizeRegion());
@@ -251,7 +253,7 @@ abstract class AbstractSplitBlockFile implements SplitRecordFile {
       mappedBlocks.put(bytes, offset, l);
     }
     mappedBitSet.set(index, true);
-    saveBitSet(mappedBitSet, mappedBitBuffer);
+    //saveBitSet(mappedBitSet, mappedBitBuffer);
     return index;
   }
 
@@ -261,7 +263,7 @@ abstract class AbstractSplitBlockFile implements SplitRecordFile {
       throw new IOException("record out of bounce");
 
     mappedBitSet.set(record, true);
-    saveBitSet(mappedBitSet, mappedBitBuffer);
+    //saveBitSet(mappedBitSet, mappedBitBuffer);
     updateRegion(record, bytes, offset, length);
   }
 
@@ -309,9 +311,9 @@ abstract class AbstractSplitBlockFile implements SplitRecordFile {
     bb.putInt(reserve);
     bb.flip();
     fc.write(bb, 0);
-    saveBitSet(mappedBitSet, mappedBitBuffer);
+    //saveBitSet(mappedBitSet, mappedBitBuffer);
     mappedBitBuffer.force();
-    saveBitSet(bitSet, bitBuffer);
+    //saveBitSet(bitSet, bitBuffer);
     bitBuffer.force();
     mappedBlocks.force();
     fc.force(true);
@@ -353,7 +355,7 @@ abstract class AbstractSplitBlockFile implements SplitRecordFile {
 
   @Override
   public boolean updateRegion(int record, byte[] bytes, int offset, int length) throws IOException {
-    if (!mappedBitSet.get(record)) return false;
+    if (!mappedBitSet.contains(record)) return false;
     mappedBlocks.position(record * getBlockSizeRegion());
     int l = length > getBlockSizeRegion() ? getBlockSizeRegion() : length;
     mappedBlocks.put(bytes, offset, l);
@@ -369,8 +371,9 @@ abstract class AbstractSplitBlockFile implements SplitRecordFile {
   }
 
   protected int bitSetSize() {
-    int bytes = (int) Math.ceil((maxBlocks / 8D));
-    return 4 + bytes;
+    return MappedBitSet.maxBytesUsed(maxBlocks);
+    /*int bytes = (int) Math.ceil((maxBlocks / 8D));
+    return 4 + bytes;*/
   }
 
   protected long blocksOffset() {
@@ -381,8 +384,8 @@ abstract class AbstractSplitBlockFile implements SplitRecordFile {
     fc = FileChannel.open(p, StandardOpenOption.CREATE_NEW, StandardOpenOption.READ, StandardOpenOption.WRITE);
     mappedBitBuffer = fc.map(FileChannel.MapMode.READ_WRITE, regionBitSetOffset(), regionBitSetSize());
     bitBuffer = fc.map(FileChannel.MapMode.READ_WRITE, bitSetOffset(), bitSetSize());
-    bitSet = new BitSet();
-    mappedBitSet = new BitSet();
+    bitSet = new MappedBitSet(bitBuffer);
+    mappedBitSet = new MappedBitSet(mappedBitBuffer);
     mappedBlocks = fc.map(FileChannel.MapMode.READ_WRITE, regionBlocksOffset(),
         regionBlocksSize());
     close();
@@ -422,17 +425,18 @@ abstract class AbstractSplitBlockFile implements SplitRecordFile {
 
     //bitsets
     mappedBitBuffer = fc.map(FileChannel.MapMode.READ_WRITE, regionBitSetOffset(), regionBitSetSize());
-    int numBytes = mappedBitBuffer.getInt();
+    /*int numBytes = mappedBitBuffer.getInt();
     ByteBuffer lb = mappedBitBuffer.slice();
-    //System.out.println("mapped size: "+numBytes);
     lb.limit(numBytes);
-    mappedBitSet = BitSet.valueOf(lb);
+    mappedBitSet = BitSet.valueOf(lb);*/
+    mappedBitSet = new MappedBitSet(mappedBitBuffer);
 
     bitBuffer = fc.map(FileChannel.MapMode.READ_WRITE, bitSetOffset(), bitSetSize());
-    numBytes = bitBuffer.getInt();
+    /*numBytes = bitBuffer.getInt();
     lb = bitBuffer.slice();
     lb.limit(numBytes);
-    bitSet = BitSet.valueOf(lb);
+    bitSet = BitSet.valueOf(lb);*/
+    bitSet = new MappedBitSet(bitBuffer);
 
     //region blocks
     mappedBlocks = fc.map(FileChannel.MapMode.READ_WRITE, regionBlocksOffset(),
@@ -447,20 +451,21 @@ abstract class AbstractSplitBlockFile implements SplitRecordFile {
   }
 
   protected int regionBitSetSize() {
-    int bytes = (int) Math.ceil((mappedMaxBlocks / 8D));
-    return 4 + bytes;
+    return MappedBitSet.maxBytesUsed(mappedMaxBlocks);
+    /*int bytes = (int) Math.ceil((mappedMaxBlocks / 8D));
+    return 4 + bytes;*/
   }
 
   protected long regionBlocksOffset() {
     return align(reservedOffset() + reservedSize());
   }
 
-  protected void saveBitSet(BitSet toSave, ByteBuffer bb) throws IOException {
+  /*protected void saveBitSet(BitSet toSave, ByteBuffer bb) throws IOException {
     bb.clear();
     byte[] bits = toSave.toByteArray();
     bb.putInt(bits.length);
     bb.put(bits);
-  }
+  }*/
 
   private long regionBlocksSize() {
     return mappedBlockSize * (long) mappedMaxBlocks;

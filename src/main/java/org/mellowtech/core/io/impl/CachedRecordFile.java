@@ -43,7 +43,7 @@ public class CachedRecordFile extends AbstractBlockFile {
   CacheLoader<Integer, byte[]> loader = new CacheLoader<Integer, byte[]>() {
     @Override
     public byte[] load(Integer key) throws Exception {
-      if (bitSet.get(key)) {
+      if (bitSet.contains(key)) {
         ByteBuffer bb = ByteBuffer.allocate(getBlockSize());
         long offset = getOffset(key);
         fc.read(bb, offset);
@@ -119,7 +119,7 @@ public class CachedRecordFile extends AbstractBlockFile {
     int index = bitSet.nextClearBit(0);
     bitSet.set(index, true);
     update(index, bytes, offset, length);
-    saveBitSet();
+    //saveBitSet();
     return index;
   }
 
@@ -128,12 +128,12 @@ public class CachedRecordFile extends AbstractBlockFile {
     if (record >= maxBlocks) throw new IOException("record out of block range");
     bitSet.set(record, true);
     update(record, bytes, offset, length);
-    saveBitSet();
+    //saveBitSet();
   }
 
   @Override
   public boolean update(int record, byte[] bytes, int offset, int length) throws IOException {
-    if (bitSet.get(record) && bytes != null && bytes.length > 0) {
+    if (bitSet.contains(record) && bytes != null && bytes.length > 0) {
       long off = getOffset(record);
       ByteBuffer bb = ByteBuffer.wrap(bytes, offset, length > getBlockSize() ? getBlockSize() : length);
       fc.write(bb, off);

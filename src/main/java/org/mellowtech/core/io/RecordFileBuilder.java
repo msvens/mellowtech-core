@@ -28,7 +28,7 @@ import java.nio.file.Paths;
  */
 public class RecordFileBuilder {
   
-  public enum Strategy {DISC, SPLIT, MEM_SPLIT, DISC_MEM}
+  public enum Strategy {DISC, SPLIT, MEM_SPLIT, DISC_MEM, MULTI}
 
   private boolean spanned = false;
   private Strategy strategy = Strategy.DISC;
@@ -38,6 +38,7 @@ public class RecordFileBuilder {
   private int reserve = 0;
   private int splitBlockSize = 512;
   private Integer splitMaxBlocks = null;
+  private int multiFileSize = MultiBlockFile.DEFAULT_FILE_SIZE;
   
   /**
    * 
@@ -69,6 +70,16 @@ public class RecordFileBuilder {
     strategy = Strategy.DISC;
     return this;
   }
+
+  public RecordFileBuilder multi() {
+    strategy = Strategy.MULTI;
+    return this;
+  }
+
+  public RecordFileBuilder multiFileSize(int fileSize){
+    this.multiFileSize = fileSize;
+    return this;
+  }
   
   public RecordFileBuilder iterate(boolean iter) {
     this.iterate = iter;
@@ -94,6 +105,7 @@ public class RecordFileBuilder {
     this.splitMaxBlocks = size;
     return this;
   }
+
   
   public RecordFileBuilder reserve(int bytes) {
     this.reserve = bytes;
@@ -108,11 +120,11 @@ public class RecordFileBuilder {
     if(spanned)
       return new VariableRecordFile(path,maxBlocks,reserve);
     else
-      return RecordFileBuilder.create(strategy, maxBlocks, path, blockSize, reserve, splitMaxBlocks, splitBlockSize);
+      return RecordFileBuilder.create(strategy, maxBlocks, path, blockSize, reserve, splitMaxBlocks, splitBlockSize, multiFileSize);
   }
   
   private static RecordFile create(Strategy s, Integer maxBlocks, Path path,
-      int blockSize, int reserve, Integer splitMaxBlocks, Integer splitBlockSize) throws IOException {
+      int blockSize, int reserve, Integer splitMaxBlocks, Integer splitBlockSize, int multiFileSize) throws IOException {
     switch(s) {
       case DISC:
         return maxBlocks != null ? new BlockFile(path, blockSize, maxBlocks, reserve) : new BlockFile(path);
@@ -122,6 +134,8 @@ public class RecordFileBuilder {
         return maxBlocks != null ? new MemSplitBlockFile(path, blockSize, maxBlocks, reserve, splitMaxBlocks, splitBlockSize) : new MemSplitBlockFile(path);
       case DISC_MEM :
         return maxBlocks != null ? new MemBlockFile(path, blockSize, maxBlocks, reserve) : new MemBlockFile(path);
+      case MULTI:
+        return new MultiBlockFile(multiFileSize, blockSize, reserve, path);
     }
     return null;
   }

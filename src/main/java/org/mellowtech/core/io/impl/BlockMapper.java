@@ -103,7 +103,7 @@ public class BlockMapper {
       removed = true;
     }
     if (removed) {
-      int region = blockSize * blocksToMap;
+      long region =  ((long) blockSize) * blocksToMap;
       fc.truncate(offset + ((blockNo + 1) * region));
     }
   }

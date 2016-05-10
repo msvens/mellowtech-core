@@ -182,10 +182,12 @@ public class MultiBlockFile implements RecordFile {
     }
     FileRecord fr = files.get(fid.fileId);
     ByteBuffer bb = fr.slice(fid.rec);
-    if(bytes != null && length > 0)
+    if(bytes != null && length > 0) {
       bb.put(bytes, offset, length > getBlockSize() ? getBlockSize() : length);
-    else //just override the deleted marker
+    }
+    else { //just override the deleted marker
       bb.putInt(Integer.MAX_VALUE);
+    }
     if(record >= high)
       high = record + 1;
   }
@@ -405,6 +407,10 @@ public class MultiBlockFile implements RecordFile {
       }catch (IOException e){
         throw new Error(e);
       }
+    }
+
+    public MappedByteBuffer sliceTo(int record, int size){
+      return slice(record*blockSize,size);
     }
 
     public MappedByteBuffer slice(int record){

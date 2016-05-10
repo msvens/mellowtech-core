@@ -53,12 +53,12 @@ public class MemBlockFile extends AbstractBlockFile {
 
   @Override
   public MappedByteBuffer getMapped(int record){
-    return bitSet.get(record) ? bmap.slice(record) : null;
+    return bitSet.contains(record) ? bmap.slice(record) : null;
   }
 
   @Override
   public boolean get(int record, byte[] buffer) throws IOException {
-    if (bitSet.get(record)) {
+    if (bitSet.contains(record)) {
       //ByteBuffer bb = findBuffer(record);
       ByteBuffer bb = bmap.find(record);
       record = bmap.truncate(record);
@@ -73,40 +73,20 @@ public class MemBlockFile extends AbstractBlockFile {
   }
 
   @Override
-  public int insert(byte[] bytes, int offset, int length) throws IOException {
-    if (size() >= maxBlocks)
-      throw new IOException("no blocks left");
-
-    int index = bitSet.nextClearBit(0);
-
-    bmap.maybeExpand(index);
-
-    if (bytes != null && length > 0) {
-      ByteBuffer bb = bmap.find(index);
-      int record = bmap.truncate(index);
-      bb.position(record * getBlockSize());
-      bb.put(bytes, offset, length > getBlockSize() ? getBlockSize() : length);
-    }
-    bitSet.set(index, true);
-    saveBitSet();
-    return index;
-  }
-
-  @Override
   public void insert(int record, byte[] bytes, int offset, int length) throws IOException {
     if (record >= maxBlocks)
       throw new IOException("record out of range");
     bmap.maybeExpand(record);
-
     bitSet.set(record, true);
-    saveBitSet();
-    update(record, bytes, offset, length);
+    //saveBitSet();
+    if(bytes != null && length > 0)
+      update(record, bytes, offset, length);
 
   }
 
   @Override
   public boolean update(int record, byte[] bytes, int offset, int length) throws IOException {
-    if (!bitSet.get(record)) return false;
+    if (!bitSet.contains(record)) return false;
     ByteBuffer bb = bmap.find(record);
     record = bmap.truncate(record);
     bb.position(record * getBlockSize());

@@ -65,7 +65,7 @@ public class MemSplitBlockFile extends AbstractSplitBlockFile {
 
   @Override
   public boolean get(int record, byte[] buffer) throws IOException{
-    if(bitSet.get(record)){
+    if(bitSet.contains(record)){
       ByteBuffer bb = bmap.find(record);
       record = bmap.truncate(record);
       bb.position(record * getBlockSize());
@@ -81,7 +81,7 @@ public class MemSplitBlockFile extends AbstractSplitBlockFile {
 
   @Override
   public MappedByteBuffer getMapped(int record){
-    return bitSet.get(record) ? bmap.slice(record) : null;
+    return bitSet.contains(record) ? bmap.slice(record) : null;
   }
 
   public int getLastMappedRecord(){
@@ -108,7 +108,7 @@ public class MemSplitBlockFile extends AbstractSplitBlockFile {
       bb.put(bytes, offset, length > getBlockSize() ? getBlockSize() : length);
     }
     bitSet.set(index, true);
-    saveBitSet(bitSet, bitBuffer);
+    //saveBitSet(bitSet, bitBuffer);
     return index;
 
   }
@@ -120,7 +120,7 @@ public class MemSplitBlockFile extends AbstractSplitBlockFile {
     bmap.maybeExpand(record);
 
     bitSet.set(record, true);
-    saveBitSet(bitSet, bitBuffer);
+    //saveBitSet(bitSet, bitBuffer);
     update(record, bytes, offset, length);
 
   }
@@ -136,12 +136,14 @@ public class MemSplitBlockFile extends AbstractSplitBlockFile {
 
   @Override
   public boolean update(int record, byte[] bytes, int offset, int length) throws IOException {
-    if (!bitSet.get(record)) return false;
+    if (!bitSet.contains(record)) return false;
     ByteBuffer bb = bmap.find(record);
     record = bmap.truncate(record);
     bb.position(record * getBlockSize());
     bb.put(bytes, offset, length > getBlockSize() ? getBlockSize() : length);
     return true;
   }
+
+
 
 }

@@ -43,7 +43,7 @@ public class SplitBlockFile extends AbstractSplitBlockFile {
 
   @Override
   public boolean get(int record, byte[] buffer) throws IOException {
-    if (bitSet.get(record)) {
+    if (bitSet.contains(record)) {
       ByteBuffer bb = ByteBuffer.wrap(buffer);
       long offset = getOffset(record);
       fc.read(bb, offset);
@@ -57,7 +57,7 @@ public class SplitBlockFile extends AbstractSplitBlockFile {
     if (record >= maxBlocks)
       throw new IOException("record out of bounce");
     bitSet.set(record, true);
-    saveBitSet(bitSet, bitBuffer);
+    //saveBitSet(bitSet, bitBuffer);
     update(record, bytes, offset, length);
   }
 
@@ -73,13 +73,13 @@ public class SplitBlockFile extends AbstractSplitBlockFile {
       fc.write(data, off);
     }
     bitSet.set(index, true);
-    saveBitSet(bitSet, bitBuffer);
+    //saveBitSet(bitSet, bitBuffer);
     return index;
   }
 
   @Override
   public boolean update(int record, byte[] bytes, int offset, int length) throws IOException {
-    if (!bitSet.get(record)) return false;
+    if (!bitSet.contains(record)) return false;
     long off = getOffset(record);
     ByteBuffer bb = ByteBuffer.wrap(bytes, offset, length > getBlockSize() ? getBlockSize() : length);
     fc.write(bb, off);

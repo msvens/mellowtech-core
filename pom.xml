@@ -21,7 +21,7 @@
     <groupId>org.mellowtech</groupId>
     <artifactId>core</artifactId>
     <packaging>jar</packaging>
-    <version>3.0.5-SNAPSHOT</version>
+    <version>3.0.6-SNAPSHOT</version>
     <name>MELLOWTECH-CORE</name>
     <description>A library for storing, retrieving and searching objects on disc</description>
     <url>http://msvens.github.io/mellowtech-core/</url>
@@ -50,6 +50,11 @@
     </properties>
 
     <dependencies>
+        <dependency>
+            <groupId>org.roaringbitmap</groupId>
+            <artifactId>RoaringBitmap</artifactId>
+            <version>[0.5,)</version>
+        </dependency>
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>

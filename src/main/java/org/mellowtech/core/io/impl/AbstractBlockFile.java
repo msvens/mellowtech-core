@@ -21,6 +21,7 @@ import com.google.common.base.Objects;
 import org.mellowtech.core.CoreLog;
 import org.mellowtech.core.io.Record;
 import org.mellowtech.core.io.RecordFile;
+import org.mellowtech.core.util.MappedBitSet;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -48,7 +49,7 @@ abstract class AbstractBlockFile implements RecordFile {
   protected Path p;
   protected FileChannel fc;
   protected int maxBlocks;
-  protected BitSet bitSet;
+  protected MappedBitSet bitSet;
 
   @Override
   public boolean isOpen() {
@@ -59,7 +60,8 @@ abstract class AbstractBlockFile implements RecordFile {
   private int blockSize;
   private int reserve;
 
-  public AbstractBlockFile(Path p) throws IOException {
+
+  public AbstractBlockFile(Path p) throws IOException{
     openFile(p);
   }
 
@@ -87,7 +89,7 @@ abstract class AbstractBlockFile implements RecordFile {
   @Override
   public void clear() throws IOException {
     bitSet.clear();
-    saveBitSet();
+    //saveBitSet();
   }
 
   @Override
@@ -105,26 +107,18 @@ abstract class AbstractBlockFile implements RecordFile {
 
   @Override
   public boolean contains(int record) {
-    return bitSet.get(record);
+    return bitSet.contains(record);
   }
 
   @Override
   public boolean delete(int record) throws IOException {
-    //if(fileName.endsWith(".idx"))
-    if (bitSet.get(record)) {
+    if (bitSet.contains(record)) {
       bitSet.flip(record);
-      saveBitSet();
+      //saveBitSet();
       return true;
     } else
       return false;
   }
-
-  /*@Override
-  public void deleteAll() throws IOException {
-    bitSet.clear();
-    saveBitSet();
-  }*/
-
 
   @Override
   public int getBlockSize() {
@@ -144,6 +138,13 @@ abstract class AbstractBlockFile implements RecordFile {
   @Override
   public MappedByteBuffer getMapped(int record) throws UnsupportedOperationException {
     throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public int insert(byte[] bytes, int offset, int length) throws IOException {
+    int index = bitSet.nextClearBit(0);
+    insert(index, bytes, offset, length);
+    return index;
   }
 
   @Override
@@ -190,7 +191,7 @@ abstract class AbstractBlockFile implements RecordFile {
     bb.putInt(reserve);
     bb.flip();
     fc.write(bb, headerOffset());
-    saveBitSet();
+    //saveBitSet();
     bitBuffer.force();
     fc.force(true);
     return true;
@@ -226,9 +227,9 @@ abstract class AbstractBlockFile implements RecordFile {
   }
 
   protected int bitSetSize() {
-    int bytes = (int) Math.ceil((maxBlocks / 8D));
-
-    return 4 + bytes;
+    return MappedBitSet.maxBytesUsed(maxBlocks);
+    /*int bytes = (int) Math.ceil((maxBlocks / 8D));
+    return bytes;*/
   }
 
   protected long blocksOffset() {
@@ -238,7 +239,7 @@ abstract class AbstractBlockFile implements RecordFile {
   protected void createFile(Path p) throws IOException {
     fc = FileChannel.open(p, StandardOpenOption.CREATE_NEW, StandardOpenOption.READ, StandardOpenOption.WRITE);
     bitBuffer = fc.map(FileChannel.MapMode.READ_WRITE, bitSetOffset(), bitSetSize());
-    bitSet = new BitSet();
+    bitSet = new MappedBitSet(bitBuffer);
     close();
   }
 
@@ -285,10 +286,11 @@ abstract class AbstractBlockFile implements RecordFile {
     reserve = bb.getInt();
 
     bitBuffer = fc.map(FileChannel.MapMode.READ_WRITE, bitSetOffset(), bitSetSize());
-    int numBytes = bitBuffer.getInt();
+    /*int numBytes = bitBuffer.getInt();
     ByteBuffer lb = bitBuffer.slice();
     lb.limit(numBytes);
-    bitSet = BitSet.valueOf(lb);
+    bitSet = BitSet.valueOf(lb);*/
+    bitSet = new MappedBitSet(bitBuffer);
     return true;
   }
 
@@ -300,13 +302,13 @@ abstract class AbstractBlockFile implements RecordFile {
     return this.reserve;
   }
 
+  /*
   protected void saveBitSet() throws IOException {
     bitBuffer.clear();
     byte[] bits = bitSet.toByteArray();
     bitBuffer.putInt(bits.length);
     bitBuffer.put(bits);
-    //bitBuffer.asLongBuffer().put(bits);
-  }
+  }*/
 
   class BlockFileIterator implements Iterator<Record> {
 
@@ -321,7 +323,7 @@ abstract class AbstractBlockFile implements RecordFile {
 
     @Override
     public boolean hasNext() {
-      return record > 0;
+      return record > -1;
     }
 
     @Override

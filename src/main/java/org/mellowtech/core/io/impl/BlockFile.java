@@ -47,7 +47,7 @@ public class BlockFile extends AbstractBlockFile {
 
   @Override
   public boolean get(int record, byte[] buffer) throws IOException {
-    if (bitSet.get(record)) {
+    if (bitSet.contains(record)) {
       ByteBuffer bb = ByteBuffer.wrap(buffer);
       long offset = getOffset(record);
       fc.read(bb, offset);
@@ -56,7 +56,7 @@ public class BlockFile extends AbstractBlockFile {
     return false;
   }
 
-  @Override
+  /*@Override
   public int insert(byte[] bytes, int offset, int length) throws IOException {
     if (getFreeBlocks() < 1) throw new IOException("no free blocks");
     int index = bitSet.nextClearBit(0);
@@ -64,19 +64,19 @@ public class BlockFile extends AbstractBlockFile {
     update(index, bytes, offset, length);
     saveBitSet();
     return index;
-  }
+  }*/
 
   @Override
   public void insert(int record, byte[] bytes, int offset, int length) throws IOException {
     if (record >= maxBlocks) throw new IOException("record out of block range");
     bitSet.set(record, true);
     update(record, bytes, offset, length);
-    saveBitSet();
+    //saveBitSet();
   }
 
   @Override
   public boolean update(int record, byte[] bytes, int offset, int length) throws IOException {
-    if (bitSet.get(record) && bytes != null && bytes.length > 0) {
+    if (bitSet.contains(record) && bytes != null && bytes.length > 0) {
       long off = getOffset(record);
       ByteBuffer bb = ByteBuffer.wrap(bytes, offset, length > getBlockSize() ? getBlockSize() : length);
       fc.write(bb, off);
