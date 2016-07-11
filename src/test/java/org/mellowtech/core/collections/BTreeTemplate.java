@@ -88,6 +88,7 @@ public abstract class BTreeTemplate {
   @Before
   public void setup() throws Exception{
     tree = init(TestUtils.getAbsolutDir(dir+"/"+fName()), 1024, 1024, 20, 5);
+    //tree = init(TestUtils.getAbsolutDir(dir+"/"+fName()), 124, 124, 200, 200);
   }
 
   @After
@@ -536,6 +537,7 @@ public abstract class BTreeTemplate {
   @Test
   public void manyContainsKey() throws IOException {
     putMany();
+    //System.out.println(tree.toString());
     for(CBString w : manyWords) {
       Assert.assertTrue(tree.containsKey(w));
     }
