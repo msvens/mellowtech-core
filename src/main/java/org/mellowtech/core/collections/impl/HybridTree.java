@@ -25,10 +25,12 @@ import org.mellowtech.core.collections.KeyValue;
 import org.mellowtech.core.collections.TreePosition;
 import org.mellowtech.core.io.Record;
 import org.mellowtech.core.io.RecordFile;
+import org.mellowtech.core.io.RecordFileBuilder;
 import org.mellowtech.core.util.MapEntry;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -40,6 +42,8 @@ import java.util.stream.Stream;
 public class HybridTree <A, B extends BComparable<A, B>, C, D extends BStorable<C, D>>
     implements BTree<A,B,C,D> {
 
+  private final String VALUE_EXT = ".val";
+
   private final TreeMap<B,Integer> idx;
   private Integer rightPtr;
   private long size;
@@ -49,11 +53,17 @@ public class HybridTree <A, B extends BComparable<A, B>, C, D extends BStorable<
   private final B keyType;
   private final D valueType;
   private final boolean mapped;
+  protected final Path dir;
+  protected final String name;
 
-  public HybridTree(Class<B> keyType, Class<D> valueType, RecordFile values, boolean mapped){
+
+  public HybridTree(Path dir, String name, Class<B> keyType, Class<D> valueType,
+                    int valueBlockSize, boolean mapped, boolean multiFile, Optional<Integer> maxBlocks, Optional<Integer> multiFileSize){
     try {
+      this.dir = dir;
+      this.name = name;
       this.mapped = mapped;
-      this.values = values;
+      this.values = openValues(valueBlockSize, multiFile, maxBlocks, multiFileSize);
       this.keyType = keyType.newInstance();
       this.valueType = valueType.newInstance();
       this.keyValues = new KeyValue<>(this.keyType, this.valueType);
@@ -66,6 +76,7 @@ public class HybridTree <A, B extends BComparable<A, B>, C, D extends BStorable<
 
   @Override
   public void close() throws IOException {
+    values.save();
     values.close();
   }
 
@@ -178,7 +189,9 @@ public class HybridTree <A, B extends BComparable<A, B>, C, D extends BStorable<
   public void rebuildIndex() throws IOException, UnsupportedOperationException {
     //just return if there are no value blocks
     if (values.size() == 0) {
-      truncate();
+      size = 0;
+      rightPtr = newBlock(mapped).bNo;
+      idx.clear();
       return;
     }
     idx.clear();
@@ -538,6 +551,27 @@ public class HybridTree <A, B extends BComparable<A, B>, C, D extends BStorable<
       bNo = values.insert(buff.getArray());
     }
     return new HybridTree.Block<>(buff, bNo);
+  }
+
+  private Path valuePath() {
+    return dir.resolve(name + VALUE_EXT);
+  }
+
+  private RecordFile openValues(int valueBlockSize, boolean multiFile, Optional<Integer> maxBlocks, Optional<Integer> multiFileSize) throws IOException{
+    Path vp = valuePath();
+    RecordFileBuilder sfb = new RecordFileBuilder();
+    sfb.blockSize(valueBlockSize);
+    if(multiFile){
+      sfb.multi();
+      if(multiFileSize.isPresent()) sfb.multiFileSize(multiFileSize.get());
+    } else {
+      if(mapped)
+        sfb.mem();
+      else
+        sfb.disc();
+      if(maxBlocks.isPresent()) sfb.maxBlocks(maxBlocks.get());
+    }
+    return sfb.build(vp);
   }
 
   class HybridTreeIterator implements Iterator<KeyValue<B, D>> {

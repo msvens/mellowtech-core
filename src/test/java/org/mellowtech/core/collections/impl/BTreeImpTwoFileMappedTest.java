@@ -23,6 +23,7 @@ import org.mellowtech.core.collections.BTreeTemplate;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Optional;
 
 
 /**
@@ -44,13 +45,14 @@ public class BTreeImpTwoFileMappedTest extends BTreeTemplate {
                                                int maxValueBlocks, int maxIndexBlocks) throws Exception{
     //return new MemMappedBPTreeImp<>(fileName, CBString.class, CBInt.class, indexBlockSize,
     //    valueBlockSize,false,maxValueBlocks,maxIndexBlocks);
-    return new BTreeImp<>(getDir(fileName), fName(), CBString.class, CBInt.class, indexBlockSize, valueBlockSize,maxIndexBlocks,maxValueBlocks,
-        false,true,true,true);
+    return new BTreeImp<>(getDir(fileName), fName(), CBString.class, CBInt.class, indexBlockSize, valueBlockSize,maxIndexBlocks,
+        true,false, Optional.of(maxValueBlocks), Optional.empty());
   }
   @Override
-  public BTree<String, CBString, Integer, CBInt> reopen(String fileName) throws Exception{
-    return new BTreeImp<>(getDir(fileName), fName(), CBString.class, CBInt.class,
-        false,true,true);
+  public BTree<String, CBString, Integer, CBInt> reopen(String fileName,int valueBlockSize, int indexBlockSize,
+                                                        int maxValueBlocks, int maxIndexBlocks) throws Exception{
+    return new BTreeImp<>(getDir(fileName), fName(), CBString.class, CBInt.class, indexBlockSize, valueBlockSize,maxIndexBlocks,
+        true,false, Optional.of(maxValueBlocks), Optional.empty());
   }
 
 

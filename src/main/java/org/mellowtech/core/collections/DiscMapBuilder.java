@@ -34,7 +34,7 @@ public class DiscMapBuilder {
   private int keyBlockSize = DEFAULT_KEY_BLOCK_SIZE;
   private int valueBlockSize = DEFAULT_VALUE_BLOCK_SIZE;
 
-  private boolean memMappedKeyBlocks = true;
+  //private boolean memMappedKeyBlocks = true;
   private boolean memMappedValueBlocks = false;
   private boolean blobValues = false;
 
@@ -57,10 +57,10 @@ public class DiscMapBuilder {
     return this;
   }
 
-  public DiscMapBuilder memMappedKeyBlocks(boolean memMapped) {
+  /*public DiscMapBuilder memMappedKeyBlocks(boolean memMapped) {
     this.memMappedKeyBlocks = memMapped;
     return this;
-  }
+  }*/
 
   public DiscMapBuilder memMappedValueBlocks(boolean memMapped) {
     this.memMappedValueBlocks = memMapped;
@@ -321,8 +321,9 @@ public class DiscMapBuilder {
       if (calcSize(keyClass.newInstance(), valueClass.newInstance()) * 10 > valueBlockSize)
         blobValues = true;
       if (sorted) {
-        return new DiscBasedMap<>(keyClass, valueClass, fileName, valueBlockSize, keyBlockSize, blobValues,
-            memMappedKeyBlocks, memMappedValueBlocks);
+        BTreeBuilder builder = new BTreeBuilder();
+        builder.valueBlockSize(valueBlockSize).valueBlockSize(keyBlockSize).blobValues(blobValues).memoryMappedValues(memMappedValueBlocks);
+        return new DiscBasedMap<>(keyClass, valueClass, fileName, builder);
       } else {
         return new DiscBasedHashMap<>(keyClass, valueClass, fileName, blobValues, memMappedValueBlocks);
       }

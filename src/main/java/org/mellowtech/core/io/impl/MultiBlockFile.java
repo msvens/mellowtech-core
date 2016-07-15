@@ -34,7 +34,7 @@ public class MultiBlockFile implements RecordFile {
 
   public final static int DEFAULT_FILE_SIZE = 1024*1024*64;
   public final static int DEFAULT_BLOCK_SIZE = 1024*8;
-  private static final int DELETED_BLOCK = Integer.MIN_VALUE;
+  private static final int DELETED_BLOCK = 687997538;
   final Path dir;
   final String name;
 
@@ -103,6 +103,8 @@ public class MultiBlockFile implements RecordFile {
 
   @Override
   public void remove() throws IOException {
+    if(!opened)
+      open();
     for(FileRecord fr : files.values()){
       fr.delete();
     }
@@ -295,8 +297,9 @@ public class MultiBlockFile implements RecordFile {
     MappedByteBuffer bb = fr.get();
     int blockNo = -1;
     for(int i = 0; i < blocksPerFile; i++){
-      if(bb.getInt(i*getBlockSize()) != DELETED_BLOCK)
+      if(bb.getInt(i*getBlockSize()) != DELETED_BLOCK) {
         blockNo = i;
+      }
     }
     return blockNo;
   }

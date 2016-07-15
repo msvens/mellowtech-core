@@ -28,6 +28,7 @@ import org.mellowtech.core.bytestorable.CBString;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Created by msvens on 01/11/15.
@@ -35,7 +36,7 @@ import java.util.*;
 public abstract class BTreeTemplate {
 
   BTree <String, CBString, Integer, CBInt> tree;
-  public static String dir = "rftests";
+  public String dir = "rftests";
   public static String chars = "abcdefghijklmn0123456789";
   public static int MAX_WORD_LENGTH = 20;
   public static int MAX_BYTES = 4000;
@@ -77,16 +78,18 @@ public abstract class BTreeTemplate {
   public abstract BTree<String,CBString,Integer,CBInt>
     init(String fileName, int valueBlockSize, int indexBlockSize, int maxValueBlocks, int maxIndexBlocks) throws Exception;
 
-  public abstract BTree<String,CBString,Integer,CBInt> reopen(String fileName) throws Exception;
+  public abstract BTree<String,CBString,Integer,CBInt> reopen(String fileName, int valueBlockSize, int indexBlockSize, int maxValueBlocks, int maxIndexBlocks) throws Exception;
 
-  @BeforeClass
+  /*@BeforeClass
   public static void createDir(){
     TestUtils.deleteTempDir(dir);
     TestUtils.createTempDir(dir);
-  }
+  }*/
 
   @Before
   public void setup() throws Exception{
+    dir = "rftests"+ThreadLocalRandom.current().nextInt();
+    TestUtils.createTempDir(dir);
     tree = init(TestUtils.getAbsolutDir(dir+"/"+fName()), 1024, 1024, 20, 5);
     //tree = init(TestUtils.getAbsolutDir(dir+"/"+fName()), 124, 124, 200, 200);
   }
@@ -95,6 +98,8 @@ public abstract class BTreeTemplate {
   public void after() throws Exception{
     tree.close();
     tree.delete();
+    TestUtils.deleteTempDir(dir);
+    //TestUtils.deleteTempDir(dir);
   }
 
   //IO:
@@ -147,7 +152,7 @@ public abstract class BTreeTemplate {
   @Test
   public void emptyReopen() throws Exception{
     tree.close();
-    tree = reopen(TestUtils.getAbsolutDir(dir+"/"+fName()));
+    tree = reopen(TestUtils.getAbsolutDir(dir+"/"+fName()),1024, 1024, 20, 5);
     Assert.assertNull(tree.get(firstWord));
   }
 
@@ -252,7 +257,7 @@ public abstract class BTreeTemplate {
   public void oneReopen() throws Exception{
     onePut();
     tree.close();
-    tree = reopen(TestUtils.getAbsolutDir(dir+"/"+fName()));
+    tree = reopen(TestUtils.getAbsolutDir(dir+"/"+fName()),1024, 1024, 20, 5);
     Assert.assertEquals(val(ascend[0]), tree.get(ascend[0]));
   }
 
@@ -384,7 +389,7 @@ public abstract class BTreeTemplate {
   public void tenReopen() throws Exception{
     tenPut();
     tree.close();
-    tree = reopen(TestUtils.getAbsolutDir(dir+"/"+fName()));
+    tree = reopen(TestUtils.getAbsolutDir(dir+"/"+fName()),1024, 1024, 20, 5);
     for(CBString w : words)
       Assert.assertEquals(val(w), tree.get(w));
   }
@@ -563,7 +568,7 @@ public abstract class BTreeTemplate {
   public void manyReopen() throws Exception{
     putMany();
     tree.close();
-    tree = reopen(TestUtils.getAbsolutDir(dir+"/"+fName()));
+    tree = reopen(TestUtils.getAbsolutDir(dir+"/"+fName()),1024, 1024, 20, 5);
     for(CBString w : manyWords)
       Assert.assertEquals(val(w), tree.get(w));
   }

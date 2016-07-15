@@ -51,14 +51,14 @@ public class DiscBasedMap <A,B extends BComparable<A,B>,
   protected B keyMapping;
   protected D valueMapping;
   
-  public static int DEFAULT_KEY_BLOCK = 1024*8;
-  public static int DEFAULT_VALUE_BLOCK = 1024*8;
+  //public static int DEFAULT_KEY_BLOCK = 1024*8;
+  //public static int DEFAULT_VALUE_BLOCK = 1024*8;
 
 
   
   
 
-  public DiscBasedMap(Class <B> keyClass, Class <D> valueClass,
+  /*public DiscBasedMap(Class <B> keyClass, Class <D> valueClass,
                       String fileName, boolean blobValues, boolean inMemory) throws Exception{
     this(keyClass, valueClass, fileName, DEFAULT_VALUE_BLOCK, DEFAULT_KEY_BLOCK, blobValues, true, inMemory);
   }
@@ -70,9 +70,9 @@ public class DiscBasedMap <A,B extends BComparable<A,B>,
   
   public DiscBasedMap(Class <B> keyClass, Class <D> valueClass,
       String fileName, int valueBlockSize, int keyBlockSize, boolean blobValues, boolean keysMemoryMapped, boolean valsMemoryMapped) throws Exception{
-    this(keyClass, valueClass, fileName, new BTreeBuilder().blobValues(blobValues).valuesInMemory(valsMemoryMapped)
-        .indexInMemory(keysMemoryMapped).valueBlockSize(valueBlockSize).indexBlockSize(keyBlockSize));
-  }
+    this(keyClass, valueClass, fileName, new BTreeBuilder().blobValues(blobValues).memoryMappedValues(valsMemoryMapped)
+        .memoryMappedIndex(keysMemoryMapped).valueBlockSize(valueBlockSize).indexBlockSize(keyBlockSize));
+  }*/
   
   public DiscBasedMap(Class <B> keyClass, Class <D> valueClass, String fileName,
       BTreeBuilder builder) throws Exception {

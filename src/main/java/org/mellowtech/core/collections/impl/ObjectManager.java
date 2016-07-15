@@ -369,7 +369,7 @@ public class ObjectManager implements DiscMap<String, BStorable> {
   
   private void open() throws Exception {
     //this.mIndex = BTreeFactory.openMemMappedBlob(mFileName, new CBString(), new PointerClassId(), inMemory);
-    BTreeBuilder b = new BTreeBuilder().blobValues(true).valuesInMemory(inMemory);
+    BTreeBuilder b = new BTreeBuilder().blobValues(true).memoryMappedValues(inMemory);
     mIndex = b.build(CBString.class, PointerClassId.class, mFileName);
     openClassIds();
   }

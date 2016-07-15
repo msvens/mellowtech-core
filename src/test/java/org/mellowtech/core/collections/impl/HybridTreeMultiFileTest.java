@@ -25,15 +25,17 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Optional;
 
-
 /**
- * @author Martin Svensson
+ * @author msvens
+ * @since 02/07/16
  */
-public class BTreeImpTwoFileDiscValueTest extends BTreeTemplate {
+public class HybridTreeMultiFileTest extends BTreeTemplate {
 
+
+  public static final Optional<Integer> MultiFileSize = Optional.of(1024*1024*4);
   @Override
   public String fName() {
-    return "btreeimptwofilediscvalue";
+    return "hybridtreemultifile";
   }
 
   static Path getDir(String fName){
@@ -41,17 +43,18 @@ public class BTreeImpTwoFileDiscValueTest extends BTreeTemplate {
   }
 
   @Override
-  public BTree<String, CBString, Integer, CBInt> init(String fileName, int valueBlockSize, int indexBlockSize,
-                                               int maxValueBlocks, int maxIndexBlocks) throws Exception{
-    return new BTreeImp<>(getDir(fileName), fName(), CBString.class, CBInt.class, indexBlockSize, valueBlockSize,maxIndexBlocks,
-        false,false, Optional.of(maxValueBlocks), Optional.empty());
+  public BTree<String, CBString, Integer, CBInt> init(String fileName, int valueBlockSize,
+                                                      int indexBlockSize, int maxValueBlocks,
+                                                      int maxIndexBlocks) throws Exception {
+    return new HybridTree<>(getDir(fileName), fName(), CBString.class, CBInt.class,
+        valueBlockSize, true, true, Optional.empty(), MultiFileSize);
   }
+
   @Override
-  public BTree<String, CBString, Integer, CBInt> reopen(String fileName, int valueBlockSize, int indexBlockSize,
-                                                        int maxValueBlocks, int maxIndexBlocks) throws Exception{
-    return new BTreeImp<>(getDir(fileName), fName(), CBString.class, CBInt.class, indexBlockSize, valueBlockSize,maxIndexBlocks,
-        false,false, Optional.of(maxValueBlocks), Optional.empty());
+  public BTree<String, CBString, Integer, CBInt> reopen(String fileName,int valueBlockSize,
+                                                        int indexBlockSize, int maxValueBlocks,
+                                                        int maxIndexBlocks) throws Exception {
+    return new HybridTree<>(getDir(fileName), fName(), CBString.class, CBInt.class,
+        valueBlockSize, true, true, Optional.empty(), MultiFileSize);
   }
-
-
 }

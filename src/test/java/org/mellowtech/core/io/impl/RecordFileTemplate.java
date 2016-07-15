@@ -144,6 +144,7 @@ public abstract class RecordFileTemplate {
   public void zeroReopen() throws Exception {
     rf.close();
     rf = reopen(TestUtils.getAbsolutDir(dir+"/"+fname()));
+    Assert.assertEquals(0, rf.size());
     Assert.assertNull(rf.get(0));
   }
 
@@ -228,8 +229,10 @@ public abstract class RecordFileTemplate {
   @Test
   public void oneReopen() throws Exception {
     rf.insert(testBlock);
+    rf.save();
     rf.close();
     rf = reopen(TestUtils.getAbsolutDir(dir+"/"+fname()));
+    Assert.assertEquals(1, rf.size());
     Assert.assertEquals(new String(testBlock), new String(rf.get(0)));
   }
 

@@ -20,8 +20,6 @@ import org.mellowtech.core.bytestorable.CBInt;
 import org.mellowtech.core.bytestorable.CBString;
 import org.mellowtech.core.collections.BTree;
 import org.mellowtech.core.collections.BTreeTemplate;
-import org.mellowtech.core.io.RecordFile;
-import org.mellowtech.core.io.RecordFileBuilder;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -31,12 +29,12 @@ import java.util.Optional;
  * @author msvens
  * @since 02/07/16
  */
-public class HybridTreeTest extends BTreeTemplate {
+public class HybridBlobTreeTest extends BTreeTemplate {
 
 
   @Override
   public String fName() {
-    return "hybridtree";
+    return "hybridblobtree";
   }
 
   static Path getDir(String fName){
@@ -47,15 +45,17 @@ public class HybridTreeTest extends BTreeTemplate {
   public BTree<String, CBString, Integer, CBInt> init(String fileName, int valueBlockSize,
                                                       int indexBlockSize, int maxValueBlocks,
                                                       int maxIndexBlocks) throws Exception {
-    return new HybridTree<>(getDir(fileName), fName(), CBString.class, CBInt.class,
+
+    return new HybridBlobTree<>(getDir(fileName), fName(), CBString.class, CBInt.class,
         valueBlockSize, true, false, Optional.of(maxValueBlocks), Optional.empty());
+
   }
 
   @Override
   public BTree<String, CBString, Integer, CBInt> reopen(String fileName,int valueBlockSize,
                                                         int indexBlockSize, int maxValueBlocks,
                                                         int maxIndexBlocks) throws Exception {
-    return new HybridTree<>(getDir(fileName), fName(), CBString.class, CBInt.class,
-        valueBlockSize, true, false, Optional.of(maxValueBlocks), Optional.empty());
+    return new HybridBlobTree<>(getDir(fileName), fName(), CBString.class, CBInt.class,
+        valueBlockSize, true, false, Optional.of(maxValueBlocks), Optional.empty());//return new HybridTree<>(CBString.class, CBInt.class, rf,false);
   }
 }

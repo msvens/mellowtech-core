@@ -91,17 +91,17 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
   protected boolean readOnly = true;
 
   //How the tree is stored on disc
-  protected boolean oneFileTree;
+  //protected boolean oneFileTree;
   protected SplitRecordFile idxValueFile = null;
   protected RecordFile idxFile = null;
   protected RecordFile valueFile = null;
 
   //How disc data should be accessed
-  protected boolean useMappedIdx = false;
+  //protected boolean useMappedIdx = false;
   protected boolean useMappedValue = false;
 
 
-  public BTreeImp(Path dir, String name, Class<B> keyType, Class<D> valueType,
+  /*public BTreeImp(Path dir, String name, Class<B> keyType, Class<D> valueType,
                   boolean oneFileTree, boolean mappedIndex,
                   boolean mappedValues) throws Exception{
     this(dir,name, keyType,valueType,oneFileTree,mappedIndex,mappedValues, false);
@@ -114,12 +114,12 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
         DEFAULT_INDEX_BLOCK_SIZE, DEFAULT_VALUE_BLOCK_SIZE,
         DEFAULT_MAX_INDEX_BLOCKS, DEFAULT_MAX_VALUE_BLOCKS,
         oneFileTree, mappedIndex, mappedValues, create);
-  }
+  }*/
 
   public BTreeImp(Path dir, String name, Class<B> keyType, Class<D> valueType,
                   int indexBlockSize, int valueBlockSize,
-                  int maxIndexBlocks, int maxValueBlocks,
-                  boolean oneFileTree, boolean mappedIndex, boolean mappedValues, boolean create) throws Exception{
+                  int maxIndexBlocks, boolean mappedValues,
+                  boolean multiValueFile, Optional<Integer> maxBlocks, Optional<Integer> multiFileSize) throws Exception{
     this.keyType = keyType.newInstance();
     this.valueType = valueType.newInstance();
     keyValues = new KeyValue <> (this.keyType, this.valueType);
@@ -127,26 +127,46 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
 
     this.dir = dir;
     this.name = name;
-    this.oneFileTree = oneFileTree;
     this.useMappedValue = mappedValues;
-    this.useMappedIdx = mappedIndex;
-    if(create)
-      createTree(indexBlockSize, valueBlockSize, maxIndexBlocks, maxValueBlocks);
-    else
-      openTree();
+    //this.useMappedIdx = true;
+    //first try to open then create
+    try{
+      openTree(indexBlockSize, valueBlockSize, maxIndexBlocks, multiValueFile, maxBlocks, multiFileSize);
+    } catch(Exception e){
+
+      createTree(indexBlockSize, valueBlockSize, maxIndexBlocks, multiValueFile, maxBlocks, multiFileSize);
+    }
   }
 
-  protected void openTree() throws IOException{
+  protected void openTree(int indexBlockSize, int valueBlockSize,
+                          int maxIndexBlocks, boolean multiFile,
+                          Optional<Integer> maxValueBlocks, Optional<Integer> multiFileSize) throws IOException{
     Path ip = indexPath();
-    Path vp = !oneFileTree ? valuePath() : null;
+    Path vp = valuePath();
 
     if(!Files.exists(ip))
       throw new FileNotFoundException(ip.toString());
-    else if(vp != null && !Files.exists(vp))
+    else if(!Files.exists(vp))
       throw new FileNotFoundException(vp.toString());
 
     RecordFileBuilder sfb = new RecordFileBuilder();
-    if(oneFileTree){
+    sfb.blockSize(indexBlockSize).maxBlocks(maxIndexBlocks).reserve(1024).mem();
+    idxFile = sfb.build(ip);
+    //value file:
+    sfb.blockSize(valueBlockSize);
+    if(multiFile){
+      sfb.multi();
+      if(multiFileSize.isPresent()) sfb.multiFileSize(multiFileSize.get());
+    } else {
+      if(useMappedValue)
+        sfb.mem();
+      else
+        sfb.disc();
+      if(maxValueBlocks.isPresent()) sfb.maxBlocks(maxValueBlocks.get());
+    }
+    valueFile = sfb.build(vp);
+    readHeader();
+    /*if(oneFileTree){
       sfb = useMappedValue ? sfb.memSplit() : sfb.split();
       sfb.maxBlocks(null);
       valueFile = sfb.build(indexPath());
@@ -157,20 +177,38 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
       idxFile = sfb.build(ip);
       sfb = useMappedValue ? sfb.mem() : sfb.disc();
       valueFile = sfb.build(vp);
-    }
-    readHeader();
+    }*/
   }
 
   protected final void createTree(int indexBlockSize, int valueBlockSize,
-                                  int maxIndexBlocks, int maxValueBlocks) throws IOException{
+                                  int maxIndexBlocks, boolean multiFile,
+                                  Optional<Integer> maxValueBlocks, Optional<Integer> multiFileSize) throws IOException{
     Path ip = indexPath();
-    Path vp = !oneFileTree ? valuePath() : null;
+    Path vp = valuePath();
+    //Path vp = !oneFileTree ? valuePath() : null;
     if(Files.exists(ip))
       throw new FileAlreadyExistsException(ip.toString());
-    if(vp != null && Files.exists(vp))
+    if(Files.exists(vp))
       throw new FileAlreadyExistsException(vp.toString());
     RecordFileBuilder sfb = new RecordFileBuilder();
-    if(oneFileTree){
+    sfb.blockSize(indexBlockSize).maxBlocks(maxIndexBlocks).reserve(1024).mem();
+    idxFile = sfb.build(ip);
+    //value file:
+    sfb.blockSize(valueBlockSize);
+    if(multiFile){
+      sfb.multi();
+      if(multiFileSize.isPresent()) sfb.multiFileSize(multiFileSize.get());
+    } else {
+      if(useMappedValue)
+        sfb.mem();
+      else
+        sfb.disc();
+      if(maxValueBlocks.isPresent()) sfb.maxBlocks(maxValueBlocks.get());
+    }
+    /*sfb.blockSize(valueBlockSize).maxBlocks(maxValueBlocks).reserve(-1);
+    sfb = useMappedValue ? sfb.mem() : sfb.disc();*/
+    valueFile = sfb.build(vp);
+    /*if(oneFileTree){
       sfb.splitBlockSize(indexBlockSize).splitMaxBlocks(maxIndexBlocks);
       sfb.blockSize(valueBlockSize).maxBlocks(maxValueBlocks).reserve(1024);
       sfb = useMappedValue ? sfb.memSplit() : sfb.split();
@@ -183,7 +221,7 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
       sfb.blockSize(valueBlockSize).maxBlocks(maxValueBlocks).reserve(-1);
       sfb = useMappedValue ? sfb.mem() : sfb.disc();
       valueFile = sfb.build(vp);
-    }
+    }*/
     leafLevel = -1;
     rootPage = newValueBlock().bNo;
     //save header:
@@ -193,8 +231,9 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
   public void close() throws IOException {
     save();
     valueFile.close();
-    if (!oneFileTree)
-      idxFile.close();
+    idxFile.close();
+    /*if (!oneFileTree)
+      idxFile.close();*/
   }
 
   @Override
@@ -238,10 +277,11 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
     size = 0;
     rootPage = blocks[0].bNo;
     size = s;
-    if (oneFileTree)
+    /*if (oneFileTree)
       idxValueFile.deleteAllRegion();
     else
-      idxFile.clear();
+      idxFile.clear();*/
+    idxFile.clear();
 
     IdxBlock<B>[] levels = (IdxBlock<B>[]) new IdxBlock<?>[20];
     for (i = 0; i < blocks.length - 1; i++) {
@@ -272,7 +312,8 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
     }
     //clear file (cannot use truncate because it creates a block in the file)
     valueFile.clear();
-    if (!oneFileTree) idxFile.clear();
+    //if (!oneFileTree) idxFile.clear();
+    idxFile.clear();
     leafLevel = -1;
 
     ValueBlock<B, D> vb = newValueBlock();
@@ -290,6 +331,7 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
         //splitFile.insert(bNo, sb.getBlock());
         //bNo++;
         BTreeKey<B> sep = generateSeparator(vb.sb, tmpKV);
+        //TODO: This must be a bug...should be leftNode = bNo and rightNode the new node
         sep.get().leftNode = bNo - 1;
         insertSeparator(sep, levels, 0, bNo);
         vb = newValueBlock();
@@ -311,7 +353,7 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
    */
   @Override
   public void delete() throws IOException {
-    if (oneFileTree) {
+    /*if (oneFileTree) {
       idxValueFile.close();
       Files.delete(indexPath());
     } else {
@@ -319,7 +361,9 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
       valueFile.close();
       Files.delete(indexPath());
       Files.delete(valuePath());
-    }
+    }*/
+    idxFile.remove();
+    valueFile.remove();
     idxFile = null;
     valueFile = null;
     idxValueFile = null;
@@ -427,17 +471,20 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
   @Override
   public void save() throws IOException {
     setHeader();
-    if(oneFileTree)
+    idxFile.save();
+    valueFile.save();
+    /*if(oneFileTree)
       idxValueFile.save();
     else {
       idxFile.save();
       valueFile.save();
-    }
+    }*/
   }
 
   protected final void readHeader() throws IOException {
-    RecordFile rf = oneFileTree ? idxValueFile : idxFile;
-    ByteBuffer bb = ByteBuffer.wrap(rf.getReserve());
+    //RecordFile rf = oneFileTree ? idxValueFile : idxFile;
+    //ByteBuffer bb = ByteBuffer.wrap(rf.getReserve());
+    ByteBuffer bb = ByteBuffer.wrap(idxFile.getReserve());
     //now read header:
     rootPage = bb.getInt();
     leafLevel = bb.getInt();
@@ -462,8 +509,9 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
     new CBBoolean(fullIndex).to(bb);
     new CBBoolean(readOnly).to(bb);
 
-    RecordFile rf = oneFileTree ? idxValueFile : idxFile;
-    rf.setReserve(bb.array());
+    //RecordFile rf = oneFileTree ? idxValueFile : idxFile;
+    //rf.setReserve(bb.array());
+    idxFile.setReserve(bb.array());
   }
 
   @Override
@@ -496,12 +544,14 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
 
   @Override
   public void truncate() throws IOException {
-    if (oneFileTree)
+    /*if (oneFileTree)
       idxValueFile.clear();
     else {
       idxFile.clear();
       valueFile.clear();
-    }
+    }*/
+    idxFile.clear();
+    valueFile.clear();
     leafLevel = -1;
     size = 0;
     rootPage = newValueBlock().bNo;
@@ -596,15 +646,15 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
         sb.delete(pos);
       } else
         sb.delete(pos);
-      updateIndexBlock(rootPage, sb);
+      //updateIndexBlock(rootPage, sb);
       ret.action = BPlusReturn.NONE;
       return ret;
     }
     // we have to collapse the root:
-    if (oneFileTree)
+    /*if (oneFileTree)
       idxValueFile.deleteRegion(rootPage);
-    else
-      idxFile.delete(rootPage);
+    else*/
+    idxFile.delete(rootPage);
 
     //very unsure here!!!
     if (leafLevel == 0) { // we just removed the only block we had
@@ -636,7 +686,7 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
     rootKey.get().leftNode = rootPage;
     block.sb.insert(rootKey);
     rootPage = block.bNo;
-    updateIndexBlock(rootPage, block.sb);
+    //updateIndexBlock(rootPage, block.sb);
     leafLevel++;
   }
 
@@ -823,12 +873,12 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
   }
 
   protected final BCBuffer<BTreeKey.Entry<B>, BTreeKey<B>> getIndex(int blockNo) throws IOException {
-    return toIndexBlock(oneFileTree ? idxValueFile.getRegion(blockNo) : idxFile.get(blockNo));
+    return toIndexBlock(idxFile.get(blockNo));
   }
 
   protected final BCBuffer<BTreeKey.Entry<B>, BTreeKey<B>> getIndexBlock(int blockNo)
       throws IOException {
-    return useMappedIdx ? getMappedIndex(blockNo) : getIndex(blockNo);
+    return getMappedIndex(blockNo);
   }
 
   /**
@@ -849,7 +899,7 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
 
   protected final BCBuffer<BTreeKey.Entry<B>, BTreeKey<B>> getMappedIndex(int blockNo)
       throws IOException {
-    return toIndexBlock(oneFileTree ? idxValueFile.getRegionMapped(blockNo) : idxFile.getMapped(blockNo));
+    return toIndexBlock(idxFile.getMapped(blockNo));
   }
 
   protected final BCBuffer<KeyValue.KV<B, D>, KeyValue<B, D>> getMappedValue(int blockNo)
@@ -984,7 +1034,7 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
       sb.delete(pos);
     // no underflow?:
     if (checkUnderflow(sb)) {
-      updateIndexBlock(cBlock, sb);
+      //updateIndexBlock(cBlock, sb);
       ret.action = BPlusReturn.NONE;
       return;
     }
@@ -1000,8 +1050,8 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
         BTreeKey<B> pKey = parent.get(getPreviousPos(pSearch));
         //BTreeKey pKey = (BTreeKey) parent.getKey(helper.getPos(pSearch));
         if (shiftRight(sib, sb, pKey)) {
-          updateIndexBlock(leftSib, sib);
-          updateIndexBlock(cBlock, sb);
+          //updateIndexBlock(leftSib, sib);
+          //updateIndexBlock(cBlock, sb);
           ret.promo = pKey;
           ret.action = BPlusReturn.REDISTRIBUTE;
           ret.keyPos = getPreviousPos(pSearch);
@@ -1016,8 +1066,8 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
       if (checkUnderflow(sib)) {
         BTreeKey<B> pKey = parent.get(getPos(pSearch));
         if (shiftLeft(sb, sib, pKey)) {
-          updateIndexBlock(cBlock, sb);
-          updateIndexBlock(rightSib, sib);
+          //updateIndexBlock(cBlock, sb);
+          //updateIndexBlock(rightSib, sib);
           ret.promo = pKey;
           ret.action = BPlusReturn.REDISTRIBUTE;
           ret.keyPos = getPos(pSearch);
@@ -1034,11 +1084,12 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
       if (sb.fits(sib, pKey)) {
         sb.merge(sib);
         sb.insert(pKey);
-        if (oneFileTree)
+        /*if (oneFileTree)
           idxValueFile.deleteRegion(leftSib);
         else
-          idxFile.delete(leftSib);
-        updateIndexBlock(cBlock, sb);
+          idxFile.delete(leftSib);*/
+        idxFile.delete(leftSib);
+        //updateIndexBlock(cBlock, sb);
         ret.action = BPlusReturn.MERGE;
         ret.keyPos = getPreviousPos(pSearch);
         return;
@@ -1051,17 +1102,18 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
       if (sib.fits(sb, pKey)) {
         sib.merge(sb);
         sib.insert(pKey);
-        if (oneFileTree)
+        /*if (oneFileTree)
           idxValueFile.deleteRegion(cBlock);
         else
-          idxFile.delete(cBlock);
-        updateIndexBlock(rightSib, sib);
+          idxFile.delete(cBlock);*/
+        idxFile.delete(cBlock);
+        //updateIndexBlock(rightSib, sib);
         ret.action = BPlusReturn.MERGE;
         ret.keyPos = getPos(pSearch);
         return;
       }
     }
-    updateIndexBlock(cBlock, sb);
+    //updateIndexBlock(cBlock, sb);
     ret.action = BPlusReturn.NONE;
   }
 
@@ -1089,7 +1141,7 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
     if (changed.get().key.byteSize() >= ret.promo.get().key.byteSize()) {
       changed.get().key = ret.promo.get().key;
       sb.insert(changed);
-      updateIndexBlock(cBlock, sb);
+      //updateIndexBlock(cBlock, sb);
     } else { // treat as normal insert...tweak pointers to fit insertKey scheme
       changed.get().key = ret.promo.get().key;
       if (pos < sb.getNumberOfElements()) {
@@ -1171,7 +1223,7 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
       throws IOException {
     if (sb.fits(keyIndex)) {
       insertAndReplace(keyIndex, sb);
-      updateIndexBlock(pNo, sb);
+      //updateIndexBlock(pNo, sb);
       return null;
     }
     //we need to expand index
@@ -1186,22 +1238,9 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
     }
     BTreeKey<B> promo = ib.sb.getFirst();
     deleteAndReplace(promo, ib.sb);
-    updateIndexBlock(pNo, sb);
-    updateIndexBlock(ib.bNo, ib.sb);
+    //updateIndexBlock(pNo, sb);
+    //updateIndexBlock(ib.bNo, ib.sb);
     promo.get().leftNode = ib.bNo;
-    /*BCBuffer<BTreeKey.Entry<B>, BTreeKey<B>> sb1 = sb.split();
-    BTreeKey<B> first = sb1.getFirst();
-    setLastPointer(sb, first.get().leftNode);
-    if (keyIndex.compareTo(sb.getLast()) < 0) {
-      insertAndReplace(keyIndex, sb);
-    } else
-      insertAndReplace(keyIndex, sb1);
-    // find the shortest separator:
-    BTreeKey<B> promo = sb1.getFirst();
-    deleteAndReplace(promo, sb1);
-    updateIndexBlock(pNo, sb);
-    promo.get().leftNode = oneFileTree ? idxValueFile.insertRegion(sb1.getBlock().array()) :
-        idxFile.insert(sb1.getBlock().array());*/
     return promo;
   }
 
@@ -1291,9 +1330,11 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
 
   protected final IdxBlock<B> newIdxBlock() throws IOException {
     int bNo;
-    int blockSize = oneFileTree ? idxValueFile.getBlockSizeRegion() : idxFile.getBlockSize();
+    int blockSize = idxFile.getBlockSize();
     BCBuffer<BTreeKey.Entry<B>, BTreeKey<B>> buff;
-    if (oneFileTree) {
+    bNo = idxFile.insert(null);
+    buff = new BCBuffer<>(idxFile.getMapped(bNo), indexKeys, BCBuffer.PtrType.NORMAL, (short) 4);
+    /*if (oneFileTree) {
       bNo = idxValueFile.insertRegion(null);
       if (useMappedIdx) {
         buff = new BCBuffer<>(idxValueFile.getRegionMapped(bNo), indexKeys, BCBuffer.PtrType.NORMAL, (short) 4);
@@ -1309,7 +1350,7 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
         buff = new BCBuffer<>(blockSize, indexKeys, BCBuffer.PtrType.NORMAL, (short) 4);
         updateIndexBlock(bNo, buff);
       }
-    }
+    }*/
     return new IdxBlock<>(buff, bNo);
   }
 
@@ -1344,7 +1385,7 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
   }
 
   protected final void printIndexBlocks(StringBuilder sb) throws IOException {
-    Iterator<Record> iter = oneFileTree ? idxValueFile.iteratorRegion() : idxFile.iterator();
+    Iterator<Record> iter = idxFile.iterator();
     while (iter.hasNext()) {
       int record = iter.next().record;
       sb.append("RECORD: " + record + '\n');
@@ -1420,7 +1461,7 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
    * @return the Key/value pair or null if the key did not exist
    * @throws java.io.IOException if an error occurs
    */
-  protected final TreePosition searchValueFilePosition(B key, int bNo)
+  private TreePosition searchValueFilePosition(B key, int bNo)
       throws IOException {
     if (valueFile.size() == 0)
       return null;
@@ -1445,7 +1486,7 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
    * @return the Key/value pair or null if the key did not exist
    * @throws java.io.IOException if an error occurs
    */
-  protected final TreePosition searchValueFilePositionNoStrict(B key, int bNo)
+  private TreePosition searchValueFilePositionNoStrict(B key, int bNo)
       throws IOException {
     if (valueFile.size() == 0)
       return null;
@@ -1570,14 +1611,14 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
     return new BCBuffer<>(data, keyValues);
   }
 
-  protected final void updateIndexBlock(int blockNo, BCBuffer<BTreeKey.Entry<B>, BTreeKey<B>> sb) throws IOException {
+  /*protected final void updateIndexBlock(int blockNo, BCBuffer<BTreeKey.Entry<B>, BTreeKey<B>> sb) throws IOException {
     if (!useMappedIdx) {
       if (oneFileTree)
         idxValueFile.updateRegion(blockNo, sb.getArray());
       else
         idxFile.update(blockNo, sb.getArray());
     }
-  }
+  }*/
 
   protected final void updateValueBlock(int blockNo, BCBuffer<KeyValue.KV<B, D>, KeyValue<B, D>> sb)
       throws IOException {
@@ -1654,7 +1695,7 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
       BTreeKey<B> promo = sb.delete(sb.getNumberOfElements() - 1);
       setLastPointer(sb, promo.get().leftNode);
       promo.get().leftNode = levels[current].bNo;
-      updateIndexBlock(levels[current].bNo, sb);
+      //updateIndexBlock(levels[current].bNo, sb);
 
       // create the new block:
       levels[current] = newIdxBlock();
@@ -1684,7 +1725,7 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
       if (levels[i] == null)
         break;
       rPage = levels[i].bNo;
-      updateIndexBlock(rPage, levels[i].sb);
+      //updateIndexBlock(rPage, levels[i].sb);
     }
     leafLevel = i - 1;
     rootPage = rPage;

@@ -19,9 +19,11 @@ package org.mellowtech.core.collections;
 import org.mellowtech.core.bytestorable.BComparable;
 import org.mellowtech.core.bytestorable.BStorable;
 import org.mellowtech.core.collections.impl.*;
+import org.mellowtech.core.io.impl.MultiBlockFile;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Optional;
 
 /**
  * A Builder for sorted disc based maps. There are basically 4 different parameters to consider
@@ -71,27 +73,42 @@ public class BTreeBuilder {
   
   private int indexBlockSize = DEFAULT_INDEX_BLOCK;
   private int valueBlockSize = DEFAULT_VALUE_BLOCK;
-  private boolean indexInMemory = true;
-  private boolean valuesInMemory = true;
+  private boolean memoryIndex = false;
+  private boolean memoryMappedValues = true;
   private int maxBlocks = DEFAULT_MAX_BLOCKS;
   private int maxIndexBlocks = DEFAULT_MAX_INDEX_BLOCKS;
-  private boolean forceNew = false;
   private boolean blobValues = false;
-  private boolean oneFileTree = false;
+  private boolean multiFileValues = false;
+  private int multiFileSize = MultiBlockFile.DEFAULT_FILE_SIZE;
 
   /**
    * Based on usage hints calculates block sizes and maximum blocks as well as
    * if this tree should store blobs
-   * @param maxKeys maximum number of keys this tree will hold
+   * @param maxKeyValues maximum number of keys this tree will hold
    * @param maxKeySize maximum size of a key
    * @param maxValueSize maximum size of a value
    * @param avgKeySize average size of a key
    * @param avgValueSize average size of a value
    * @return this builder
    */
-  public BTreeBuilder hint(long maxKeys, int maxKeySize, int maxValueSize, int avgKeySize, int avgValueSize){
-    long totalBytes = maxKeys * avgKeySize * avgValueSize;
+  public BTreeBuilder hint(long maxKeyValues, int maxKeySize, int maxValueSize, int avgKeySize, int avgValueSize){
+    long totalBytes = maxKeyValues * avgKeySize * avgValueSize;
 
+    return this;
+  }
+
+  public BTreeBuilder multiFileValues(boolean multiFile){
+    this.multiFileValues = multiFile;
+    return this;
+  }
+
+  public BTreeBuilder multiFileSize(int size){
+    this.multiFileSize = size;
+    return this;
+  }
+
+  public BTreeBuilder memoryIndex(boolean memIndex){
+    this.memoryIndex = memIndex;
     return this;
   }
   
@@ -109,19 +126,9 @@ public class BTreeBuilder {
     this.blobValues = blobs;
     return this;
   }
-
-  public BTreeBuilder oneFile(boolean oneFile){
-    this.oneFileTree = oneFile;
-    return this;
-  }
   
-  public BTreeBuilder indexInMemory(boolean inMemory){
-    this.indexInMemory = inMemory;
-    return this;
-  }
-  
-  public BTreeBuilder valuesInMemory(boolean inMemory){
-    this.valuesInMemory = inMemory;
+  public BTreeBuilder memoryMappedValues(boolean inMemory){
+    this.memoryMappedValues = inMemory;
     return this;
   }
   
@@ -133,15 +140,6 @@ public class BTreeBuilder {
   public BTreeBuilder maxIndexBlocks(int max){
     this.maxIndexBlocks = max;
     return this;
-  }
-  
-  public BTreeBuilder forceNew(boolean force){
-    this.forceNew = force;
-    return this;
-  }
-
-  private boolean isOneFileTree(){
-    return oneFileTree && indexInMemory;
   }
 
   @Deprecated
@@ -159,39 +157,27 @@ public class BTreeBuilder {
 
     BTree <A,B,C,D> toRet;
 
-    try {
-      //first try to open
-      toRet = new BTreeImp<>(dir,name,keyType,valueType,isOneFileTree(),indexInMemory,valuesInMemory);
-    } catch (Exception e){
-      //try create
+    if(memoryIndex){
+      return new HybridTree<>(dir, name,keyType,valueType,valueBlockSize, memoryMappedValues, multiFileValues,
+          Optional.of(maxBlocks), Optional.of(multiFileSize));
+    } else {
       return new BTreeImp<>(dir,name,keyType,valueType,indexBlockSize,valueBlockSize,
-          maxIndexBlocks,maxBlocks,isOneFileTree(),indexInMemory,valuesInMemory,true);
+          maxIndexBlocks,memoryMappedValues,multiFileValues, Optional.of(maxBlocks),Optional.of(multiFileSize));
     }
-    if(!forceNew) return toRet;
-
-    //delete old and create new:
-    toRet.delete();
-    return new BTreeImp<>(dir,name,keyType,valueType,indexBlockSize,valueBlockSize,
-        maxIndexBlocks,maxBlocks,isOneFileTree(),indexInMemory,valuesInMemory,true);
   }
 
   private <A,B extends BComparable<A,B>,C,D extends BStorable<C,D>> BTree <A,B,C,D>
   buildBlob(Class<B> keyType, Class<D> valueType, Path dir, String name) throws Exception{
     BTree<A,B,C,D> toRet;
-    //first try to open
-    try {
-      toRet = new BTreeBlobImp<>(dir, name, keyType, valueType,isOneFileTree(),indexInMemory,valuesInMemory);
-    } catch (Exception e){
-      //try create
-      return new BTreeBlobImp<>(dir,name, keyType, valueType,indexBlockSize,valueBlockSize,
-          maxIndexBlocks,maxBlocks,isOneFileTree(),indexInMemory,valuesInMemory);
-    }
 
-    if(!forceNew) return toRet;
-    //delete old and create new:
-    toRet.delete();
-    return new BTreeBlobImp<>(dir,name, keyType, valueType,indexBlockSize,valueBlockSize,
-        maxIndexBlocks,maxBlocks,isOneFileTree(),indexInMemory,valuesInMemory);
+    //first try to open
+    if(memoryIndex){
+      return new HybridBlobTree<>(dir, name,keyType,valueType,valueBlockSize,
+          memoryMappedValues,multiFileValues, Optional.of(maxBlocks), Optional.of(multiFileSize));
+    } else {
+      return new BTreeBlobImp<>(dir,name,keyType,valueType,indexBlockSize,valueBlockSize,
+          maxIndexBlocks,memoryMappedValues,multiFileValues, Optional.of(maxBlocks),Optional.of(multiFileSize));
+    }
   }
   
 }

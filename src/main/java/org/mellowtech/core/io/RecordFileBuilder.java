@@ -45,6 +45,11 @@ public class RecordFileBuilder {
    */
   public RecordFileBuilder() {
   }
+
+  public RecordFileBuilder strategy(Strategy s){
+    this.strategy = s;
+    return this;
+  }
   
   public RecordFileBuilder span(boolean spanned) {
     this.spanned = true;

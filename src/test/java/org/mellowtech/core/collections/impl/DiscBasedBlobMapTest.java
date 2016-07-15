@@ -35,14 +35,17 @@ public class DiscBasedBlobMapTest extends SortedDiscMapTemplate {
 
   @Override
   public DiscMap<String, Integer> reopen() throws Exception {
-    return new DiscBasedMap<>(CBString.class, CBInt.class, absPath(fName), true, false);
+    BTreeBuilder builder = new BTreeBuilder();
+    builder.maxBlocks(VAL_BLKS).maxIndexBlocks(IDX_BLKS).valueBlockSize(VAL_BLK_SIZE).indexBlockSize(IDX_BLK_SIZE);
+    builder.blobValues(true).memoryMappedValues(false);
+    return new DiscBasedMap<>(CBString.class, CBInt.class, absPath(fName), builder);
   }
 
   @Override
   public Map<String, Integer> init() throws Exception {
     BTreeBuilder builder = new BTreeBuilder();
     builder.maxBlocks(VAL_BLKS).maxIndexBlocks(IDX_BLKS).valueBlockSize(VAL_BLK_SIZE).indexBlockSize(IDX_BLK_SIZE);
-    builder.blobValues(true).indexInMemory(true).valuesInMemory(false);
+    builder.blobValues(true).memoryMappedValues(false);
     return new DiscBasedMap<>(CBString.class, CBInt.class, absPath(fName), builder);
   }
 }

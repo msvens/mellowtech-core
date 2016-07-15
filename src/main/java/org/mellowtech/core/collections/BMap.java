@@ -36,6 +36,8 @@ public interface BMap<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
 
   /**
    * Increase the capacity of this map
+   * @throws IOException if the operation fails
+   * @throws UnsupportedOperationException by default
    */
   default void expand() throws IOException, UnsupportedOperationException{
     throw new UnsupportedOperationException();
