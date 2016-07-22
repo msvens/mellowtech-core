@@ -19,6 +19,7 @@ package org.mellowtech.core.collections;
 import org.mellowtech.core.bytestorable.BComparable;
 import org.mellowtech.core.bytestorable.BStorable;
 import org.mellowtech.core.collections.impl.*;
+import org.mellowtech.core.io.RecordFileBuilder;
 import org.mellowtech.core.io.impl.MultiBlockFile;
 
 import java.nio.file.Path;
@@ -54,7 +55,6 @@ import java.util.Optional;
  *   <li>1024*10 index blocks</li>
  *   <li>1024*1024 value blocks</li>
  *   <li>Both index and values memory mapped</li>
- *   <li>Index and values stored in separate files</li>
  *   <li>no blob values</li>
  * </ul>
  * The default configuration can roughly hold key-values equaling
@@ -97,51 +97,117 @@ public class BTreeBuilder {
     return this;
   }
 
+  /**
+   * If key/values should be stored in a multiFile recordFile.
+   * @param multiFile true if multiFile
+   * @return this
+   * @see MultiBlockFile
+   */
   public BTreeBuilder multiFileValues(boolean multiFile){
     this.multiFileValues = multiFile;
     return this;
   }
 
+  /**
+   * Size (in bytes) of file parts for a multiFile recordFile. Only used if fileValues are
+   * stored in a multiFile
+   * @param size size in bytes
+   * @return this
+   */
   public BTreeBuilder multiFileSize(int size){
     this.multiFileSize = size;
     return this;
   }
 
+  /**
+   * Indicate if the index should only be kept in-memory and recreated on startup. This is the
+   * fastest tree type but has an additional startup cost and unpredictable memory usage. However,
+   * memory should not be a major problem as the index does not tend to get very large
+   * @param memIndex indicate memoryIndex
+   * @return this
+   */
   public BTreeBuilder memoryIndex(boolean memIndex){
     this.memoryIndex = memIndex;
     return this;
   }
-  
+
+  /**
+   * Size of the blocks that store the index part of this tree. Only used with no-memory based indices
+   * @param size size in bytes
+   * @return this
+   */
   public BTreeBuilder indexBlockSize(int size) {
     this.indexBlockSize = size;
     return this;
   }
-  
+
+  /**
+   * Size of the blocks that hold key/value pairs
+   * @param size size in bytes
+   * @return this
+   */
   public BTreeBuilder valueBlockSize(int size) {
     this.valueBlockSize = size;
     return this;
   }
-  
+
+  /**
+   * If this tree sore large values, typically 256+ bytes or so. Actual values will be stored in a separate file
+   * @param blobs true if large values
+   * @return this
+   */
   public BTreeBuilder blobValues(boolean blobs) {
     this.blobValues = blobs;
     return this;
   }
-  
+
+  /**
+   * If this tree will memory map key/value blocks. If the tree is set to use a multiFile valuefile this
+   * parameter is ignored as the multiFile is memoryMapped.
+   * @param inMemory true if key/values should be memory mapped
+   * @return this
+   */
   public BTreeBuilder memoryMappedValues(boolean inMemory){
     this.memoryMappedValues = inMemory;
     return this;
   }
-  
+
+  /**
+   * Max number of key/value blocks this tree can hold. This will effectively determine the max number of
+   * bytes of data stored in this tree (maxBlocks * valueBlockSize). For a multiFile tree this value is
+   * ignored
+   * @param max max number of key/value blocks
+   * @return this
+   */
   public BTreeBuilder maxBlocks(int max) {
     this.maxBlocks = max;
     return this;
   }
-  
+
+  /**
+   * Max number of index blocks of this tree. This value will determine the max number of leaves this tree
+   * can hold. Index blocks only store key/value block separators so this value does not have to be that large.
+   * For a tree with its index only in memory this value is ignored.
+   * @param max max number of index blocks
+   * @return this
+   */
   public BTreeBuilder maxIndexBlocks(int max){
     this.maxIndexBlocks = max;
     return this;
   }
 
+  /**
+   * Create/Open a new disc based tree
+   * @param keyType BComparable keyType
+   * @param valueType BStorable valueType
+   * @param fileName the path to this tree
+   * @param <A> key wrapped type
+   * @param <B> key self type
+   * @param <C> value wrapped type
+   * @param <D> value self type
+   * @return a new disc based tree
+   * @throws Exception if tree could not be created/opened
+   */
   @Deprecated
   public <A,B extends BComparable<A,B>, C, D extends BStorable<C,D>> BTree <A,B,C,D>
   build(Class<B> keyType, Class<D> valueType, String fileName) throws Exception{
@@ -151,32 +217,37 @@ public class BTreeBuilder {
 
   }
 
+  /**
+   * Create/Open a new disc based tree
+   * @param keyType BComparable keyType
+   * @param valueType BStorable valueType
+   * @param dir directory where to store this tree
+   * @param name name of the tree
+   * @param <A> key wrapped type
+   * @param <B> key self type
+   * @param <C> value wrapped type
+   * @param <D> value self type
+   * @return a new disc based tree
+   * @throws Exception if tree could not be created/opened
+   */
   public <A,B extends BComparable<A,B>, C, D extends BStorable<C,D>> BTree <A,B,C,D>
   build(Class<B> keyType, Class<D> valueType, Path dir, String name) throws Exception{
-    if(blobValues) return buildBlob(keyType, valueType, dir, name);
 
-    BTree <A,B,C,D> toRet;
+    RecordFileBuilder vfb = new RecordFileBuilder();
+    vfb.maxBlocks(maxBlocks).blockSize(valueBlockSize).multiFileSize(multiFileSize);
+    if(multiFileValues)
+      vfb.multi();
+    else if(memoryMappedValues)
+      vfb.mem();
+    else
+      vfb.disc();
 
     if(memoryIndex){
-      return new HybridTree<>(dir, name,keyType,valueType,valueBlockSize, memoryMappedValues, multiFileValues,
-          Optional.of(maxBlocks), Optional.of(multiFileSize));
+      return blobValues ? new HybridBlobTree<>(dir,name,keyType,valueType,vfb) :
+          new HybridTree<>(dir,name,keyType,valueType,vfb);
     } else {
-      return new BTreeImp<>(dir,name,keyType,valueType,indexBlockSize,valueBlockSize,
-          maxIndexBlocks,memoryMappedValues,multiFileValues, Optional.of(maxBlocks),Optional.of(multiFileSize));
-    }
-  }
-
-  private <A,B extends BComparable<A,B>,C,D extends BStorable<C,D>> BTree <A,B,C,D>
-  buildBlob(Class<B> keyType, Class<D> valueType, Path dir, String name) throws Exception{
-    BTree<A,B,C,D> toRet;
-
-    //first try to open
-    if(memoryIndex){
-      return new HybridBlobTree<>(dir, name,keyType,valueType,valueBlockSize,
-          memoryMappedValues,multiFileValues, Optional.of(maxBlocks), Optional.of(multiFileSize));
-    } else {
-      return new BTreeBlobImp<>(dir,name,keyType,valueType,indexBlockSize,valueBlockSize,
-          maxIndexBlocks,memoryMappedValues,multiFileValues, Optional.of(maxBlocks),Optional.of(multiFileSize));
+      return blobValues ? new BTreeBlobImp<>(dir,name,keyType,valueType,indexBlockSize,maxIndexBlocks,vfb) :
+          new BTreeImp<>(dir,name,keyType,valueType,indexBlockSize,maxIndexBlocks,vfb);
     }
   }
   

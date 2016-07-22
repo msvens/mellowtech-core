@@ -20,6 +20,7 @@ import org.mellowtech.core.bytestorable.CBInt;
 import org.mellowtech.core.bytestorable.CBString;
 import org.mellowtech.core.collections.BTree;
 import org.mellowtech.core.collections.BTreeTemplate;
+import org.mellowtech.core.io.RecordFileBuilder;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -46,8 +47,10 @@ public class HybridBlobTreeTest extends BTreeTemplate {
                                                       int indexBlockSize, int maxValueBlocks,
                                                       int maxIndexBlocks) throws Exception {
 
-    return new HybridBlobTree<>(getDir(fileName), fName(), CBString.class, CBInt.class,
-        valueBlockSize, true, false, Optional.of(maxValueBlocks), Optional.empty());
+    RecordFileBuilder builder = new RecordFileBuilder().mem().
+        blockSize(valueBlockSize).maxBlocks(maxValueBlocks);
+
+    return new HybridBlobTree<>(getDir(fileName), fName(), CBString.class, CBInt.class, builder);
 
   }
 
@@ -55,7 +58,11 @@ public class HybridBlobTreeTest extends BTreeTemplate {
   public BTree<String, CBString, Integer, CBInt> reopen(String fileName,int valueBlockSize,
                                                         int indexBlockSize, int maxValueBlocks,
                                                         int maxIndexBlocks) throws Exception {
-    return new HybridBlobTree<>(getDir(fileName), fName(), CBString.class, CBInt.class,
-        valueBlockSize, true, false, Optional.of(maxValueBlocks), Optional.empty());//return new HybridTree<>(CBString.class, CBInt.class, rf,false);
+
+    RecordFileBuilder builder = new RecordFileBuilder().mem().
+        blockSize(valueBlockSize).maxBlocks(maxValueBlocks);
+
+    return new HybridBlobTree<>(getDir(fileName), fName(), CBString.class, CBInt.class, builder);
+
   }
 }

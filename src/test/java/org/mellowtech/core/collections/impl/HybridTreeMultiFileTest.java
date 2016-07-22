@@ -20,6 +20,7 @@ import org.mellowtech.core.bytestorable.CBInt;
 import org.mellowtech.core.bytestorable.CBString;
 import org.mellowtech.core.collections.BTree;
 import org.mellowtech.core.collections.BTreeTemplate;
+import org.mellowtech.core.io.RecordFileBuilder;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -32,7 +33,7 @@ import java.util.Optional;
 public class HybridTreeMultiFileTest extends BTreeTemplate {
 
 
-  public static final Optional<Integer> MultiFileSize = Optional.of(1024*1024*4);
+  public static final int MultiFileSize = 1024*1024*4;
   @Override
   public String fName() {
     return "hybridtreemultifile";
@@ -46,15 +47,21 @@ public class HybridTreeMultiFileTest extends BTreeTemplate {
   public BTree<String, CBString, Integer, CBInt> init(String fileName, int valueBlockSize,
                                                       int indexBlockSize, int maxValueBlocks,
                                                       int maxIndexBlocks) throws Exception {
-    return new HybridTree<>(getDir(fileName), fName(), CBString.class, CBInt.class,
-        valueBlockSize, true, true, Optional.empty(), MultiFileSize);
+
+    RecordFileBuilder builder = new RecordFileBuilder().multi().blockSize(valueBlockSize).
+        multiFileSize(MultiFileSize);
+
+    return new HybridTree<>(getDir(fileName), fName(), CBString.class, CBInt.class, builder);
   }
 
   @Override
   public BTree<String, CBString, Integer, CBInt> reopen(String fileName,int valueBlockSize,
                                                         int indexBlockSize, int maxValueBlocks,
                                                         int maxIndexBlocks) throws Exception {
-    return new HybridTree<>(getDir(fileName), fName(), CBString.class, CBInt.class,
-        valueBlockSize, true, true, Optional.empty(), MultiFileSize);
+
+    RecordFileBuilder builder = new RecordFileBuilder().multi().blockSize(valueBlockSize).
+        multiFileSize(MultiFileSize);
+
+    return new HybridTree<>(getDir(fileName), fName(), CBString.class, CBInt.class,builder);
   }
 }

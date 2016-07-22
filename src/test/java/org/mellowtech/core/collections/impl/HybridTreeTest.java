@@ -47,15 +47,21 @@ public class HybridTreeTest extends BTreeTemplate {
   public BTree<String, CBString, Integer, CBInt> init(String fileName, int valueBlockSize,
                                                       int indexBlockSize, int maxValueBlocks,
                                                       int maxIndexBlocks) throws Exception {
-    return new HybridTree<>(getDir(fileName), fName(), CBString.class, CBInt.class,
-        valueBlockSize, true, false, Optional.of(maxValueBlocks), Optional.empty());
+
+    RecordFileBuilder builder = new RecordFileBuilder().mem().
+        blockSize(valueBlockSize).maxBlocks(maxValueBlocks);
+
+    return new HybridTree<>(getDir(fileName), fName(), CBString.class, CBInt.class, builder);
   }
 
   @Override
   public BTree<String, CBString, Integer, CBInt> reopen(String fileName,int valueBlockSize,
                                                         int indexBlockSize, int maxValueBlocks,
                                                         int maxIndexBlocks) throws Exception {
-    return new HybridTree<>(getDir(fileName), fName(), CBString.class, CBInt.class,
-        valueBlockSize, true, false, Optional.of(maxValueBlocks), Optional.empty());
+
+    RecordFileBuilder builder = new RecordFileBuilder().mem().
+        blockSize(valueBlockSize).maxBlocks(maxValueBlocks);
+
+    return new HybridTree<>(getDir(fileName), fName(), CBString.class, CBInt.class, builder);
   }
 }

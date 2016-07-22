@@ -56,15 +56,6 @@ public class BlockFile extends AbstractBlockFile {
     return false;
   }
 
-  /*@Override
-  public int insert(byte[] bytes, int offset, int length) throws IOException {
-    if (getFreeBlocks() < 1) throw new IOException("no free blocks");
-    int index = bitSet.nextClearBit(0);
-    bitSet.set(index, true);
-    update(index, bytes, offset, length);
-    saveBitSet();
-    return index;
-  }*/
 
   @Override
   public void insert(int record, byte[] bytes, int offset, int length) throws IOException {

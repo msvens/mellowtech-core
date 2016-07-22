@@ -20,6 +20,7 @@ import org.mellowtech.core.bytestorable.CBInt;
 import org.mellowtech.core.bytestorable.CBString;
 import org.mellowtech.core.collections.BTree;
 import org.mellowtech.core.collections.BTreeTemplate;
+import org.mellowtech.core.io.RecordFileBuilder;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -29,7 +30,7 @@ import java.util.Optional;
 /**
  * @author Martin Svensson
  */
-public class BTreeImpTwoFileMappedTest extends BTreeTemplate {
+public class BTreeImpMappedTest extends BTreeTemplate {
 
   @Override
   public String fName() {
@@ -43,16 +44,23 @@ public class BTreeImpTwoFileMappedTest extends BTreeTemplate {
   @Override
   public BTree<String, CBString, Integer, CBInt> init(String fileName, int valueBlockSize, int indexBlockSize,
                                                int maxValueBlocks, int maxIndexBlocks) throws Exception{
-    //return new MemMappedBPTreeImp<>(fileName, CBString.class, CBInt.class, indexBlockSize,
-    //    valueBlockSize,false,maxValueBlocks,maxIndexBlocks);
-    return new BTreeImp<>(getDir(fileName), fName(), CBString.class, CBInt.class, indexBlockSize, valueBlockSize,maxIndexBlocks,
-        true,false, Optional.of(maxValueBlocks), Optional.empty());
+
+
+    RecordFileBuilder builder = new RecordFileBuilder().mem().
+        blockSize(valueBlockSize).maxBlocks(maxValueBlocks);
+
+    return new BTreeImp<>(getDir(fileName), fName(), CBString.class, CBInt.class,
+        indexBlockSize,maxIndexBlocks, builder);
   }
   @Override
   public BTree<String, CBString, Integer, CBInt> reopen(String fileName,int valueBlockSize, int indexBlockSize,
                                                         int maxValueBlocks, int maxIndexBlocks) throws Exception{
-    return new BTreeImp<>(getDir(fileName), fName(), CBString.class, CBInt.class, indexBlockSize, valueBlockSize,maxIndexBlocks,
-        true,false, Optional.of(maxValueBlocks), Optional.empty());
+
+    RecordFileBuilder builder = new RecordFileBuilder().mem().
+        blockSize(valueBlockSize).maxBlocks(maxValueBlocks);
+
+    return new BTreeImp<>(getDir(fileName), fName(), CBString.class, CBInt.class,
+        indexBlockSize,maxIndexBlocks, builder);
   }
 
 

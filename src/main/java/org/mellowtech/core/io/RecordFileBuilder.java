@@ -81,6 +81,10 @@ public class RecordFileBuilder {
     return this;
   }
 
+  public boolean isMapped(){
+    return strategy == Strategy.MEM_SPLIT || strategy == Strategy.DISC_MEM || strategy == Strategy.MULTI;
+  }
+
   public RecordFileBuilder multiFileSize(int fileSize){
     this.multiFileSize = fileSize;
     return this;

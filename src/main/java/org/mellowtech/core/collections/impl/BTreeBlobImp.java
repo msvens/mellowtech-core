@@ -22,15 +22,14 @@ import org.mellowtech.core.bytestorable.BStorable;
 import org.mellowtech.core.collections.BTree;
 import org.mellowtech.core.collections.KeyValue;
 import org.mellowtech.core.collections.TreePosition;
+import org.mellowtech.core.io.RecordFileBuilder;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Iterator;
-import java.util.Optional;
 import java.util.logging.Level;
 
 import static java.nio.file.StandardOpenOption.*;
@@ -45,17 +44,14 @@ import static java.nio.file.StandardOpenOption.*;
 public class BTreeBlobImp<A,B extends BComparable<A,B>,C,D extends BStorable<C,D>>
   implements BTree<A,B,C,D> {
 
-  FileChannel blobs;
-  BTreeImp <A,B,?,BlobPointer> tree;
-  D template;
+  private FileChannel blobs;
+  private BTreeImp <A,B,?,BlobPointer> tree;
+  private D template;
 
   public BTreeBlobImp(Path dir, String name, Class<B> keyType, Class<D> valueType,
-                      int indexBlockSize, int valueBlockSize,
-                      int maxIndexBlocks, boolean mappedValues,
-                      boolean multiValueFile, Optional<Integer> maxBlocks, Optional<Integer> multiFileSize) throws Exception {
+                      int indexBlockSize, int maxIndexBlocks, RecordFileBuilder valueFileBuilder) throws Exception {
     tree = new BTreeImp <> (dir, name, keyType, BlobPointer.class,
-        indexBlockSize, valueBlockSize, maxIndexBlocks, mappedValues,
-        multiValueFile, maxBlocks, multiFileSize);
+        indexBlockSize, maxIndexBlocks, valueFileBuilder);
     this.template = valueType.newInstance();
     blobs = FileChannel.open(blobPath(), CREATE, WRITE, READ);
     if(tree.isEmpty() && blobs.size() > 0){

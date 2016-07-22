@@ -22,6 +22,7 @@ import org.mellowtech.core.bytestorable.BStorable;
 import org.mellowtech.core.collections.BTree;
 import org.mellowtech.core.collections.KeyValue;
 import org.mellowtech.core.collections.TreePosition;
+import org.mellowtech.core.io.RecordFileBuilder;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -29,7 +30,6 @@ import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Iterator;
-import java.util.Optional;
 import java.util.logging.Level;
 
 import static java.nio.file.StandardOpenOption.*;
@@ -41,11 +41,11 @@ import static java.nio.file.StandardOpenOption.*;
 public class HybridBlobTree<A,B extends BComparable<A,B>,C,D extends BStorable<C,D>>
     implements BTree<A,B,C,D> {
 
-  FileChannel blobs;
+  private FileChannel blobs;
 
-  HybridTree <A,B,?,BlobPointer> tree;
+  private HybridTree <A,B,?,BlobPointer> tree;
 
-  D template;
+  private D template;
 
 
   /*public HybridBlobTree(Path dir, String name, Class<B> keyType, Class<D> valueType, boolean mapped) throws Exception {
@@ -54,9 +54,8 @@ public class HybridBlobTree<A,B extends BComparable<A,B>,C,D extends BStorable<C
     blobs = FileChannel.open(blobPath(), WRITE, READ);
   }*/
 
-  public HybridBlobTree(Path dir, String name, Class<B> keyType, Class<D> valueType, int blockSize,
-                      boolean mappedValues, boolean multiFile, Optional<Integer> maxBlocks, Optional<Integer> multiFileSize) throws Exception {
-    tree = new HybridTree <> (dir, name, keyType, BlobPointer.class, blockSize, mappedValues, multiFile, maxBlocks, multiFileSize);
+  public HybridBlobTree(Path dir, String name, Class<B> keyType, Class<D> valueType, RecordFileBuilder valueFileBuilder) throws Exception {
+    tree = new HybridTree <> (dir, name, keyType, BlobPointer.class, valueFileBuilder);
     this.template = valueType.newInstance();
     blobs = FileChannel.open(blobPath(), CREATE, WRITE, READ);
     if(tree.isEmpty() && blobs.size() > 0){

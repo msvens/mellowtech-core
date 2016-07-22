@@ -286,10 +286,6 @@ abstract class AbstractBlockFile implements RecordFile {
     reserve = bb.getInt();
 
     bitBuffer = fc.map(FileChannel.MapMode.READ_WRITE, bitSetOffset(), bitSetSize());
-    /*int numBytes = bitBuffer.getInt();
-    ByteBuffer lb = bitBuffer.slice();
-    lb.limit(numBytes);
-    bitSet = BitSet.valueOf(lb);*/
     bitSet = new MappedBitSet(bitBuffer);
     return true;
   }
@@ -301,14 +297,6 @@ abstract class AbstractBlockFile implements RecordFile {
   protected int reservedSize() {
     return this.reserve;
   }
-
-  /*
-  protected void saveBitSet() throws IOException {
-    bitBuffer.clear();
-    byte[] bits = bitSet.toByteArray();
-    bitBuffer.putInt(bits.length);
-    bitBuffer.put(bits);
-  }*/
 
   class BlockFileIterator implements Iterator<Record> {
 

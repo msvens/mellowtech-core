@@ -48,32 +48,10 @@ public class DiscBasedMap <A,B extends BComparable<A,B>,
   
   protected BTree<A,B,C,D> btree;
   
-  protected B keyMapping;
-  protected D valueMapping;
-  
-  //public static int DEFAULT_KEY_BLOCK = 1024*8;
-  //public static int DEFAULT_VALUE_BLOCK = 1024*8;
+  private B keyMapping;
+  private D valueMapping;
 
 
-  
-  
-
-  /*public DiscBasedMap(Class <B> keyClass, Class <D> valueClass,
-                      String fileName, boolean blobValues, boolean inMemory) throws Exception{
-    this(keyClass, valueClass, fileName, DEFAULT_VALUE_BLOCK, DEFAULT_KEY_BLOCK, blobValues, true, inMemory);
-  }
-
-  public DiscBasedMap(Class <B> keyClass, Class <D> valueClass,
-                      String fileName, int valueBlockSize, boolean blobValues, boolean inMemory) throws Exception{
-    this(keyClass, valueClass, fileName, valueBlockSize, DEFAULT_KEY_BLOCK, blobValues, true, inMemory);
-  }
-  
-  public DiscBasedMap(Class <B> keyClass, Class <D> valueClass,
-      String fileName, int valueBlockSize, int keyBlockSize, boolean blobValues, boolean keysMemoryMapped, boolean valsMemoryMapped) throws Exception{
-    this(keyClass, valueClass, fileName, new BTreeBuilder().blobValues(blobValues).memoryMappedValues(valsMemoryMapped)
-        .memoryMappedIndex(keysMemoryMapped).valueBlockSize(valueBlockSize).indexBlockSize(keyBlockSize));
-  }*/
-  
   public DiscBasedMap(Class <B> keyClass, Class <D> valueClass, String fileName,
       BTreeBuilder builder) throws Exception {
     this.keyMapping = keyClass.newInstance();
@@ -258,14 +236,14 @@ public class DiscBasedMap <A,B extends BComparable<A,B>,
   public java.util.Map.Entry<A,C> pollFirstEntry() {
     A key = this.firstKey();
     if(key == null) return null;
-    return new MapEntry<A,C>(key, remove(key));
+    return new MapEntry<>(key, remove(key));
   }
 
   @Override
   public java.util.Map.Entry<A,C> pollLastEntry() {
     A key = this.lastKey();
     if(key == null) return null;
-    return new MapEntry<A,C>(key, remove(key));
+    return new MapEntry<>(key, remove(key));
   }
 
   @Override
@@ -423,15 +401,15 @@ public class DiscBasedMap <A,B extends BComparable<A,B>,
     return 0;
   }
 
-  class DiscBasedMapIterator implements Iterator<Entry<A, C>>{
+  private class DiscBasedMapIterator implements Iterator<Entry<A, C>>{
 
     Iterator <KeyValue<B, D>> iter;
 
-    public DiscBasedMapIterator(){
+    DiscBasedMapIterator(){
       iter = btree.iterator();
     }
 
-    public DiscBasedMapIterator(boolean descending,
+    DiscBasedMapIterator(boolean descending,
                                 A from, boolean fromInclusive,
                                 A to, boolean toInclusive){
       B fKey = from != null ? keyMapping.create(from) : null;
