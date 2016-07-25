@@ -16,9 +16,9 @@
 
 package org.mellowtech.core.collections.impl;
 
-import org.mellowtech.core.CoreLog;
 import org.mellowtech.core.bytestorable.BComparable;
 import org.mellowtech.core.bytestorable.BStorable;
+import org.mellowtech.core.bytestorable.CBAuto;
 import org.mellowtech.core.bytestorable.CBUtil;
 import org.mellowtech.core.bytestorable.io.BCBuffer;
 import org.mellowtech.core.collections.BTree;
@@ -26,29 +26,27 @@ import org.mellowtech.core.collections.KeyValue;
 import org.mellowtech.core.collections.TreePosition;
 import org.mellowtech.core.io.*;
 import org.mellowtech.core.util.MapEntry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
-import java.util.logging.Level;
 
 /**
- * @author msvens
- * @since 12/01/16
+ * @author Martin Svensson {@literal <msvens@gmail.com>}
+ * @since 2016-01-12
  */
 @SuppressWarnings("unchecked")
 public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, D>>
     implements BTree<A, B, C, D> {
 
-  /*public static final int DEFAULT_MAX_VALUE_BLOCKS = 1024 * 1024;
-  public static final int DEFAULT_MAX_INDEX_BLOCKS = 1024 * 10;
-  public static final int DEFAULT_INDEX_BLOCK_SIZE = 1024 * 8;
-  public static final int DEFAULT_VALUE_BLOCK_SIZE = 1024 * 8;*/
 
   private final String IDX_EXT = ".idx";
   private final String VALUE_EXT = ".val";
+  private final Logger logger = LoggerFactory.getLogger(BTreeImp.class);
   /**
    * Filename for the IndexFile.
    */
@@ -342,7 +340,7 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
     try {
       buildOutputTree(rootPage, sbuff, 0, true);
     } catch (IOException e) {
-      CoreLog.L().warning("could not build index tree");
+      logger.warn("could not build index tree");
     }
     // then print the keys:
     sbuff.append("\n*****************VALUE FILE***********************\n\n");
@@ -425,7 +423,7 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
     try {
       buildOutputTree(rootPage, sbuff, 0, leafLevel);
     } catch (IOException e) {
-      CoreLog.L().warning("Could not traverse index");
+      logger.warn("Could not traverse index");
     }
     return sbuff.toString();
   }
@@ -1006,7 +1004,7 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
           keyIndex.get().leftNode = ret.newBlockNo;
         }
       } catch (Exception e) {
-        CoreLog.L().log(Level.SEVERE, bNo + " " + key + " " + kv, e);
+        logger.error("cannot insert KeyValue into block {} with key {} and keyValue {}",bNo,key,kv);
         throw new IOException(e);
       }
     } else
@@ -1502,7 +1500,7 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
       BTreeKey<B> bTreeKey = new BTreeKey<>(key, 0);
       return searchBlock(rootPage, bTreeKey, 0);
     } catch (IOException e) {
-      CoreLog.L().log(Level.WARNING, "could not find block", e);
+      logger.warn("could not find block", e);
       return -1;
     }
   }

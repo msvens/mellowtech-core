@@ -23,7 +23,6 @@ import java.util.logging.Level;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
-import org.mellowtech.core.CoreLog;
 import org.mellowtech.core.bytestorable.BStorable;
 
 /**
@@ -80,8 +79,7 @@ public class StorableZipReader <A,B extends BStorable <A,B>> {
       bs = template.from(ba, 0);
     }
     catch (Exception e) {
-      CoreLog.L().log(Level.WARNING, "", e);
-      return null;
+      throw new IOException(e);
     }
     return bs;
   }

@@ -16,7 +16,6 @@
 
 package org.mellowtech.core.collections.impl;
 
-import org.mellowtech.core.CoreLog;
 import org.mellowtech.core.bytestorable.BComparable;
 import org.mellowtech.core.bytestorable.BStorable;
 import org.mellowtech.core.collections.BTree;
@@ -30,7 +29,6 @@ import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Iterator;
-import java.util.logging.Level;
 
 import static java.nio.file.StandardOpenOption.*;
 
@@ -41,6 +39,7 @@ import static java.nio.file.StandardOpenOption.*;
  *
  * @author Martin Svensson
  */
+@SuppressWarnings("unchecked")
 public class BTreeBlobImp<A,B extends BComparable<A,B>,C,D extends BStorable<C,D>>
   implements BTree<A,B,C,D> {
 
@@ -180,15 +179,11 @@ public class BTreeBlobImp<A,B extends BComparable<A,B>,C,D extends BStorable<C,D
     return template.from(bb);
   }
 
-  class BPBlobIterator implements Iterator <KeyValue <B,D>>{
+  private class BPBlobIterator implements Iterator <KeyValue <B,D>>{
 
     Iterator <KeyValue <B, BlobPointer>> iter;
 
-    public BPBlobIterator(){
-      iter = tree.iterator();
-    }
-
-    public BPBlobIterator(boolean descending, B from, boolean inclusive, B to, boolean toInclusive){
+    BPBlobIterator(boolean descending, B from, boolean inclusive, B to, boolean toInclusive){
       iter = tree.iterator(descending, from, inclusive, to, toInclusive);
     }
 
@@ -207,7 +202,7 @@ public class BTreeBlobImp<A,B extends BComparable<A,B>,C,D extends BStorable<C,D
           toRet.setValue(getValue(next.getValue()));
         }
         catch(IOException e){
-          CoreLog.L().log(Level.WARNING, "could not iterate", e);
+          throw new Error("could not iterate", e);
 
         }
       }

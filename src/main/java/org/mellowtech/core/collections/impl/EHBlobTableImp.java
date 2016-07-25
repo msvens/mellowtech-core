@@ -25,20 +25,19 @@ import static java.nio.file.StandardOpenOption.*;
 
 import java.nio.file.Path;
 import java.util.Iterator;
-import java.util.logging.Level;
 
-import org.mellowtech.core.CoreLog;
 import org.mellowtech.core.bytestorable.BComparable;
 import org.mellowtech.core.bytestorable.BStorable;
 import org.mellowtech.core.collections.BMap;
 import org.mellowtech.core.collections.KeyValue;
 
+@SuppressWarnings("unchecked")
 public class EHBlobTableImp <A, B extends BComparable <A,B>, C, D extends BStorable<C,D>>
 implements BMap <A,B,C,D>{
   
   private final FileChannel blobs;
-  EHTableImp <A,B, ?,BlobPointer> eht;
-  D template;
+  private EHTableImp <A,B, ?,BlobPointer> eht;
+  private D template;
   private Path fName;
 
   public EHBlobTableImp(Path fName, Class <B> keyType, Class <D> valueType, boolean inMemory) throws Exception{
@@ -135,24 +134,19 @@ implements BMap <A,B,C,D>{
     return new EHBlobIterator();
   }
 
-  @Override
-  public void compact() throws IOException, UnsupportedOperationException {
-    // TODO Auto-generated method stub
-    
-  }
   
-  private final D getValue(BlobPointer bp) throws IOException{
+  private D getValue(BlobPointer bp) throws IOException{
     ByteBuffer bb = ByteBuffer.allocate(bp.getbSize());
     blobs.read(bb, bp.getfPointer());
     bb.flip();
     return template.from(bb);
   }
   
-  class EHBlobIterator implements Iterator <KeyValue <B,D>>{
+  private class EHBlobIterator implements Iterator <KeyValue <B,D>>{
 
     Iterator <KeyValue <B, BlobPointer>> iter;
 
-    public EHBlobIterator(){
+    EHBlobIterator(){
       iter = eht.iterator();
     }
 
@@ -172,8 +166,7 @@ implements BMap <A,B,C,D>{
           toRet.setValue(getValue(next.getValue()));
         }
         catch(IOException e){
-          CoreLog.L().log(Level.WARNING, "could not iterate", e);
-
+          throw new RuntimeException(e);
         }
       }
       return toRet;

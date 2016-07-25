@@ -16,7 +16,6 @@
 
 package org.mellowtech.core.collections.impl;
 
-import org.mellowtech.core.CoreLog;
 import org.mellowtech.core.bytestorable.BComparable;
 import org.mellowtech.core.bytestorable.BStorable;
 import org.mellowtech.core.collections.BTree;
@@ -211,8 +210,7 @@ public class HybridBlobTree<A,B extends BComparable<A,B>,C,D extends BStorable<C
           toRet.setValue(getValue(next.getValue()));
         }
         catch(IOException e){
-          CoreLog.L().log(Level.WARNING, "could not iterate", e);
-
+          throw new Error("Could not iterate",e);
         }
       }
       return toRet;

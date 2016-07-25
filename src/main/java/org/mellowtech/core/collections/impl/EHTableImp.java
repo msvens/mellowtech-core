@@ -23,9 +23,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.logging.Level;
 
-import org.mellowtech.core.CoreLog;
 import org.mellowtech.core.bytestorable.BComparable;
 import org.mellowtech.core.bytestorable.BStorable;
 import org.mellowtech.core.bytestorable.io.BCBuffer;
@@ -35,6 +33,8 @@ import org.mellowtech.core.io.Record;
 import org.mellowtech.core.io.RecordFile;
 import org.mellowtech.core.io.RecordFileBuilder;
 import org.mellowtech.core.util.DataTypeUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author msvens
@@ -43,7 +43,9 @@ import org.mellowtech.core.util.DataTypeUtils;
 public class EHTableImp <A, B extends BComparable <A,B>, C, D extends BStorable<C,D>>
   implements BMap <A,B,C,D>{
   
-  public static final int VERSION = 12;
+  private static final int VERSION = 12;
+
+  private final Logger logger = LoggerFactory.getLogger(EHTableImp.class);
   
   private int directory[];
   private int dirDepth;
@@ -55,7 +57,7 @@ public class EHTableImp <A, B extends BComparable <A,B>, C, D extends BStorable<
   private D valueType;
   private int bucketSize;
   private boolean inMemory;
-  IntBuffer reserve;
+  private IntBuffer reserve;
   private Path p;
   
   public EHTableImp(Path path, Class<B> keyType, Class<D> valueType, boolean inMemory) throws Exception{
@@ -108,9 +110,9 @@ public class EHTableImp <A, B extends BComparable <A,B>, C, D extends BStorable<
       bucket.insert(kv);
       writeBucket(rrn, bucket);
     } else {
-      CoreLog.L().finest("Splitting bucket: "+ rrn + this);
+      logger.trace("slitting bucker {} {}", rrn, this);
       splitBucket(bucket);
-      CoreLog.L().finest(this.toString());
+      logger.trace(this.toString());
       put(key, value);
     }
   }
@@ -272,8 +274,7 @@ public class EHTableImp <A, B extends BComparable <A,B>, C, D extends BStorable<
   private void splitBucket(BCBuffer <KeyValue.KV<B,D>, KeyValue <B,D>> bucket) throws IOException {
     int bucketAddr = find(bucket.get(0));
 
-    CoreLog.L().finest(DataTypeUtils.printBits((short) find(bucket
-        .get(0))) + " " + (bucket.get(0)).getKey());
+    logger.trace(DataTypeUtils.printBits((short) find(bucket.get(0))) + " " + (bucket.get(0)).getKey());
 
     if (this.readBucketDepth(bucket) == dirDepth) {
       doubleDir();
@@ -319,7 +320,7 @@ public class EHTableImp <A, B extends BComparable <A,B>, C, D extends BStorable<
     try{
       return new BCBuffer<>(ByteBuffer.wrap(bucketFile.get(record)), kvType);
     } catch(IOException e){
-      CoreLog.L().log(Level.WARNING, "could not read block", e);
+      logger.warn("Could not read block", e);
       throw e;
     }
   }
@@ -382,7 +383,7 @@ public class EHTableImp <A, B extends BComparable <A,B>, C, D extends BStorable<
       int rrn = bucketFile.insert(toRet.getArray());
       return new BlockRecord(rrn, toRet);
     } catch(IOException e){
-      CoreLog.L().severe("could not create new bucket: "+e.toString());
+      logger.error("could not create new bucker", e);
       throw new IOException(e);
     }
   }
@@ -486,20 +487,20 @@ public class EHTableImp <A, B extends BComparable <A,B>, C, D extends BStorable<
     reserve.put(dir);
   }
   
-  class BlockRecord {
+  private class BlockRecord {
     int record = 0;
     BCBuffer <KeyValue.KV<B,D>, KeyValue <B,D>> block;
-    public BlockRecord(int r, BCBuffer <KeyValue.KV<B,D>, KeyValue <B,D>> b){
+    BlockRecord(int r, BCBuffer<KeyValue.KV<B, D>, KeyValue<B, D>> b){
       record = r;
       block = b;
     }
   }
   
-  class Range {
+  private class Range {
     int from, to;
   }
   
-  class EHTIterator implements Iterator <KeyValue<B, D>> {
+  private class EHTIterator implements Iterator <KeyValue<B, D>> {
     Iterator <Record> fileIterator = bucketFile.iterator();
     
     Iterator <KeyValue <B,D>> bucketIterator;
@@ -507,7 +508,7 @@ public class EHTableImp <A, B extends BComparable <A,B>, C, D extends BStorable<
     
     byte b[];
 
-    public EHTIterator() {
+    EHTIterator() {
       if (!fileIterator.hasNext())
         return;
       b = fileIterator.next().data;

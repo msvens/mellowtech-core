@@ -16,33 +16,34 @@
 
 package org.mellowtech.core.collections.impl;
 
-import org.mellowtech.core.CoreLog;
 import org.mellowtech.core.bytestorable.BComparable;
 import org.mellowtech.core.bytestorable.BStorable;
 import org.mellowtech.core.collections.KeyValue;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.logging.Level;
 
 /**
  * @author Martin Svensson {@literal <msvens@gmail.com>}
  * @since 14/01/16.
  */
-public class BTreeIterator<A, B extends BComparable<A, B>, C, D extends BStorable<C, D>> implements Iterator<KeyValue<B, D>> {
-  Iterator<KeyValue<B, D>> sbIterator;
-  ArrayList<Integer> blocks = new ArrayList<>();
+class BTreeIterator<A, B extends BComparable<A, B>, C, D extends BStorable<C, D>> implements Iterator<KeyValue<B, D>> {
+  private Iterator<KeyValue<B, D>> sbIterator;
+  private ArrayList<Integer> blocks = new ArrayList<>();
+  private final Logger logger = LoggerFactory.getLogger(BTreeIterator.class);
   boolean inclusive = true;
-  boolean reverse = false;
-  boolean endInclusive = true;
-  KeyValue<B, D> end = null;
-  int currblock = 0;
+  private boolean reverse = false;
+  private boolean endInclusive = true;
+  private KeyValue<B, D> end = null;
+  private int currblock = 0;
   KeyValue<B, D> next = null;
-  BTreeImp<A, B, C, D> tree;
+  private BTreeImp<A, B, C, D> tree;
 
 
-  public BTreeIterator(BTreeImp<A, B, C, D> tree, boolean reverse, B from, boolean inclusive, B to, boolean endInclusive) {
+  BTreeIterator(BTreeImp<A, B, C, D> tree, boolean reverse, B from, boolean inclusive, B to, boolean endInclusive) {
     this.tree = tree;
     this.inclusive = inclusive;
     this.reverse = reverse;
@@ -121,7 +122,7 @@ public class BTreeIterator<A, B extends BComparable<A, B>, C, D extends BStorabl
     try {
       tree.buildPointers(tree.rootPage, blocks, 0, tree.leafLevel);
     } catch (IOException e) {
-      CoreLog.L().log(Level.WARNING, "could not traverse blocks", e);
+      logger.warn("could not traverse blocks", e);
       throw new Error(e);
     }
   }
@@ -143,7 +144,7 @@ public class BTreeIterator<A, B extends BComparable<A, B>, C, D extends BStorabl
             tree.getValueBlock(blocks.get(currblock)).iterator(true, new KeyValue<>(from, null), inclusive, null, false);
         currblock--;
       } catch (IOException e) {
-        CoreLog.L().log(Level.WARNING, "Could not retrieve block", e);
+        logger.warn("Could not retrieve block", e);
         throw new Error(e);
       }
     }
@@ -160,7 +161,7 @@ public class BTreeIterator<A, B extends BComparable<A, B>, C, D extends BStorabl
             tree.getValueBlock(blocks.get(currblock)).iterator(false, new KeyValue<>(from, null), inclusive, null, false);
         currblock++;
       } catch (IOException e) {
-        CoreLog.L().log(Level.WARNING, "Could not retrieve block", e);
+        logger.warn("Could not retrieve block", e);
         throw new Error(e);
       }
     }

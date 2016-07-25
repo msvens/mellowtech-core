@@ -19,7 +19,6 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Locale;
 
-import org.mellowtech.core.CoreLog;
 import org.mellowtech.core.util.CompiledLocale;
 
 /**
@@ -81,7 +80,6 @@ public class CBCharArray extends BStorableImp <char[], CBCharArray> implements B
    *          a <code>Locale</code> value
    */
   public static void setLocale(Locale locale) {
-    CoreLog.L().info("Setting locale to " + locale + ", creating new charmap");
     CBCharArray.locale = locale;
     CBCharArray.charMap = new CompiledLocale().getCompiledLocale(locale);
   }
@@ -95,7 +93,6 @@ public class CBCharArray extends BStorableImp <char[], CBCharArray> implements B
    *          charmap to set
    */
   public static void setLocale(Locale locale, char[] charmap) {
-    CoreLog.L().info("Setting locale to " + locale + ", using supplied charmap");
     CBCharArray.locale = locale;
     CBCharArray.charMap = charmap;
   }

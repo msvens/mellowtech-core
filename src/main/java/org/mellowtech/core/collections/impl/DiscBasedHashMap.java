@@ -18,9 +18,8 @@ package org.mellowtech.core.collections.impl;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.logging.Level;
 
-import org.mellowtech.core.CoreLog;
+
 import org.mellowtech.core.bytestorable.BComparable;
 import org.mellowtech.core.bytestorable.BStorable;
 import org.mellowtech.core.bytestorable.ByteStorableException;
@@ -29,6 +28,8 @@ import org.mellowtech.core.collections.DiscMap;
 import org.mellowtech.core.collections.EHTableBuilder;
 import org.mellowtech.core.collections.KeyValue;
 import org.mellowtech.core.util.MapEntry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * User: Martin Svensson
@@ -42,8 +43,7 @@ public class DiscBasedHashMap <A,B extends BComparable<A,B>,
   private final B keyMapping;
   private final D valueMapping;
   private BMap<A,B,C,D> eht;
-  //private String fName;
-
+  private final Logger logger = LoggerFactory.getLogger(Class.class);
   public static final int DEFAULT_BUCKET_SIZE = 1024*8;
   public static final int MAX_BUCKETS = 1024*1024*2;
 
@@ -100,7 +100,7 @@ public class DiscBasedHashMap <A,B extends BComparable<A,B>,
       return eht.size();
     }
     catch(Exception e){
-      CoreLog.L().log(Level.SEVERE, "", e);
+      logger.error("", e);
       throw new ByteStorableException(e);
     }
   }
@@ -111,7 +111,7 @@ public class DiscBasedHashMap <A,B extends BComparable<A,B>,
       return eht.isEmpty();
     }
     catch(Exception e){
-      CoreLog.L().log(Level.SEVERE, "", e);
+      logger.error("", e);
       throw new ByteStorableException(e);
     }
   }
@@ -125,7 +125,7 @@ public class DiscBasedHashMap <A,B extends BComparable<A,B>,
       return eht.containsKey(keyMapping.create((A) key));
     }
     catch(Exception e){
-      CoreLog.I().l().log(Level.SEVERE, "", e);
+      logger.error("", e);
     }
     return false;  //To change body of implemented methods use File | Settings | File Templates.
   }
@@ -152,7 +152,7 @@ public class DiscBasedHashMap <A,B extends BComparable<A,B>,
       return ret != null ? ret.get() : null;
     }
     catch(Exception e){
-      CoreLog.L().log(Level.SEVERE, "", e);
+      logger.error("", e);
     }
     return null;  //To change body of implemented methods use File | Settings | File Templates.
   }
@@ -165,7 +165,7 @@ public class DiscBasedHashMap <A,B extends BComparable<A,B>,
       eht.put(bsk, vsk);
     }
     catch(Exception e){
-      CoreLog.L().log(Level.SEVERE, "", e);
+      logger.error("", e);
     }
     return null;
   }
@@ -179,7 +179,7 @@ public class DiscBasedHashMap <A,B extends BComparable<A,B>,
       return v != null ? v.get() : null;
     }
     catch(IOException e){
-      CoreLog.L().log(Level.SEVERE, "", e);
+      logger.error("", e);
     }
     return null;  //To change body of implemented methods use File | Settings | File Templates.
   }
@@ -202,7 +202,7 @@ public class DiscBasedHashMap <A,B extends BComparable<A,B>,
 
   @Override
   public Set <A> keySet() {
-    return new DBKeySet<A,C> (this);
+    return new DBKeySet<>(this);
   }
 
   @Override
@@ -215,11 +215,11 @@ public class DiscBasedHashMap <A,B extends BComparable<A,B>,
     return new DBEntrySet<>(this);
   }
 
-  class DiscBasedHashIterator implements Iterator<Entry<A,C>>{
+  private class DiscBasedHashIterator implements Iterator<Entry<A,C>>{
 
     Iterator <KeyValue <B,D>> iter;
 
-    public DiscBasedHashIterator(){
+    DiscBasedHashIterator(){
       iter = eht.iterator();
     }
 

@@ -18,7 +18,6 @@
 package org.mellowtech.core.io.impl;
 
 import com.google.common.base.Objects;
-import org.mellowtech.core.CoreLog;
 import org.mellowtech.core.io.Record;
 import org.mellowtech.core.io.RecordFile;
 import org.mellowtech.core.util.MappedBitSet;
@@ -30,10 +29,10 @@ import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.util.BitSet;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.logging.Level;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Format of File
@@ -41,6 +40,8 @@ import java.util.logging.Level;
  * Created by msvens on 30/10/15.
  */
 abstract class AbstractBlockFile implements RecordFile {
+
+  final private Logger logger = LoggerFactory.getLogger(AbstractBlockFile.class);
 
   public static String FILE_EXT = ".blf";
   public static int MIN_BLOCK_SIZE = 256;
@@ -69,7 +70,7 @@ abstract class AbstractBlockFile implements RecordFile {
     try {
       if (openFile(p)) return;
     } catch (IOException e) {
-      CoreLog.L().log(Level.FINER, "Could not open block file", e);
+      logger.info("Could not open block file", e);
     }
 
     if (reserve < 0) reserve = 0;

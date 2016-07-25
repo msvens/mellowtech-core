@@ -18,10 +18,11 @@
 package org.mellowtech.core.io.impl;
 
 import com.google.common.base.Objects;
-import org.mellowtech.core.CoreLog;
 import org.mellowtech.core.io.Record;
 import org.mellowtech.core.io.SplitRecordFile;
 import org.mellowtech.core.util.MappedBitSet;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -30,10 +31,8 @@ import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.util.BitSet;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.logging.Level;
 
 /**
  * A Block file that keeps a separate mapped region with block accessed via the
@@ -72,9 +71,13 @@ abstract class AbstractSplitBlockFile implements SplitRecordFile {
   private int blockSize;
   private int mappedBlockSize;
 
+  final private Logger logger = LoggerFactory.getLogger(AbstractSplitBlockFile.class);
+
   public AbstractSplitBlockFile(Path path) throws IOException {
-    if (!openFile(path))
+    if (!openFile(path)) {
+      logger.warn("could not open blockfile at {}", path.toString());
       throw new IOException("could not open split block file");
+    }
   }
 
   public AbstractSplitBlockFile(Path path, int blockSize, int maxBlocks,
@@ -83,7 +86,7 @@ abstract class AbstractSplitBlockFile implements SplitRecordFile {
     try {
       if (openFile(path)) return;
     } catch (IOException e) {
-      CoreLog.L().log(Level.FINER, "Could Not Open Old File", e);
+      logger.info("Could not open old block file", e);
     }
 
     if (reserve < 0) reserve = 0;
@@ -101,9 +104,6 @@ abstract class AbstractSplitBlockFile implements SplitRecordFile {
   public void clear() throws IOException {
     bitSet.clear();
     mappedBitSet.clear();
-    /*saveBitSet(bitSet, bitBuffer);
-    saveBitSet(mappedBitSet, mappedBitBuffer);
-    */
   }
 
   protected void truncate() throws IOException {

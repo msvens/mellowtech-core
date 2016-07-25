@@ -35,9 +35,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.logging.Level;
 
-import org.mellowtech.core.CoreLog;
 import org.mellowtech.core.bytestorable.ByteStorableException;
 import org.mellowtech.core.bytestorable.CBList;
 import org.mellowtech.core.bytestorable.BStorable;
@@ -47,10 +45,9 @@ import org.mellowtech.core.collections.BTree;
 import org.mellowtech.core.collections.BTreeBuilder;
 import org.mellowtech.core.collections.DiscMap;
 import org.mellowtech.core.collections.KeyValue;
-import org.mellowtech.core.collections.impl.PointerClassId;
 import org.mellowtech.core.util.MapEntry;
-
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -72,7 +69,8 @@ public class ObjectManager implements DiscMap<String, BStorable> {
  
   
 
-  
+  private final Logger logger = LoggerFactory.getLogger(ObjectManager.class);
+
   private BTree<String, CBString, ?, PointerClassId> mIndex;
   
   private CBList <String> mClassIds;
@@ -151,7 +149,7 @@ public class ObjectManager implements DiscMap<String, BStorable> {
       id = mIndex.get(new CBString((String)key));
       return id != null ? getObject(id) : null;
     } catch (IOException e) {
-      CoreLog.L().log(Level.WARNING, "", e);
+      logger.warn("",e);
     }
     return null;
   }
@@ -168,7 +166,7 @@ public class ObjectManager implements DiscMap<String, BStorable> {
       mIndex.put(new CBString(key), pci);
     }
     catch(Exception e){
-      CoreLog.L().log(Level.WARNING, "", e);
+      logger.warn("", e);
     }
     return prev;
     
@@ -185,7 +183,7 @@ public class ObjectManager implements DiscMap<String, BStorable> {
       return getObject(pci);
     }
     catch(Exception e){
-      CoreLog.L().log(Level.WARNING, "", e);
+      logger.warn("",e);
     }
     return null;
   }

@@ -20,12 +20,12 @@ package org.mellowtech.core.util;
 
 
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.logging.Level;
-
-import org.mellowtech.core.CoreLog;
 
 /**
  * DelDir is a simple utility for deleting non empty directories using Files.walkFileTree
@@ -35,6 +35,7 @@ import org.mellowtech.core.CoreLog;
 public class DelDir {
 
 
+  final static Logger logger = LoggerFactory.getLogger(DelDir.class);
   /**
    * Deletes all files including the given path
    * @param path directory to delete
@@ -58,8 +59,7 @@ public class DelDir {
         @Override
         public FileVisitResult visitFile(Path file,
                                          BasicFileAttributes attrs) throws IOException {
-
-          CoreLog.L().finer("Deleting file: " + file);
+          logger.debug("deleting file: {}", file);
           Files.delete(file);
           return FileVisitResult.CONTINUE;
         }
@@ -67,8 +67,7 @@ public class DelDir {
         @Override
         public FileVisitResult postVisitDirectory(Path dir,
                                                   IOException exc) throws IOException {
-
-          CoreLog.L().finer("Deleting dir: " + dir);
+          logger.debug("Deleteding dir: {}", dir);
           if (exc == null) {
             if(!excludeTop || !dir.equals(top))
               Files.delete(dir);
@@ -80,7 +79,7 @@ public class DelDir {
 
       });
     } catch (IOException e) {
-      CoreLog.L().log(Level.WARNING, "", e);
+      logger.warn("",e);
       return false;
     }
     return true;

@@ -28,11 +28,12 @@ import java.nio.channels.WritableByteChannel;
 import java.util.Arrays;
 import java.util.logging.Level;
 
-import org.mellowtech.core.CoreLog;
 import org.mellowtech.core.bytestorable.BComparable;
 import org.mellowtech.core.bytestorable.CBUtil;
-import org.mellowtech.core.util.ArrayUtils;
 import org.mellowtech.core.util.Platform;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import sun.rmi.runtime.Log;
 //import sun.jvm.hotspot.oops.ExceptionTableElement;
 
 /**
@@ -51,9 +52,11 @@ import org.mellowtech.core.util.Platform;
  * @see org.mellowtech.core.sort.EDiscBasedSort
  */
 public class DiscBasedSort <A, B extends BComparable<A,B>> {
-  public static final String SORT_RUN_FILE = "disc_sort_d_run.";
+  static final String SORT_RUN_FILE = "disc_sort_d_run.";
   private static final String SEP = System.getProperties().getProperty(
       "file.separator");
+
+  private final Logger logger = LoggerFactory.getLogger(DiscBasedSort.class);
 
   private static int blockSize = 1024;
   private B template;
@@ -104,16 +107,18 @@ public class DiscBasedSort <A, B extends BComparable<A,B>> {
       this.template = template.newInstance();
     } catch(Exception e){throw new Error("could not create template instance");}
     this.complevel = complevel;
-    this.tempDir = tempDir;
+    String tDir;
     try {
+      tDir = tempDir;
       File file = new File(tempDir);
       if (!file.isDirectory())
         throw new Exception("");
     }
     catch (Exception e) {
-      CoreLog.L().info("Could not open temp dir.." + tempDir+" using default");
-      tempDir = Platform.getTempDir();
+      logger.info("Could not open temp dir: {}. Using default tempDir", tempDir);
+      tDir = Platform.getTempDir();
     }
+    this.tempDir = tDir;
   }
 
   /**
@@ -137,7 +142,7 @@ public class DiscBasedSort <A, B extends BComparable<A,B>> {
       return sort(fc, fo, memorySize);
     }
     catch(IOException e){
-      CoreLog.L().log(Level.WARNING, "could not sort", e);
+      logger.error("Could not sort",e);
       return -1;
     }
   }
@@ -170,28 +175,27 @@ public class DiscBasedSort <A, B extends BComparable<A,B>> {
     File f = new File(tempDir);
     String[] fNames = f.list(new DBFFilter());
     try {
-      Merge.merge(fNames, template, large, ob, output, tempDir,
-          complevel > 0 ? true : false);
+      Merge.merge(fNames, template, large, ob, output, tempDir, complevel > 0);
     }
     catch (Exception e) {
-      CoreLog.L().log(Level.WARNING, "could not merge files", e);
+      logger.error("Could not merge files",e);
     }
     try {
-      CoreLog.L().finer("SORT:sort():Removing temp files.");
+      logger.debug("Removing temp files");
       File fileDir = new File(tempDir);
       File[] files = fileDir.listFiles(new FilenameFilter() {
         public boolean accept(File file, String name) {
-          return name.indexOf(SORT_RUN_FILE) >= 0 ? true : false;
+          return name.contains(SORT_RUN_FILE);
         }
       });
       if (files != null)
-        for (int i = 0; i < files.length; i++) {
-          CoreLog.L().finer("delete sort run " + files[i]);
-          files[i].delete();
+        for (File file : files) {
+        logger.debug("delete sort run: {}", file);
+          file.delete();
         }
     }
     catch (Exception e) {
-      CoreLog.L().log(Level.WARNING, "could not delete sort runs", e);
+      logger.warn("Could not delete sort run files", e);
     }
     return numFiles;
 
@@ -225,13 +229,13 @@ public class DiscBasedSort <A, B extends BComparable<A,B>> {
         sortRun(input, objs, c.getNumObjs(), i, tmpDir, ob);
         ll = System.currentTimeMillis() - ll;
         l = System.currentTimeMillis() - l;
-        CoreLog.L().info("discbased in memory sort of "+c.getNumObjs()+" took: "+ll/1000+" secs");
-        CoreLog.L().info("discbased sort run took: "+l/1000+" secs");
+        logger.info("Discbased inmemory sort of {} took {} secs", c.getNumObjs(), ll/1000);
+        logger.info("Discbased sort run took {} secs", l/1000);
       }
       return numObjs;
     }
     catch (Exception e) {
-      CoreLog.L().log(Level.WARNING, "", e);
+      logger.error("could not make runs", e);
       return -1;
     }
   }
@@ -271,8 +275,8 @@ public class DiscBasedSort <A, B extends BComparable<A,B>> {
 
 class DBSProducer <A, B extends BComparable<A,B>> extends Thread {
   private DBSContainer <A,B> hb;
-
-  public DBSProducer(DBSContainer <A,B> hb) {
+  private final Logger logger = LoggerFactory.getLogger(DBSProducer.class);
+  DBSProducer(DBSContainer<A, B> hb) {
     this.hb = hb;
   }
 
@@ -282,7 +286,7 @@ class DBSProducer <A, B extends BComparable<A,B>> extends Thread {
         hb.produce();
     }
     catch (Exception e) {
-      CoreLog.L().log(Level.WARNING, "", e);
+      logger.warn("",e);
     }
   }
 }
@@ -292,13 +296,14 @@ class DBSConsumer <A, B extends BComparable<A,B>> extends Thread {
   private B tmp;
   private B[] objs;
   private int numObjs = 0;
+  private final Logger logger = LoggerFactory.getLogger(DBSProducer.class);
 
-  public DBSConsumer(DBSContainer <A,B> hb, B[] objs) {
+  DBSConsumer(DBSContainer<A, B> hb, B[] objs) {
     this.objs = objs;
     this.hb = hb;
   }
 
-  public int getNumObjs() {
+  int getNumObjs() {
     return numObjs;
   }
 
@@ -322,19 +327,20 @@ class DBSConsumer <A, B extends BComparable<A,B>> extends Thread {
       }
     }
     catch (Exception e) {
-      CoreLog.L().log(Level.WARNING, "", e);
+      logger.warn("", e);
     }
   }
 }
 
 class DBSContainer <A, B extends BComparable<A,B>> {
 
-  ByteBuffer buffer;
-  ByteBuffer consumerBuffer;
+  private ByteBuffer buffer;
+  private ByteBuffer consumerBuffer;
   ReadableByteChannel c;
-  boolean noMore = false, consumedAll = false, endOfStream = false;
-  int slack = -1, totConsumed, totProduced, blockSize, maxRead;
-  B template;
+  private boolean noMore = false, consumedAll = false, endOfStream = false;
+  private int slack = -1, totConsumed, totProduced, blockSize, maxRead;
+  private B template;
+  private final Logger logger = LoggerFactory.getLogger(DBSContainer.class);
 
   public DBSContainer(ByteBuffer b, ReadableByteChannel c, int blockSize,
       B template, int maxRead) {
@@ -347,10 +353,9 @@ class DBSContainer <A, B extends BComparable<A,B>> {
     buffer = b;
     consumerBuffer = b.asReadOnlyBuffer();
     consumerBuffer.limit(buffer.position());
-
   }
 
-  public boolean prepareRun() {
+  boolean prepareRun() {
     if (endOfStream)
       return false;
     noMore = false;
@@ -371,14 +376,6 @@ class DBSContainer <A, B extends BComparable<A,B>> {
     totConsumed = 0;
     consumerBuffer.position(0);
     consumerBuffer.limit(buffer.position());
-
-    /*
-     * buffer.limit(buffer.capacity()); if(slack > 0){
-     * buffer.position(buffer.capacity() - slack);
-     * ByteStorable.copyToBeginning(buffer, slack); totProduced = slack; } else{
-     * buffer.clear(); totProduced = 0; } totConsumed = 0;
-     * consumerBuffer.limit(buffer.position()); consumerBuffer.position(0);
-     */
     return true;
   }
 
@@ -386,7 +383,7 @@ class DBSContainer <A, B extends BComparable<A,B>> {
     return buffer;
   }
 
-  public boolean producedAll() {
+  boolean producedAll() {
     return noMore;
   }
 
@@ -398,11 +395,11 @@ class DBSContainer <A, B extends BComparable<A,B>> {
     return totProduced;
   }
 
-  public boolean consumedAll() {
+  boolean consumedAll() {
     return consumedAll;
   }
 
-  public synchronized B consume() { // as much as possible
+  synchronized B consume() { // as much as possible
     try {
       if ((noMore && slack >= 0) || consumedAll) {
         notifyAll();
@@ -429,12 +426,11 @@ class DBSContainer <A, B extends BComparable<A,B>> {
       return tmp;
     }
     catch (InterruptedException e) {
-      ;
     }
     return null;
   }
 
-  public synchronized int produce() {
+  synchronized int produce() {
     int read = -1;
     if (noMore) {
       notifyAll();
@@ -482,7 +478,7 @@ class DBSContainer <A, B extends BComparable<A,B>> {
 
     }
     catch (Exception e) {
-      CoreLog.L().log(Level.WARNING, "in produce", e);
+      logger.warn("cannot produce", e);
     }
     return -1;
   }
@@ -495,8 +491,6 @@ class DBSContainer <A, B extends BComparable<A,B>> {
 class DBFFilter implements java.io.FilenameFilter {
 
   public boolean accept(File dir, String name) {
-    if (name.startsWith(DiscBasedSort.SORT_RUN_FILE))
-      return true;
-    return false;
+    return name.startsWith(DiscBasedSort.SORT_RUN_FILE);
   }
 }

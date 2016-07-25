@@ -23,9 +23,10 @@ import java.nio.channels.WritableByteChannel;
 import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
 
-import org.mellowtech.core.CoreLog;
 import org.mellowtech.core.bytestorable.BComparable;
 import org.mellowtech.core.bytestorable.CBUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Merge a set of sorted files into one large file. This Merge operates on
@@ -38,11 +39,13 @@ public class Merge{
 
   private static int mBlockSize = 4096 * 4;
 
+  private static final Logger logger = LoggerFactory.getLogger(Merge.class);
+
   private static class Container<A,B extends BComparable<A,B>> implements Comparable<Container<A,B>> {
     B store;
     int node;
 
-    public Container(B bs, int node) {
+    Container(B bs, int node) {
       store = bs;
       this.node = node;
     }
@@ -109,12 +112,12 @@ public class Merge{
     //check
     if(fNames.length * mBlockSize > input.capacity()){
       mBlockSize = input.capacity() / fNames.length;
-      CoreLog.L().finer("changing block size to fit to buffer: "+mBlockSize);
+      logger.debug("changing block size to fit to buffer: {}", mBlockSize);
     }
 
     // fill local containers:
     for (int i = 0; i < fNames.length; i++) {
-      CoreLog.L().finer("opening "+dir + "/" + fNames[i]+" for merge");
+      logger.debug("opening {}/{} for merge", dir, fNames[i]);
       if (compressed)
         channels[i] = Channels.newChannel(new InflaterInputStream(
             new FileInputStream(dir + "/" + fNames[i]), new Inflater()));
@@ -197,7 +200,7 @@ public class Merge{
     //check
     if(fNames.length * mBlockSize > input.capacity()){
       mBlockSize = input.capacity() / fNames.length;
-      CoreLog.L().finer("changing block size to fit to buffer: "+mBlockSize);
+      logger.debug("changing block size to fit to buffer: {}", mBlockSize);
     }
     for (int i = 0; i < fNames.length; i++) {
 
@@ -237,17 +240,6 @@ public class Merge{
       throws Exception {
     input.position(offset);
 
-    /** CRITICAL Remove */
-    /*
-     * int saved = input.position();
-     * 
-     * ByteStorable sortTerm = template.fromBytes(input, true); String str =
-     * sortTerm.toString();
-     * 
-     * input.position(saved);
-     */
-    /** ******************* */
-
     int size = template.byteSize(input);
     if (size > output.remaining()) {
       output.flip();
@@ -279,7 +271,7 @@ public class Merge{
     if (slack <= 0) {
       CBUtil.copyToBeginning(buffers[node], Math.abs(slack));
       if (channels[node].read(buffers[node]) == -1) {
-        CoreLog.L().finer("closing merge channel: " + slack);
+        logger.debug("closing merge channel: {}",slack);
         channels[node].close();
         if(Math.abs(slack) <= 0) //need to read the final bytes
           return;
@@ -287,7 +279,7 @@ public class Merge{
       buffers[node].flip();
       // slack = template.byteSize(buffers[node]);
     }
-    heap.insert(new Container<A,B>(template.from(buffers[node]), node));
+    heap.insert(new Container<>(template.from(buffers[node]), node));
   }
 
   private static void input(ReadableByteChannel[] channels,
@@ -300,7 +292,7 @@ public class Merge{
       CBUtil.copyToBeginning(buffers[node], Math.abs(slack));
       if (channels[node].read(buffers[node]) == -1) {
         channels[node].close();
-        CoreLog.L().finer("closing merge channel "+node+" "+slack);
+        logger.debug("closing merge channel {} {}",node,slack);
         if(Math.abs(slack) <= 0) //need to read the final bytes
         return;
       }
@@ -309,8 +301,8 @@ public class Merge{
     }
     int pos = buffers[node].position();
     heap.insert((node * mBlockSize) + pos);
-    numInserted++;
+    //numInserted++;
     buffers[node].position(pos + slack);
   }
-  public static int numInserted = 0;
+  //private static int numInserted = 0;
 }

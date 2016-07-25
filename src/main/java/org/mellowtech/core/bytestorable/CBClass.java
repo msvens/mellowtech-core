@@ -17,9 +17,6 @@
 package org.mellowtech.core.bytestorable;
 
 import java.nio.ByteBuffer;
-import java.util.logging.Level;
-
-import org.mellowtech.core.CoreLog;
 
 /**
  * BStorable wrapper for Class
@@ -53,8 +50,7 @@ public class CBClass extends BStorableImp <Class, CBClass> implements Comparable
       return new CBClass(Class.forName(tmp1));
     }
     catch(Exception e){
-      CoreLog.L().log(Level.SEVERE, "could not parse header", e);
-      return null;
+      throw new RuntimeException("could not find class: "+tmp1, e);
     }
   }
 

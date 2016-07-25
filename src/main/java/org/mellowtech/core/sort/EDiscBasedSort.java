@@ -29,14 +29,14 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
 import java.util.Arrays;
-import java.util.logging.Level;
 import java.util.zip.Deflater;
 import java.util.zip.DeflaterOutputStream;
 
-import org.mellowtech.core.CoreLog;
 import org.mellowtech.core.bytestorable.BComparable;
 import org.mellowtech.core.bytestorable.CBUtil;
 import org.mellowtech.core.util.Platform;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * DiscBasedSort sorts large amounts of data by combining in-memory sorting with
@@ -69,7 +69,7 @@ import org.mellowtech.core.util.Platform;
  * @see org.mellowtech.core.bytestorable.BComparable
  */
 public class EDiscBasedSort <A, B extends BComparable<A,B>> {
-  public static final String SORT_RUN_FILE = "disc_sort_e_run.";
+  static final String SORT_RUN_FILE = "disc_sort_e_run.";
   private static final String SEP = System.getProperties().getProperty(
       "file.separator");
 
@@ -91,18 +91,20 @@ public class EDiscBasedSort <A, B extends BComparable<A,B>> {
   private final int complevel;
   private final String tempDir;
 
+  private final Logger logger = LoggerFactory.getLogger(EDiscBasedSort.class);
+
   // Flag to control if execution is to wait occasionally to let other processes
   //..get a go for CPU usage.
-  protected boolean fGoSlower = false;
+  private boolean fGoSlower = false;
   
   // Number of milliseconds to sleep.
-  protected long fSleepMillis = 10;
+  private long fSleepMillis = 10;
   
   // Number of milliseconds to allow execution to continue before a sleep (approximately).
-  protected long fExeMillis = 100;
+  private long fExeMillis = 100;
   
   // Holds the counter for milliseconds used by the slow going execution framework.
-  protected long fLastTimeStamp = 0;
+  private long fLastTimeStamp = 0;
   
   /**
    * Set the block size. How much data to read/write from disc. This number
@@ -155,18 +157,18 @@ public class EDiscBasedSort <A, B extends BComparable<A,B>> {
       this.template = template.newInstance();
     } catch(Exception e){throw new Error("could not create template instance");}
     this.complevel = complevel;
-    this.tempDir = tempDir;
+    String tDir;
     try {
-
       File file = new File(tempDir);
       if (!file.isDirectory())
         throw new Exception("");
+      tDir = tempDir;
     }
     catch (Exception e) {
-      CoreLog.L().info("could not open temp dir, using default tempdir");
-      tempDir = Platform.getTempDir();
-
+      logger.info("could not open temp dir, using default tempdir");
+      tDir = Platform.getTempDir();
     }
+    this.tempDir = tDir;
   }
   
   /**
@@ -177,9 +179,8 @@ public class EDiscBasedSort <A, B extends BComparable<A,B>> {
    * necessary since threads cannot wait() on objects that don't belong
    * to them.
    */
-  protected void allowSleep(Object pMonitor) {
-	  if(fGoSlower == false)
-		  return;
+  private void allowSleep(Object pMonitor) {
+	  if(!fGoSlower) return;
 	  long currentTime = System.currentTimeMillis();
 	  if(currentTime - fLastTimeStamp > fExeMillis) {
 		  try {
@@ -232,7 +233,7 @@ public class EDiscBasedSort <A, B extends BComparable<A,B>> {
       return ret;
     }
     catch (IOException e) {
-      CoreLog.L().log(Level.WARNING, "could not sort", e);
+      logger.warn("could not sort", e);
       return -1;
     }
   }
@@ -279,10 +280,7 @@ public class EDiscBasedSort <A, B extends BComparable<A,B>> {
     ByteBuffer ob = ByteBuffer.allocate(blockSize);
     ByteBuffer large = ByteBuffer.allocate(memorySize);
 
-    //if (tempDir == null)
-    //tempDir = ".";
-
-    CoreLog.L().finer("SORT:sort():Making runs.");
+    logger.debug("SORT:sort():Making runs.");
     int numFiles = makeRuns(input, large, ob, tempDir);
 
     if (numFiles <= 0)
@@ -292,33 +290,31 @@ public class EDiscBasedSort <A, B extends BComparable<A,B>> {
     File f = new File(tempDir);
     String[] fNames = f.list(new FFilter());
     try {
-      CoreLog.L().finer("SORT:sort():Merging runs");
+      logger.debug("SORT:sort():Merging runs");
       // Clock time to complete.
       long timeStart = System.currentTimeMillis();
-      Merge.mergeDirect(fNames, template, large, ob, output, tempDir,
-          complevel > 0 ? true : false);
+      Merge.mergeDirect(fNames, template, large, ob, output, tempDir, complevel > 0);
 
-      CoreLog.L().finer("Merge took "
-              + (System.currentTimeMillis() - timeStart) / 1000 + " secs");
+      logger.debug("Merge took {} secs", (System.currentTimeMillis() - timeStart) / 1000);
     }
     catch (Exception e) {
-      CoreLog.L().log(Level.WARNING, "", e);
+      logger.warn("",e);
     }
     try {
-      CoreLog.L().finer("SORT:sort():Removing temp files.");
+      logger.debug("SORT:sort():Removing temp files.");
       File fileDir = new File(tempDir);
       File[] files = fileDir.listFiles(new FilenameFilter() {
         public boolean accept(File file, String name) {
-          return name.indexOf(SORT_RUN_FILE) >= 0 ? true : false;
+          return name.contains(SORT_RUN_FILE);
         }
       });
-      for (int i = 0; i < files.length; i++) {
-        CoreLog.L().info("delete sort run " + files[i]);
-        files[i].delete();
+      for (File file : files) {
+        logger.debug("delete sort run " + file);
+        file.delete();
       }
     }
     catch (Exception e) {
-      CoreLog.L().log(Level.WARNING, "could not delete sort file", e);
+      logger.warn("could not delete sort file", e);
     }
     return numFiles;
   }
@@ -330,7 +326,7 @@ public class EDiscBasedSort <A, B extends BComparable<A,B>> {
       Integer[] offsets = new Integer[10000];
       int i = 0;
       int numSorts = 0;
-      int prod = 0, cons = 0;
+      //int prod = 0, cons = 0;
       while (true) {
         long l = System.currentTimeMillis();
         i++;
@@ -350,16 +346,16 @@ public class EDiscBasedSort <A, B extends BComparable<A,B>> {
         sortRun(hb.getBuffer(), input, offsets, c.getNumOffsets(), i, tempDir,
             ob);
         ll = System.currentTimeMillis() - ll;
-        prod += hb.getTotalConsumed();
-        cons += hb.getTotalConsumed();
+        //prod += hb.getTotalConsumed();
+        //cons += hb.getTotalConsumed();
         l = System.currentTimeMillis() - l;
-        CoreLog.L().info("ediscbasedsort of "+c.getNumOffsets()+" took: "+ll/1000+" secs");
-        CoreLog.L().info("ediscbasedsort run took "+l/1000+" secs");
+        logger.info("ediscbasedsort of {} took {} secs",c.getNumOffsets(), ll/1000);
+        logger.info("ediscbasedsort run took {} secs",+l/1000);
       }
       return numSorts;
     }
     catch (Exception e) {
-      CoreLog.L().log(Level.WARNING, "", e);
+      logger.warn("", e);
       return -1;
     }
 
@@ -372,7 +368,7 @@ public class EDiscBasedSort <A, B extends BComparable<A,B>> {
 
     // Create output channel:
     WritableByteChannel fc;
-    CoreLog.L().finer("SORT:sortRun():Sort Run "+i);
+    logger.debug("SORT:sortRun():Sort Run "+i);
     if (complevel > 0)
       fc = Channels.newChannel(new DeflaterOutputStream(new FileOutputStream(
           dir + SEP + SORT_RUN_FILE + i), new Deflater(complevel)));
@@ -381,14 +377,11 @@ public class EDiscBasedSort <A, B extends BComparable<A,B>> {
     int size = 0, numBytes = 0;
 
     // sort offsets:
-    //System.out.println("has array: "+bb.hasArray()+" "+numOffsets);
     if (bb.hasArray())
       Arrays.parallelSort(offsets, 0, numOffsets, new BComparatorArray <A,B>(template, bb.array()));
-      //Sorters.quickSort(offsets, bc, bb.array(), numOffsets);
     else
       Arrays.parallelSort(offsets, 0, numOffsets, new BComparator <A,B> (template, bb));
-      //Sorters.quickSort(offsets, bc, bb, numOffsets);
-    
+
     for (int j = 0; j < numOffsets; j++) {
       bb.limit(bb.capacity());
       bb.position(offsets[j]);
@@ -404,7 +397,7 @@ public class EDiscBasedSort <A, B extends BComparable<A,B>> {
         output.put(bb);
       }
       catch (BufferOverflowException boe) {
-        CoreLog.L().log(Level.WARNING, "offset j = " + j, boe);
+        logger.warn("offset j = " + j, boe);
       }
       numBytes += size;
     }
@@ -416,10 +409,11 @@ public class EDiscBasedSort <A, B extends BComparable<A,B>> {
   }
 
  
-  class EDBSProducer extends Thread {
+  private class EDBSProducer extends Thread {
 	  private EDBSContainer<?,?> hb;
 	  private Object monitor = new Object();
-	  public EDBSProducer(EDBSContainer<?,?> hb) {
+
+	  EDBSProducer(EDBSContainer<?, ?> hb) {
 	    this.hb = hb;
 	  }
 
@@ -430,28 +424,28 @@ public class EDiscBasedSort <A, B extends BComparable<A,B>> {
 	        allowSleep(monitor);
 	    }
 	    catch (Exception e) {
-	     CoreLog.L().log(Level.WARNING, "", e);
+	     logger.warn("", e);
 	    }
 	  }
 	} // EDBSProducer
   
-  class EDBSConsumer extends Thread {
+  private class EDBSConsumer extends Thread {
 	  private EDBSContainer <?,?> hb;
 	  private int offset;
 	  private Integer[] offsets;
 	  private int numOffsets = 0;
       private Object monitor = new Object();
       
-	  public EDBSConsumer(EDBSContainer <?,?> hb, Integer[] offsets) {
+	  EDBSConsumer(EDBSContainer<?, ?> hb, Integer[] offsets) {
 	    this.offsets = offsets;
 	    this.hb = hb;
 	  }
 
-	  public int getNumOffsets() {
+	  int getNumOffsets() {
 	    return numOffsets;
 	  }
 
-	  public Integer[] getOffsets() {
+	  Integer[] getOffsets() {
 	    return offsets;
 	  }
 
@@ -473,10 +467,9 @@ public class EDiscBasedSort <A, B extends BComparable<A,B>> {
 	      } // while not all consumed
 	    }
 	    catch (Exception e) {
-	      CoreLog.L().log(Level.WARNING, "", e);
+	      logger.warn("", e);
 	    }
-      CoreLog.L().finer("SORT:consumer.run(): consumed all: "
-              + hb.consumedAll() + " " + numOffsets);
+      logger.debug("SORT:consumer.run(): consumed all: {} {}", hb.consumedAll(), numOffsets);
 	  }
 	} // EDBSConsumer
   
@@ -490,15 +483,17 @@ public class EDiscBasedSort <A, B extends BComparable<A,B>> {
 
 class EDBSContainer <A, B extends BComparable<A,B>> {
   public boolean verbose = false;
-  ByteBuffer buffer;
-  ByteBuffer consumerBuffer;
+  private ByteBuffer buffer;
+  private ByteBuffer consumerBuffer;
   ReadableByteChannel c;
-  boolean noMore = false, consumedAll = false, endOfStream = false;
-  int slack = -1, totConsumed, totProduced, blockSize, read;
-  B template;
+  private final Logger logger = LoggerFactory.getLogger(EDBSContainer.class);
 
-  public EDBSContainer(ByteBuffer b, ReadableByteChannel c, int blockSize,
-      B template) {
+  private boolean noMore = false, consumedAll = false, endOfStream = false;
+  private int slack = -1, totConsumed, totProduced, blockSize, read;
+  private B template;
+
+  EDBSContainer(ByteBuffer b, ReadableByteChannel c, int blockSize,
+                B template) {
 
     this.blockSize = blockSize;
     this.template = template;
@@ -507,11 +502,10 @@ class EDBSContainer <A, B extends BComparable<A,B>> {
     buffer = b;
     consumerBuffer = b.asReadOnlyBuffer();
     consumerBuffer.limit(buffer.position());
-    CoreLog.L().finer("SORT:container():consumer buffer limit: "
-              + consumerBuffer.limit());
+    logger.debug("SORT:container():consumer buffer limit: {}",consumerBuffer.limit());
   }
 
-  public boolean prepareRun() {
+  boolean prepareRun() {
     if (endOfStream)
       return false;
     noMore = false;
@@ -536,7 +530,7 @@ class EDBSContainer <A, B extends BComparable<A,B>> {
     return buffer;
   }
 
-  public boolean producedAll() {
+  boolean producedAll() {
     return noMore;
   }
 
@@ -548,7 +542,7 @@ class EDBSContainer <A, B extends BComparable<A,B>> {
     return totProduced;
   }
 
-  public boolean consumedAll() {
+  boolean consumedAll() {
     return consumedAll;
   }
 
@@ -556,7 +550,7 @@ class EDBSContainer <A, B extends BComparable<A,B>> {
     return consumerBuffer;
   }
 
-  public synchronized int consume() { // as much as possible
+  synchronized int consume() { // as much as possible
     try {
 
       if ((noMore && slack >= 0) || consumedAll){
@@ -592,7 +586,7 @@ class EDBSContainer <A, B extends BComparable<A,B>> {
     return -1;
   }
 
-  public synchronized int produce() {
+  synchronized int produce() {
     read = -1;
     // slack = -1;
     if (noMore) {
@@ -620,7 +614,7 @@ class EDBSContainer <A, B extends BComparable<A,B>> {
       return read;
     }
     catch (Exception e) {
-      CoreLog.L().log(Level.WARNING, "", e);
+      logger.warn("", e);
     }
     return -1;
   }
@@ -629,8 +623,6 @@ class EDBSContainer <A, B extends BComparable<A,B>> {
 class FFilter implements java.io.FilenameFilter {
 
   public boolean accept(File dir, String name) {
-    if (name.startsWith(EDiscBasedSort.SORT_RUN_FILE))
-      return true;
-    return false;
+    return name.startsWith(EDiscBasedSort.SORT_RUN_FILE);
   }
 }

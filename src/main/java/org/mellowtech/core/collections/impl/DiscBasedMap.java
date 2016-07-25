@@ -16,12 +16,12 @@
 
 /**
  * DiscBasedMap.java, org.mellowtech.core.collections
- * 
+ *
  * This is a first shot of a disc based hmap that is compliant with
  * the java.util.collections package. It is based on the Mellowtech
  * BTree implementation. The BTree implementation should later be
  * updated to offer more efficient key iterators.
- * 
+ *
  * @author Martin Svensson
  */
 package org.mellowtech.core.collections.impl;
@@ -29,13 +29,13 @@ package org.mellowtech.core.collections.impl;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.logging.Level;
 
-import org.mellowtech.core.CoreLog;
 import org.mellowtech.core.bytestorable.BComparable;
 import org.mellowtech.core.bytestorable.BStorable;
 import org.mellowtech.core.collections.*;
 import org.mellowtech.core.util.MapEntry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Implementation of a Disc Base Map. Based on the Mellowtech BTree. 
@@ -47,7 +47,8 @@ public class DiscBasedMap <A,B extends BComparable<A,B>,
   
   
   protected BTree<A,B,C,D> btree;
-  
+
+  final private Logger logger = LoggerFactory.getLogger(DiscBasedMap.class);
   private B keyMapping;
   private D valueMapping;
 
@@ -103,7 +104,7 @@ public class DiscBasedMap <A,B extends BComparable<A,B>,
     try {
       tp = this.btree.getPositionWithMissing(keyMapping.create(key));
     } catch (IOException e) {
-      CoreLog.L().log(Level.WARNING, "", e);
+      logger.warn("",e);
       return null;
     }
     int pos = tp.getSmaller();
@@ -117,7 +118,7 @@ public class DiscBasedMap <A,B extends BComparable<A,B>,
         //return this.keyMapping.fromByteComparable(this.btree.getKey(pos));
         return this.btree.getKey(pos).get();
       } catch (IOException e) {
-        CoreLog.L().log(Level.WARNING, "", e);
+        logger.warn("",e);
         return null;
       }
     }
@@ -158,7 +159,7 @@ public class DiscBasedMap <A,B extends BComparable<A,B>,
       
     }
     catch(IOException e){
-      CoreLog.L().log(Level.WARNING, "", e);
+      logger.warn("",e);
       return null;
     }
   }
@@ -194,7 +195,7 @@ public class DiscBasedMap <A,B extends BComparable<A,B>,
       }
       return null;
     } catch (IOException e) {
-      CoreLog.L().log(Level.WARNING, "", e);
+      logger.warn("",e);
       return null;
     }
   }
@@ -222,7 +223,7 @@ public class DiscBasedMap <A,B extends BComparable<A,B>,
       
     }
     catch(IOException e){
-      CoreLog.L().log(Level.WARNING, "", e);
+      logger.warn("",e);
       return null;
     }
   }
@@ -286,7 +287,7 @@ public class DiscBasedMap <A,B extends BComparable<A,B>,
     try {
       return btree.getKey(0).get();
     } catch (IOException e) {
-      CoreLog.L().log(Level.WARNING, "", e);
+      logger.warn("",e);
     }
     return null;
   }
@@ -302,7 +303,7 @@ public class DiscBasedMap <A,B extends BComparable<A,B>,
     try{
       return btree.getKey(btree.size()-1).get();
     } catch(IOException e){
-      CoreLog.L().log(Level.WARNING, "", e);
+      logger.warn("",e);
     }
     return null;
   }
@@ -327,7 +328,7 @@ public class DiscBasedMap <A,B extends BComparable<A,B>,
     try {
       return btree.containsKey(keyMapping.create((A) key));
     } catch (IOException e) {
-      CoreLog.L().log(Level.WARNING, "", e);
+      logger.warn("",e);
     }
     return false;
   }
@@ -349,7 +350,7 @@ public class DiscBasedMap <A,B extends BComparable<A,B>,
       D value = this.btree.get(keyMapping.create((A)key));
       return value != null ? value.get() : null;
     } catch (IOException e) {
-      CoreLog.L().log(Level.WARNING, "", e);
+      logger.warn("",e);
     }
     return null;
   }
@@ -365,7 +366,7 @@ public class DiscBasedMap <A,B extends BComparable<A,B>,
     try {
       this.btree.put(keyMapping.create(key), valueMapping.create(value));
     } catch (IOException e) {
-      CoreLog.L().log(Level.WARNING, "", e);
+      logger.warn("",e);
     }
     return null;
   }
@@ -385,7 +386,7 @@ public class DiscBasedMap <A,B extends BComparable<A,B>,
       return prev != null ? prev.get() : null;
     }
     catch(Exception e){
-      CoreLog.L().log(Level.WARNING, "", e);
+      logger.warn("",e);
       return null;
     }
   }
@@ -396,7 +397,7 @@ public class DiscBasedMap <A,B extends BComparable<A,B>,
       return this.btree.size();
     }
     catch(Exception e){
-      CoreLog.L().log(Level.WARNING, "", e);
+      logger.warn("",e);
     }
     return 0;
   }
@@ -404,10 +405,6 @@ public class DiscBasedMap <A,B extends BComparable<A,B>,
   private class DiscBasedMapIterator implements Iterator<Entry<A, C>>{
 
     Iterator <KeyValue<B, D>> iter;
-
-    DiscBasedMapIterator(){
-      iter = btree.iterator();
-    }
 
     DiscBasedMapIterator(boolean descending,
                                 A from, boolean fromInclusive,

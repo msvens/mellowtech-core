@@ -20,10 +20,10 @@ import com.google.common.cache.*;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
-import java.util.logging.Level;
 
-import org.mellowtech.core.CoreLog;
 import org.mellowtech.core.collections.DiscMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Simple cache that use the least recently used scheme. When the cache limit is
@@ -45,8 +45,10 @@ public class CacheLRU <K, V> extends AbstractCache <K,V> {
   LoadingCache<K,CacheValue <V>> lru;
   protected boolean memory = false;
   DiscMap <K,V> backend;
+  private final Logger logger = LoggerFactory.getLogger(CacheLRU.class);
 
-  protected CacheLRU(){
+
+  public CacheLRU(){
     ;
   }
 
@@ -56,7 +58,7 @@ public class CacheLRU <K, V> extends AbstractCache <K,V> {
    * @param loader Loader object
    * @param maxSize maximum number of elements
    */
-  public CacheLRU(Remover<K,V> remover, Loader<K,V> loader, long maxSize) {
+  public CacheLRU(Remover<K, V> remover, Loader<K, V> loader, long maxSize) {
     setRemover(remover);
     setSize(maxSize);
     setLoader(loader);
@@ -91,7 +93,7 @@ public class CacheLRU <K, V> extends AbstractCache <K,V> {
         return;
       cv.setDirty(false);
     } catch (ExecutionException e) {
-      CoreLog.L().log(Level.FINE, "", e);
+      logger.debug("",e);
     }
   }
 
@@ -119,7 +121,7 @@ public class CacheLRU <K, V> extends AbstractCache <K,V> {
 
   @Override
   public void put(K key, V value){
-    lru.put(key, new CacheValue<V>(value, true));
+    lru.put(key, new CacheValue<>(value, true));
   }
 
   @Override
