@@ -103,14 +103,6 @@ public class CBLong implements BComparable <Long,CBLong>{
   @Override
   public int byteCompare(int offset1, ByteBuffer bb1, int offset2,
       ByteBuffer bb2) {
-    
-    long diff = (bb1.getLong(offset1) - bb2.getLong(offset2));
-    
-    if (diff < 0L) 
-      return -1;
-    
-    if (diff > 0L) 
-      return 1;
-    return 0;
+    return Long.compare(bb1.getLong(offset1), bb2.getLong(offset2));
   }
 }

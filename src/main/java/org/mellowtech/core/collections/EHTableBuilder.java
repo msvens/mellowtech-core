@@ -30,8 +30,8 @@ import java.nio.file.Paths;
  */
 public class EHTableBuilder {
 
-  public static final int DEFAULT_MAX_BUCKETS = 1024 * 1024 * 2;
-  public static final int DEFAULT_BUCKET_SIZE = 1024;
+  public static final int DEFAULT_MAX_BUCKETS = 1024 * 1024;
+  public static final int DEFAULT_BUCKET_SIZE = 1024 * 8;
 
 
   private int maxBuckets = DEFAULT_MAX_BUCKETS;

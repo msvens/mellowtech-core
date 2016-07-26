@@ -106,6 +106,7 @@ public class CBShort implements BComparable<Short,CBShort>{
   @Override
   public int byteCompare(int offset1, ByteBuffer bb1, int offset2,
       ByteBuffer bb2) {
+
     return bb1.getShort(offset1) - bb2.getShort(offset2);
   }
 

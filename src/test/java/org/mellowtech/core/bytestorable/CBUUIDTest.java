@@ -17,8 +17,9 @@
 package org.mellowtech.core.bytestorable;
 
 import org.junit.Before;
-import org.mellowtech.core.bytestorable.CBInt;
 
+import java.util.Date;
+import java.util.UUID;
 
 /**
  * Date: 2013-04-17
@@ -26,12 +27,21 @@ import org.mellowtech.core.bytestorable.CBInt;
  *
  * @author Martin Svensson
  */
-public class CBIntTest extends BComparableTemplate <Integer, CBInt>{
+public class CBUUIDTest extends BComparableTemplate <UUID, CBUUID> {
 
   @Before public void init(){
-    type = CBInt.class;
-    values = new Integer[]{-5,2};
-    sizes = new int[]{4,4};
+    type = CBUUID.class;
+    UUID u1 = UUID.randomUUID();
+    UUID u2 = UUID.randomUUID();
+    sizes = new int[]{16,16};
+    values = new UUID[2];
+    if(u1.compareTo(u2) < 0){
+      values[0] = u1;
+      values[1] = u2;
+    } else {
+      values[0] = u2;
+      values[1] = u1;
+    }
   }
   
 }

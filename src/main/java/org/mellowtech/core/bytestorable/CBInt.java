@@ -100,7 +100,7 @@ public class CBInt implements BComparable<Integer,CBInt> {
   @Override
   public int byteCompare(int offset1, ByteBuffer bb1, int offset2,
       ByteBuffer bb2) {
-    return bb1.getInt(offset1) - bb2.getInt(offset2);
+    return Integer.compare(bb1.getInt(offset1),bb2.getInt(offset2));
   }
 
 }

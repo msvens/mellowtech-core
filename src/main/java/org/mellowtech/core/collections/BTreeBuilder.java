@@ -58,7 +58,7 @@ import java.util.Optional;
  *   <li>no blob values</li>
  * </ul>
  * The default configuration can roughly hold key-values equaling
- * 1024*1024*1024*8 bytes, or 8gb worth of data
+ * 1024*1024*1024*8 bytes, or 4gb worth of data
  *
  * @author Martin Svensson {@literal <msvens@gmail.com>}
  * @since 3.0.1
