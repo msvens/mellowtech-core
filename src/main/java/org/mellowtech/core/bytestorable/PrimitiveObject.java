@@ -41,8 +41,9 @@ public class PrimitiveObject <T> extends BStorableImp <T, PrimitiveObject<T>> {
    */
   public PrimitiveObject(T value){
     super(value);
-    if(value != null)
+    if(value != null) {
       pt = PrimitiveType.type(value);
+    }
   }
 
   @Override

@@ -30,7 +30,7 @@ public enum PrimitiveType {
   StringObject, ByteObject, ShortObject,
   IntObject, LongObject, FloatObject, DoubleObject,
   CharObject, BooleanObject, ByteArrayObject, DateObject,
-  ListObject, MapObject, SortedMapObject, BitSetObject, SetObject;
+  ListObject, MapObject, SortedMapObject, BitSetObject, SetObject, UUIDObject;
 
   /**
    * Create an empty BStorable for a PrimitiveType
@@ -61,6 +61,8 @@ public enum PrimitiveType {
         return new CBDate();
       case ByteArrayObject:
         return new CBByteArray();
+      case UUIDObject:
+        return new CBUUID();
       case ListObject:
         return new CBList <> ();
       case MapObject:
@@ -105,16 +107,18 @@ public enum PrimitiveType {
         return new CBDate((Date)o);
       case ByteArrayObject:
         return new CBByteArray((byte[])o);
+      case UUIDObject:
+        return new CBUUID((UUID)o);
       case ListObject:
         return new CBList <> ((List)o);
       case MapObject:
-        return new CBMap<>();
+        return new CBMap<>((Map)o);
       case SortedMapObject:
-        return new CBSortedMap<>();
+        return new CBSortedMap<>((SortedMap)o);
       case BitSetObject:
         return new CBBitSet((BitSet)o);
       case SetObject:
-        return new CBSet <>();
+        return new CBSet <>((Set)o);
     }
     return null;
   }
@@ -160,6 +164,8 @@ public enum PrimitiveType {
       return PrimitiveType.ByteArrayObject;
     else if(obj instanceof Date)
       return PrimitiveType.DateObject;
+    else if(obj instanceof UUID)
+      return PrimitiveType.UUIDObject;
     else if(obj instanceof Character)
       return PrimitiveType.CharObject;
     else if(obj instanceof Boolean)
@@ -201,6 +207,8 @@ public enum PrimitiveType {
       return PrimitiveType.ByteArrayObject;
     else if(obj instanceof CBDate)
       return PrimitiveType.DateObject;
+    else if(obj instanceof CBUUID)
+      return PrimitiveType.UUIDObject;
     else if(obj instanceof CBChar)
       return PrimitiveType.CharObject;
     else if(obj instanceof CBBoolean)
@@ -243,6 +251,8 @@ public enum PrimitiveType {
       return ByteArrayObject;
     else if(clazz == Date.class)
       return DateObject;
+    else if(clazz == UUID.class)
+      return UUIDObject;
     else if(clazz == Character.class || clazz == char.class)
       return CharObject;
     else if(clazz == Boolean.class || clazz == boolean.class)
@@ -282,6 +292,8 @@ public enum PrimitiveType {
       return ByteArrayObject;
     else if(ordinal == DateObject.ordinal())
       return DateObject;
+    else if(ordinal == UUIDObject.ordinal())
+      return UUIDObject;
     else if(ordinal == ByteObject.ordinal())
       return ByteObject;
     else if(ordinal == CharObject.ordinal())
