@@ -313,8 +313,6 @@ public class DiscMapBuilder {
   }
 
 
-  //Class <B> keyClass, Class <D> valueClass,
-  //String fileName, int valueBlockSize, int keyBlockSize, boolean blobValues, boolean keysMemoryMapped, boolean valsMemoryMapped
   public <K, V, BK extends BComparable<K, BK>, BV extends BStorable<V, BV>> DiscMap<K, V> create(Class<BK> keyClass,
                                                                                                  Class<BV> valueClass, String fileName, boolean sorted) {
     try {

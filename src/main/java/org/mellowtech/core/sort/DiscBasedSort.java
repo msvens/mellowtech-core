@@ -33,7 +33,6 @@ import org.mellowtech.core.bytestorable.CBUtil;
 import org.mellowtech.core.util.Platform;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import sun.rmi.runtime.Log;
 //import sun.jvm.hotspot.oops.ExceptionTableElement;
 
 /**
