@@ -37,7 +37,7 @@ import java.util.stream.Stream;
 
 /**
  * @author msvens
- * @since 19/06/16
+ * @since 3.0.7
  */
 public class HybridTree <A, B extends BComparable<A, B>, C, D extends BStorable<C, D>>
     implements BTree<A,B,C,D> {
