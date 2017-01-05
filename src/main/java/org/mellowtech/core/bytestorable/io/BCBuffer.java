@@ -206,7 +206,6 @@ public class BCBuffer<A, B extends BComparable<A, B>> implements RangeIterable<B
         return;
     }
   }
-
   /**
    * Redistribute the keys in a number of blocks as evenly as possible.
    *
@@ -746,6 +745,24 @@ public class BCBuffer<A, B extends BComparable<A, B>> implements RangeIterable<B
   public void update(B element, int idx) {
     block.position(getPhysicalPos(idx));
     element.to(block);
+  }
+
+  /**
+   * Check if this block is sorted
+   * @return
+   */
+  public boolean isSorted(){
+    if(getNumberOfElements() < 2)
+      return true;
+    B prev = get(0);
+    B next;
+    for(int i = 1; i < getNumberOfElements() -1; i++){
+      next = get(i);
+      if(prev.compareTo(next) >= 0)
+        return false;
+      prev = next;
+    }
+    return true;
   }
 
   private void byteBufferCopy(int srcPos, int destPos, int length) {

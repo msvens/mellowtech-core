@@ -262,6 +262,7 @@ public class HybridTree <A, B extends BComparable<A, B>, C, D extends BStorable<
       size--;
       //first check if block is not underflowed...
       if(!isUnderflowed(block)){
+        //System.out.println("no underflow...just return");
         updateBlock(entry.getValue(), block);
         return deleted.getValue();
       }
@@ -270,6 +271,7 @@ public class HybridTree <A, B extends BComparable<A, B>, C, D extends BStorable<
       Map.Entry<B,Integer> rightSib = rightEntry(key);
       BCBuffer<KeyValue.KV<B,D>, KeyValue<B,D>> left = null;
       BCBuffer<KeyValue.KV<B,D>, KeyValue<B,D>> right = null;
+
       //try to redistribute
       if(leftSib != null){
         left = getBlock(leftSib.getValue());
@@ -327,6 +329,62 @@ public class HybridTree <A, B extends BComparable<A, B>, C, D extends BStorable<
     size = 0;
     rightPtr = newBlock(mapped).bNo;
     idx.clear();
+  }
+
+
+  //Utility methods
+  public void printBlocks(){
+    Iterator<Integer> iter = blockPointers().iterator();
+    while(iter.hasNext()){
+      int blockNo = iter.next();
+      BCBuffer<KeyValue.KV<B, D>, KeyValue<B, D>> block = getBlock(blockNo);
+      KeyValue<B,D> first = block.getFirst();
+      KeyValue<B,D> last = block.getLast();
+      System.out.println("block: "+blockNo+" "+first.getKey()+":::"+last.getKey());
+    }
+  }
+
+  public void printTree(){
+    Iterator<Map.Entry<B,Integer>> iter = idx.entrySet().iterator();
+    StringBuilder sbuilder = new StringBuilder();
+    while(iter.hasNext()){
+      Map.Entry<B,Integer> e = iter.next();
+      sbuilder.append(e.getValue()+"::"+e.getKey()+"::");
+    }
+    sbuilder.append(rightPtr);
+    System.out.println(sbuilder.toString());
+  }
+
+  public boolean verifyOrder(){
+    Iterator<KeyValue<B,D>> iter = iterator();
+    if(iter.hasNext()) {
+      KeyValue<B, D> prev = iter.next();
+      while (iter.hasNext()) {
+        KeyValue<B, D> next = iter.next();
+        if (prev.getKey().compareTo(next.getKey()) >= 0) {
+          System.out.println("wrong order: " + prev.getKey() + " " + next.getKey());
+          return false;
+        }
+        prev = next;
+      }
+    }
+    return true;
+  }
+
+  public boolean verifyReverseOrder(){
+    Iterator<KeyValue<B,D>> iter = iterator(true);
+    if(iter.hasNext()) {
+      KeyValue<B, D> prev = iter.next();
+      while (iter.hasNext()) {
+        KeyValue<B, D> next = iter.next();
+        if (prev.getKey().compareTo(next.getKey()) <= 0) {
+          System.out.println("wrong order: " + prev.getKey() + " " + next.getKey());
+          return false;
+        }
+        prev = next;
+      }
+    }
+    return true;
   }
 
   private void addPointer(B sep, int right){
@@ -421,19 +479,6 @@ public class HybridTree <A, B extends BComparable<A, B>, C, D extends BStorable<
     }
   }
 
-  /*private TreePosition getFilePosition(B key, int bNo){
-    if (values.size() == 0)
-      return null;
-    BCBuffer<KeyValue.KV<B, D>, KeyValue<B, D>> sb = getBlock(bNo);
-    int smallerInBlock = sb.search(new KeyValue<B, D>(key, null));
-    if (smallerInBlock < 0) return null;
-    int elements = (int) size;
-    int elementsInBlock = sb.getNumberOfElements();
-    Map.Entry<Integer, Integer> cnt = countKeyValues(bNo);
-    int smaller = cnt.getValue() + smallerInBlock;
-    return new TreePosition(smaller, elements, smallerInBlock, elementsInBlock);
-  }*/
-
   private TreePosition getFilePositionNoStrict(B key, int bNo)
       throws IOException {
     if (values.size() == 0)
@@ -458,7 +503,7 @@ public class HybridTree <A, B extends BComparable<A, B>, C, D extends BStorable<
   }
 
   private Map.Entry<B,Integer> leftEntry(B key){
-    return idx.lowerEntry(key);
+    return idx.floorEntry(key);
   }
 
   private HybridTree.Block<B, D> newBlock(boolean mapped) throws IOException {
@@ -547,7 +592,6 @@ public class HybridTree <A, B extends BComparable<A, B>, C, D extends BStorable<
 
 
     HybridTreeIterator(boolean reverse, B from, boolean inclusive, B to, boolean endInclusive) {
-      //this.tree = tree;
       this.inclusive = inclusive;
       this.reverse = reverse;
       this.end = to == null ? null : new KeyValue<>(to, null);
@@ -555,6 +599,10 @@ public class HybridTree <A, B extends BComparable<A, B>, C, D extends BStorable<
       initPtrs();
       setCurrentBlock(from);
       nextIter(from);
+      //Hack for now
+      if(sbIterator != null && !sbIterator.hasNext()) //can happen when from not included
+          nextIter(null);
+
       getNext();
     }
 
@@ -581,6 +629,7 @@ public class HybridTree <A, B extends BComparable<A, B>, C, D extends BStorable<
         next = null;
         return;
       }
+
       KeyValue<B, D> toRet = sbIterator.next();
       if (toRet == null) {
         sbIterator = null;
@@ -625,14 +674,12 @@ public class HybridTree <A, B extends BComparable<A, B>, C, D extends BStorable<
       if (currblock < 0)
         sbIterator = null;
       else {
-
         sbIterator = from == null ?
             getBlock(blocks.get(currblock)).iterator(true) :
             getBlock(blocks.get(currblock)).iterator(true, new KeyValue<>(from, null), inclusive, null, false);
         currblock--;
 
       }
-
     }
 
     private void setCurrentBlock(B from) {

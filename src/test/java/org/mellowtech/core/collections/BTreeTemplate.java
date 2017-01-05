@@ -16,10 +16,9 @@
 
 package org.mellowtech.core.collections;
 
-import junit.framework.Assert;
+import org.junit.Assert;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 
 import org.junit.Test;
 import org.mellowtech.core.TestUtils;
@@ -553,7 +552,11 @@ public abstract class BTreeTemplate {
     putMany();
     tree.save();
     for(CBString w : manyWords) {
-      Assert.assertEquals(val(w), tree.remove(w));
+      CBInt rem = tree.remove(w);
+      if(rem == null){
+        System.out.println("this is word: "+w);
+      }
+      Assert.assertEquals(val(w), rem);
     }
   }
 
@@ -665,6 +668,9 @@ public abstract class BTreeTemplate {
       from--;
     }
     from++;
+    if(from != to){
+      //print many tre...
+    }
     org.junit.Assert.assertEquals(from, to);
   }
 

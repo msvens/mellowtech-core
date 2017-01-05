@@ -52,6 +52,9 @@ class BTreeIterator<A, B extends BComparable<A, B>, C, D extends BStorable<C, D>
     initPtrs();
     setCurrentBlock(from);
     nextIter(from);
+    //Hack for now
+    if(sbIterator != null && !sbIterator.hasNext()) //can happen when from not included
+      nextIter(null);
     getNext();
   }
 
