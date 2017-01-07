@@ -16,16 +16,16 @@
 
 package org.mellowtech.core.test;
 
-import com.google.common.base.Stopwatch;
-import org.mellowtech.core.io.impl.MemBlockFile;
 import org.mellowtech.core.io.impl.MultiBlockFile;
 
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
 
 /**
  * @author msvens
@@ -38,7 +38,6 @@ public class MultiBlockFileTest {
       int blockSize = 1024*4;
       Path p = Paths.get("/Users/msvens/core-tests/multiBlockFile.mbf");
 
-    Stopwatch sw = Stopwatch.createUnstarted();
 
     MultiBlockFile mbf = new MultiBlockFile(blockSize,p);
 
@@ -49,7 +48,7 @@ public class MultiBlockFileTest {
     shuffle(records);
 
     //Fill all blocks
-    sw.start();
+    Instant start = Instant.now();
     //byte b[] = "1234567890".getBytes();
     //byte b[] = new byte[blockSize];
     byte b[] = new byte[1024*4];
@@ -58,18 +57,17 @@ public class MultiBlockFileTest {
       mbf.insert(b);
     }
     mbf.save();
-    sw.stop();
-    System.out.println("done inserting: "+sw.elapsed(TimeUnit.MILLISECONDS));
+    Duration d = Duration.between(start, Instant.now());
+    System.out.println("done inserting: "+d.get(ChronoUnit.MILLIS));
     //Delete all blocks
-    sw.reset();
-    sw.start();
+    start = Instant.now();
     for(Integer i : records){
       if(!mbf.delete(i))
         System.out.println("something wrong");
     }
-    sw.stop();
+    d = Duration.between(start, Instant.now());
     System.out.println("num blocks: "+mbf.size());
-    System.out.println("done deleting: "+sw.elapsed(TimeUnit.MILLISECONDS));
+    System.out.println("done deleting: "+d.get(ChronoUnit.MILLIS));
     mbf.remove();
 
   }

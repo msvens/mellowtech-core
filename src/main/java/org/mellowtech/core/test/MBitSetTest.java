@@ -16,11 +16,13 @@
 
 package org.mellowtech.core.test;
 
-import com.google.common.base.Stopwatch;
 import org.mellowtech.core.util.MappedBitSet;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
@@ -62,39 +64,39 @@ public class MBitSetTest {
   }
 
   void fillBitSet(){
-    Stopwatch sw = Stopwatch.createStarted();
+    Instant i1 = Instant.now();
     for(int i = 0; i < trueVals; i++){
       bs.set(randVals[i]);
     }
-    sw.stop();
+    Duration d = Duration.between(i1, Instant.now());
     System.out.format("\nSetting %d values to true in a %d sized bitset took %d millis",
-        trueVals, max, sw.elapsed(TimeUnit.MILLISECONDS));
+        trueVals, max, d.get(ChronoUnit.MILLIS));
   }
 
   void lookupTrue(){
-    Stopwatch sw = Stopwatch.createStarted();
+    Instant i1 = Instant.now();
     for(int i = 0; i < trueVals; i++){
       if(!bs.contains(randVals[i]))
         System.out.println("not set");
     }
-    sw.stop();
+    Duration d = Duration.between(i1, Instant.now());
     System.out.format("\nLookup %d values to true in a %d sized bitset took %d millis",
-        trueVals, max, sw.elapsed(TimeUnit.MILLISECONDS));
+        trueVals, max, d.get(ChronoUnit.MILLIS));
   }
 
   void iterate(){
     int cnt = 0;
-    Stopwatch sw = Stopwatch.createStarted();
+    Instant i1 = Instant.now();
     /*for (int i = bs.nextSetBit(0); i >= 0; i = bs.nextSetBit(i+1)) {
       cnt++;
     }*/
     for(int i : bs){
       cnt++;
     }
+    Duration d = Duration.between(i1, Instant.now());
     System.out.println("\n"+cnt);
-    sw.stop();
     System.out.format("\nIterate over %d values to true in a %d sized bitset took %d millis",
-        trueVals, max, sw.elapsed(TimeUnit.MILLISECONDS));
+        trueVals, max, d.get(ChronoUnit.MILLIS));
   }
 
   void reopen(){

@@ -16,10 +16,11 @@
 
 package org.mellowtech.core.test;
 
-import com.google.common.base.Stopwatch;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 
+import java.time.Duration;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 import java.util.TreeSet;
@@ -34,8 +35,8 @@ public class SmallSortedCollectionTest {
 
   public static void main(String[] args){
     int size = 10;
-    TreeSet<Integer> s = Sets.newTreeSet();
-    List<Integer> l = Lists.newLinkedList();
+    TreeSet<Integer> s = new TreeSet<>();
+    List<Integer> l = new LinkedList<>();
     Integer[] nums = new Integer[size];
 
     for(int i = 0; i < size; i++){
@@ -46,21 +47,20 @@ public class SmallSortedCollectionTest {
     shuffle(nums);
 
     Random r = ThreadLocalRandom.current();
-    Stopwatch sw = Stopwatch.createStarted();
+    Instant start = Instant.now();
     for(int i = 0; i < 1000*1000*100; i++){
       if(s.contains(i % size) != true)
         System.out.println("problem");
     }
-    sw.stop();
-    System.out.println("set contains:"+sw.elapsed(TimeUnit.MILLISECONDS));
-    sw.reset();
-    sw.start();
+    Duration d = Duration.between(start, Instant.now());
+    System.out.println("set contains:"+d.get(ChronoUnit.MILLIS));
+    start = Instant.now();
     for(int i = 0; i < 1000*1000*100; i++){
       if(l.contains(i % size) != true)
         System.out.println("problem");
     }
-    sw.stop();
-    System.out.println("list contains:"+sw.elapsed(TimeUnit.MILLISECONDS));
+    d = Duration.between(start, Instant.now());
+    System.out.println("list contains:"+d.get(ChronoUnit.MILLIS));
   }
 
   public static<T> void shuffle(Integer[] array){

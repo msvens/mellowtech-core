@@ -17,7 +17,6 @@
 
 package org.mellowtech.core.io.impl;
 
-import com.google.common.base.Objects;
 import org.mellowtech.core.io.Record;
 import org.mellowtech.core.io.RecordFile;
 import org.mellowtech.core.util.MappedBitSet;
@@ -211,12 +210,8 @@ abstract class AbstractBlockFile implements RecordFile {
   }
 
   public String toString() {
-    return Objects.toStringHelper(this).add("maxBlocks", maxBlocks).
-        add("fileName", p.toString()).
-        add("blockstart", blocksOffset()).
-        add("blockSize", blockSize).
-        add("reserve", reserve).
-        add("bitSet", bitSet.toString()).toString();
+    return String.format("maxBlocks: %i\nfileName: %s\nblockStart: %i\nblockSize: %i\nreservere: %i\nbitSet: %s",
+        maxBlocks,p.toString(),blocksOffset(),blockSize,reserve,bitSet.toString());
   }
 
   protected long align(long offset) {

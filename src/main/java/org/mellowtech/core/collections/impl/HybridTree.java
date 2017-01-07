@@ -51,6 +51,8 @@ public class HybridTree <A, B extends BComparable<A, B>, C, D extends BStorable<
   private Integer rightPtr;
   private long size;
 
+  private long modCount = 0;
+
 
   public HybridTree(Path dir, String name, Class<B> keyType, Class<D> valueType,
                     RecordFileBuilder valueFileBuilder){
@@ -110,6 +112,7 @@ public class HybridTree <A, B extends BComparable<A, B>, C, D extends BStorable<
 
   @Override
   public void delete() throws IOException {
+    modCount++;
     values.remove();
     rightPtr = null;
     idx.clear();
@@ -169,6 +172,7 @@ public class HybridTree <A, B extends BComparable<A, B>, C, D extends BStorable<
     try {
       Integer bNo = findBlock(kv.getKey());
       BCBuffer<KeyValue.KV<B, D>, KeyValue<B, D>> block = getBlock(bNo);
+      modCount++;
       if (block.contains(kv)) {
         if (!update)
           return;
@@ -253,6 +257,7 @@ public class HybridTree <A, B extends BComparable<A, B>, C, D extends BStorable<
   @Override
   public D remove(B key) throws IOException {
     try{
+      modCount++;
       Map.Entry<B,Integer> entry = entry(key);
       BCBuffer<KeyValue.KV<B,D>, KeyValue<B,D>> block = getBlock(entry.getValue());
       KeyValue<B,D> deleted = block.delete(new KeyValue<>(key,null));
@@ -325,6 +330,7 @@ public class HybridTree <A, B extends BComparable<A, B>, C, D extends BStorable<
 
   @Override
   public void truncate() throws IOException {
+    modCount++;
     values.clear();
     size = 0;
     rightPtr = newBlock(mapped).bNo;

@@ -16,15 +16,12 @@
 
 package org.mellowtech.core.util;
 
-import com.google.common.primitives.Ints;
 import junit.framework.Assert;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.nio.LongBuffer;
 import java.util.*;
-import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * @author msvens

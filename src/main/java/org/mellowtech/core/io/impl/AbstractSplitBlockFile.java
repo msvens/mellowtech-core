@@ -17,7 +17,6 @@
 
 package org.mellowtech.core.io.impl;
 
-import com.google.common.base.Objects;
 import org.mellowtech.core.io.Record;
 import org.mellowtech.core.io.SplitRecordFile;
 import org.mellowtech.core.util.MappedBitSet;
@@ -338,19 +337,12 @@ abstract class AbstractSplitBlockFile implements SplitRecordFile {
   }
 
   public String toString() {
-    return Objects.toStringHelper(this).
-        add("maxBlocks", maxBlocks).
-        add("fileName", p.toString()).
-        add("startMappedBlocks", regionBlocksOffset()).
-        add("startBlocks", blocksOffset()).
-        add("bitSize", bitSetSize()).
-        add("mappedBitSize", regionBitSetSize()).
-        add("blockSize", blockSize).
-        add("maxBlocks", maxBlocks).
-        add("mappedMaxBlocks", mappedMaxBlocks).
-        add("reserve", reserve).
-        add("mappedBitSet", mappedBitSet.toString()).
-        add("bitSet", bitSet.toString()).toString();
+    return String.format("maxBlocks: %i\nfileName: %s\nstartMappedBlocks: ‰i\nstartBlocks: ‰i\n" +
+        "bitSize: ‰i\nmappedBitSize: ‰i\nblockSize: ‰i\nmaxBlocks: ‰i\nmappedMaxBlocks: ‰i\n" +
+        "reserve: ‰i\nmappedBitSet: ‰s\nbitSet: ‰s",
+        maxBlocks, p.toString(), regionBlocksOffset(), blocksOffset(), bitSetSize(),
+        regionBitSetSize(), blockSize, maxBlocks, mappedMaxBlocks, reserve,
+        mappedBitSet.toString(), bitSet.toString());
   }
 
   @Override
