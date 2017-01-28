@@ -23,7 +23,7 @@ import java.nio.ByteBuffer;
  * @author Martin Svensson {@literal <msvens@gmail.com>}
  * @since 3.0.1
  */
-public class CBChar implements BComparable <Character, CBChar> {
+public class CBChar implements BComparable <Character> {
 
   private final char value;
   /**
@@ -81,8 +81,8 @@ public class CBChar implements BComparable <Character, CBChar> {
   }
 
   @Override
-  public int compareTo(CBChar other) {
-    return Character.compare(value, other.value);
+  public int compareTo(BComparable<Character> other) {
+    return Character.compare(value, other.get());
   }
 
   @Override

@@ -16,10 +16,11 @@
 
 package org.mellowtech.core.sort;
 
+import org.mellowtech.core.codec.BCodec;
+
 import java.nio.ByteBuffer;
 import java.util.LinkedList;
 
-import org.mellowtech.core.bytestorable.BComparable;
 
 /**
  * A number of static methods for sorting data
@@ -35,16 +36,16 @@ public class Sorters {
    * 
    * @param n
    *          start offsets in the buffer
-   * @param bc
+   * @param codec
    *          a comparator for byte level comparisons
    * @param buffer
    *          has to be either a byte[] or java.nio.ByteBuffer
    */
-  public static void heapSort(int n[], BComparable bc, Object buffer) {
+  public static void heapSort(int n[], BCodec<?> codec, Object buffer) {
     if (buffer instanceof ByteBuffer)
-      ByteBufferHeap.heapSort(n, (ByteBuffer) buffer, bc);
+      ByteBufferHeap.heapSort(n, (ByteBuffer) buffer, codec);
     else if (buffer instanceof byte[])
-      ByteHeap.heapSort(n, (byte[]) buffer, bc);
+      ByteHeap.heapSort(n, (byte[]) buffer, codec);
   }
 
   /**
@@ -62,22 +63,22 @@ public class Sorters {
    * 
    * @param n
    *          start offsets in the buffer
-   * @param bc
+   * @param codec
    *          a comparator for byte level comparisons
    * @param buffer
    *          has to be either a byte[] or java.nio.ByteBuffer
    * @param endPos
    *          only sort up to endPos offsets in the array.
    */
-  public static final void quickSort(int n[], BComparable bc, Object buffer,
+  public static final void quickSort(int n[], BCodec<?> codec, Object buffer,
       int endPos) {
     if (buffer instanceof ByteBuffer) {
-      quickSort(n, 0, endPos - 1, (ByteBuffer) buffer, bc);
-      insertionSort(n, 0, endPos - 1, (ByteBuffer) buffer, bc);
+      quickSort(n, 0, endPos - 1, (ByteBuffer) buffer, codec);
+      insertionSort(n, 0, endPos - 1, (ByteBuffer) buffer, codec);
     }
     else if (buffer instanceof byte[]) {
-      quickSort(n, 0, endPos - 1, (byte[]) buffer, bc);
-      insertionSort(n, 0, endPos - 1, (byte[]) buffer, bc);
+      quickSort(n, 0, endPos - 1, (byte[]) buffer, codec);
+      insertionSort(n, 0, endPos - 1, (byte[]) buffer, codec);
     }
   }
 
@@ -86,14 +87,14 @@ public class Sorters {
    * 
    * @param n
    *          offsets in a byte buffer
-   * @param bc
+   * @param codec
    *          a comparator for byte level comparisons
    * @param buffer
    *          has to be either a byte[] or java.nio.ByteBuffer
    * @see java.nio.ByteBuffer
    */
-  public static final void quickSort(int n[], BComparable bc, Object buffer) {
-    quickSort(n, bc, buffer, n.length);
+  public static final void quickSort(int n[], BCodec<?> codec, Object buffer) {
+    quickSort(n, codec, buffer, n.length);
   }
 
   /**
@@ -149,7 +150,7 @@ public class Sorters {
   }
 
   private static final void quickSort(int n[], int left, int right,
-      ByteBuffer bb, BComparable bc) {
+      ByteBuffer bb, BCodec<?> bc) {
     int min = 4;
     int middle, j;
     int tmp;
@@ -186,7 +187,7 @@ public class Sorters {
   }
 
   private static void quickSort(int n[], int left, int right, byte[] bb,
-      BComparable bc) {
+      BCodec<?> bc) {
     int min = 4;
     int middle, j;
     int tmp;
@@ -335,7 +336,7 @@ public class Sorters {
   }
 
   private static final void insertionSort(int a[], int lo0, int hi0,
-      ByteBuffer bb, BComparable bc) {
+      ByteBuffer bb, BCodec<?> bc) {
     int i;
     int j;
     int v;
@@ -352,7 +353,7 @@ public class Sorters {
   }
 
   private static final void insertionSort(int a[], int lo0, int hi0, byte[] bb,
-      BComparable bc) {
+      BCodec<?> bc) {
     int i;
     int j;
     int v;

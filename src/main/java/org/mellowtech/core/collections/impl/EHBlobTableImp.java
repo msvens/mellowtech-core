@@ -28,32 +28,34 @@ import java.util.Iterator;
 
 import org.mellowtech.core.bytestorable.BComparable;
 import org.mellowtech.core.bytestorable.BStorable;
+import org.mellowtech.core.codec.BCodec;
 import org.mellowtech.core.collections.BMap;
 import org.mellowtech.core.collections.KeyValue;
 
 @SuppressWarnings("unchecked")
-public class EHBlobTableImp <A, B extends BComparable <A,B>, C, D extends BStorable<C,D>>
-implements BMap <A,B,C,D>{
+public class EHBlobTableImp <A,B> implements BMap <A,B>{
   
   private final FileChannel blobs;
-  private EHTableImp <A,B, ?,BlobPointer> eht;
-  private D template;
+  private final EHTableImp <A,BlobPointer> eht;
+  private final BCodec<B> valueCodec;
   private Path fName;
 
-  public EHBlobTableImp(Path fName, Class <B> keyType, Class <D> valueType, boolean inMemory) throws Exception{
+  public EHBlobTableImp(Path fName, BCodec<A> keyCodec,
+                        BCodec<B> valueCodec, boolean inMemory) throws Exception{
     this.fName = fName;
     //@SuppressWarnings("resource")
-    eht = new EHTableImp <> (fName, keyType, BlobPointer.class, inMemory);
-    template = valueType.newInstance();
+    eht = new EHTableImp <> (fName, keyCodec, new BlobPointerCodec(), inMemory);
+    this.valueCodec = valueCodec;
     File f = new File(fName+".blb");
     blobs = FileChannel.open(f.toPath(), WRITE, READ); 
   }
   
-  public EHBlobTableImp(Path fName, Class <B> keyType, Class <D> valueType,
+  public EHBlobTableImp(Path fName, BCodec<A> keyCodec,
+                        BCodec<B> valueCodec,
       boolean inMemory, int bucketSize, int maxBuckets) throws Exception{
     this.fName = fName;
-    eht = new EHTableImp <> (fName, keyType, BlobPointer.class, inMemory, bucketSize, maxBuckets);
-    template = valueType.newInstance();
+    eht = new EHTableImp <> (fName, keyCodec, new BlobPointerCodec(), inMemory, bucketSize, maxBuckets);
+    this.valueCodec = valueCodec;
     File f = new File(fName+".blb");
     blobs = FileChannel.open(f.toPath(), WRITE, READ, TRUNCATE_EXISTING, CREATE); 
   }
@@ -95,56 +97,52 @@ implements BMap <A,B,C,D>{
   }
 
   @Override
-  public boolean containsKey(B key) throws IOException {
+  public boolean containsKey(A key) throws IOException {
     return eht.containsKey(key);
   }
 
   @Override
-  public void put(B key, D value) throws IOException {
-    int size = value.byteSize();
+  public void put(A key, B value) throws IOException {
+    int size = valueCodec.byteSize(value);
     long fpos = blobs.size();
     BlobPointer bp = new BlobPointer(fpos, size);
-    ByteBuffer bb = value.to(); bb.flip();
+    ByteBuffer bb = valueCodec.to(value); bb.flip();
     eht.put(key, bp);
     blobs.write(bb, fpos);
     
   }
 
   @Override
-  public D remove(B key) throws IOException {
+  public B remove(A key) throws IOException {
     BlobPointer bp = eht.remove(key);
     return bp != null ? getValue(bp) : null;
   }
 
   @Override
-  public KeyValue<B, D> getKeyValue(B key) throws IOException {
-    KeyValue <B, BlobPointer> tmp = eht.getKeyValue(key);
+  public KeyValue<A,B> getKeyValue(A key) throws IOException {
+    BlobPointer tmp = eht.get(key);
     if(tmp != null){
-      KeyValue <B, D> kv = new KeyValue<>(tmp.getKey(), null);
-      if(tmp.getValue() != null) {
-        kv.setValue(getValue(tmp.getValue()));
-      }
-      return kv;
-    }
-    return null;
+      return new KeyValue<>(key, getValue(tmp));
+    } else
+      return null;
   }
 
   @Override
-  public Iterator<KeyValue<B, D>> iterator() {
+  public Iterator<KeyValue<A,B>> iterator() {
     return new EHBlobIterator();
   }
 
   
-  private D getValue(BlobPointer bp) throws IOException{
-    ByteBuffer bb = ByteBuffer.allocate(bp.getbSize());
-    blobs.read(bb, bp.getfPointer());
+  private B getValue(BlobPointer bp) throws IOException{
+    ByteBuffer bb = ByteBuffer.allocate(bp.bSize);
+    blobs.read(bb, bp.fPointer);
     bb.flip();
-    return template.from(bb);
+    return valueCodec.from(bb);
   }
   
-  private class EHBlobIterator implements Iterator <KeyValue <B,D>>{
+  private class EHBlobIterator implements Iterator <KeyValue <A,B>>{
 
-    Iterator <KeyValue <B, BlobPointer>> iter;
+    Iterator <KeyValue <A, BlobPointer>> iter;
 
     EHBlobIterator(){
       iter = eht.iterator();
@@ -157,10 +155,10 @@ implements BMap <A,B,C,D>{
     }
 
     @Override
-    public KeyValue<B, D> next() {
-      KeyValue <B, BlobPointer> next = iter.next();
+    public KeyValue<A,B> next() {
+      KeyValue <A, BlobPointer> next = iter.next();
       if(next == null) return null;
-      KeyValue <B, D> toRet = new KeyValue<>(next.getKey(), null);
+      KeyValue <A,B> toRet = new KeyValue<>(next.getKey(), null);
       if(next.getValue() != null){
         try{
           toRet.setValue(getValue(next.getValue()));

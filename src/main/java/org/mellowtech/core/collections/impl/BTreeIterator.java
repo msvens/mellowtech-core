@@ -16,8 +16,6 @@
 
 package org.mellowtech.core.collections.impl;
 
-import org.mellowtech.core.bytestorable.BComparable;
-import org.mellowtech.core.bytestorable.BStorable;
 import org.mellowtech.core.collections.KeyValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,20 +28,22 @@ import java.util.Iterator;
  * @author Martin Svensson {@literal <msvens@gmail.com>}
  * @since 14/01/16.
  */
-class BTreeIterator<A, B extends BComparable<A, B>, C, D extends BStorable<C, D>> implements Iterator<KeyValue<B, D>> {
-  private Iterator<KeyValue<B, D>> sbIterator;
+class BTreeIterator<A,B> implements Iterator<KeyValue<A,B>> {
+  private Iterator<KeyValue<A,B>> sbIterator;
   private ArrayList<Integer> blocks = new ArrayList<>();
   private final Logger logger = LoggerFactory.getLogger(BTreeIterator.class);
   boolean inclusive = true;
   private boolean reverse = false;
   private boolean endInclusive = true;
-  private KeyValue<B, D> end = null;
+  private KeyValue<A,B> end = null;
   private int currblock = 0;
-  KeyValue<B, D> next = null;
-  private BTreeImp<A, B, C, D> tree;
+  KeyValue<A,B> next = null;
+  private BTreeImp<A,B> tree;
 
 
-  BTreeIterator(BTreeImp<A, B, C, D> tree, boolean reverse, B from, boolean inclusive, B to, boolean endInclusive) {
+  BTreeIterator(BTreeImp<A,B> tree, boolean reverse,
+                A from, boolean inclusive,
+                A to, boolean endInclusive) {
     this.tree = tree;
     this.inclusive = inclusive;
     this.reverse = reverse;
@@ -64,13 +64,13 @@ class BTreeIterator<A, B extends BComparable<A, B>, C, D extends BStorable<C, D>
   }
 
   @Override
-  public KeyValue<B, D> next() {
-    KeyValue<B, D> toRet = next;
+  public KeyValue<A,B> next() {
+    KeyValue<A,B> toRet = next;
     getNext();
     return toRet;
   }
 
-  private void setCurrentBlock(B from) {
+  private void setCurrentBlock(A from) {
     if (reverse) {
       this.currblock = blocks.size() - 1;
       if (from != null) {
@@ -97,7 +97,7 @@ class BTreeIterator<A, B extends BComparable<A, B>, C, D extends BStorable<C, D>
       next = null;
       return;
     }
-    KeyValue<B, D> toRet = sbIterator.next();
+    KeyValue<A,B> toRet = sbIterator.next();
     if (toRet == null) {
       sbIterator = null;
       next = null;
@@ -115,7 +115,7 @@ class BTreeIterator<A, B extends BComparable<A, B>, C, D extends BStorable<C, D>
 
   }
 
-  private boolean checkEnd(KeyValue<B, D> toCheck) {
+  private boolean checkEnd(KeyValue<A,B> toCheck) {
     if (end == null) return true;
     int cmp = reverse ? end.compareTo(toCheck) : toCheck.compareTo(end);
     return cmp < 0 || (endInclusive && cmp == 0);
@@ -130,21 +130,22 @@ class BTreeIterator<A, B extends BComparable<A, B>, C, D extends BStorable<C, D>
     }
   }
 
-  private void nextIter(B from) {
+  private void nextIter(A from) {
     if (reverse)
       prevBlock(from);
     else
       nextBlock(from);
   }
 
-  private void prevBlock(B from) {
+  private void prevBlock(A from) {
     if (currblock < 0)
       sbIterator = null;
     else {
       try {
         sbIterator = from == null ?
             tree.getValueBlock(blocks.get(currblock)).iterator(true) :
-            tree.getValueBlock(blocks.get(currblock)).iterator(true, new KeyValue<>(from, null), inclusive, null, false);
+            tree.getValueBlock(blocks.get(currblock)).iterator(true,
+                new KeyValue<>(from, null), inclusive, null, false);
         currblock--;
       } catch (IOException e) {
         logger.warn("Could not retrieve block", e);
@@ -154,14 +155,15 @@ class BTreeIterator<A, B extends BComparable<A, B>, C, D extends BStorable<C, D>
 
   }
 
-  private void nextBlock(B from) {
+  private void nextBlock(A from) {
     if (currblock >= blocks.size())
       sbIterator = null;
     else {
       try {
         sbIterator = from == null ?
             tree.getValueBlock(blocks.get(currblock)).iterator() :
-            tree.getValueBlock(blocks.get(currblock)).iterator(false, new KeyValue<>(from, null), inclusive, null, false);
+            tree.getValueBlock(blocks.get(currblock)).iterator(false,
+                new KeyValue<>(from, null), inclusive, null, false);
         currblock++;
       } catch (IOException e) {
         logger.warn("Could not retrieve block", e);

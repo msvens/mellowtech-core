@@ -24,7 +24,7 @@ import java.util.UUID;
  * @author Martin Svensson {@literal <msvens@gmail.com>}
  * @since 3.0.1
  */
-public class CBUUID extends BStorableImp <UUID, CBUUID> implements BComparable<UUID, CBUUID>{
+public class CBUUID extends BStorableImp <UUID> implements BComparable<UUID>{
 
 
   /**
@@ -72,8 +72,8 @@ public class CBUUID extends BStorableImp <UUID, CBUUID> implements BComparable<U
   }
 
   @Override
-  public int compareTo(CBUUID other) {
-    return value.compareTo(other.value);
+  public int compareTo(BComparable<UUID> other) {
+    return value.compareTo(other.get());
   }
 
   @Override

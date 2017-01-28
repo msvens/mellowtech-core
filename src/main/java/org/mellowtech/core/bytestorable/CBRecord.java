@@ -16,18 +16,20 @@
 
 package org.mellowtech.core.bytestorable;
 
+import org.mellowtech.core.codec.BRecord;
+
 import java.nio.ByteBuffer;
 
 
 /**
  * Template class for creating an automatically generated
- * BStorable that wraps and AutoRecord. Useful when you
+ * BStorable that wraps and BRecord. Useful when you
  * need to serialize/deserialize a record rather than a
  * single value
  * <p>Example code:</p>
  * <pre style="code">
  *   public class MyContainer extends CBRecord {@literal <}MyContainer.Record, MyContainer{@literal >} {
- *     static class Record implements AutoRecord {
+ *     static class Record implements BRecord {
  *       {@literal @}BSField(2) public Integer f1;
  *       {@literal @}BSField(1) public String f2;
  *     }
@@ -41,8 +43,7 @@ import java.nio.ByteBuffer;
  * @author Martin Svensson {@literal <msvens@gmail.com>}
  * @since 3.0.4
  */
-public abstract class CBRecord <A extends AutoRecord,
-  B extends CBRecord<A,B>> extends BStorableImp <A, B> {
+public abstract class CBRecord <A extends BRecord> extends BStorableImp <A> {
 
   /**
    * Create a new value that this CBRecord holds. This method
@@ -77,10 +78,10 @@ public abstract class CBRecord <A extends AutoRecord,
   }
 
   @Override
-  public B from(ByteBuffer bb) {
+  public CBRecord<A> from(ByteBuffer bb) {
     try{
-      B toRet =  (B) getClass().newInstance();
-      Class<? extends AutoRecord> rclazz = value.getClass();
+      CBRecord<A> toRet =  getClass().newInstance();
+      Class<? extends BRecord> rclazz = value.getClass();
       CBUtil.getSize(bb, true);
       short elements = bb.getShort();
       PrimitiveObject po = new PrimitiveObject();
@@ -98,7 +99,7 @@ public abstract class CBRecord <A extends AutoRecord,
   @Override
   public void to(ByteBuffer bb) {
     CBUtil.putSize(internalSize(), bb, true);
-    Class<? extends AutoRecord> rclazz = value.getClass();
+    Class<? extends BRecord> rclazz = value.getClass();
     //PrimitiveObject po = new PrimitiveObject();
     int pos = bb.position();
     bb.putShort((byte) 0); //num elements;
@@ -121,7 +122,7 @@ public abstract class CBRecord <A extends AutoRecord,
 
   private final int internalSize() {
     int size = 4; //num elements;
-    Class<? extends AutoRecord> rclazz = value.getClass();
+    Class<? extends BRecord> rclazz = value.getClass();
     //PrimitiveObject po = new PrimitiveObject();
     for(Integer i : AutoBytes.I().getFieldIndexes(rclazz)){
       Object toStore = AutoBytes.I().getField(rclazz, i, this.value);

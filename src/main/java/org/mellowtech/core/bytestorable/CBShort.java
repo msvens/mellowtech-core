@@ -23,7 +23,7 @@ import java.nio.ByteBuffer;
  * @author Martin Svensson {@literal <msvens@gmail.com>}
  * @since 3.0.1
  */
-public class CBShort implements BComparable<Short,CBShort>{
+public class CBShort implements BComparable<Short>{
 
   private final short value;
 
@@ -84,8 +84,8 @@ public class CBShort implements BComparable<Short,CBShort>{
   }
 
   @Override
-  public int compareTo(CBShort other) {
-    return Short.compare(value, other.value);
+  public int compareTo(BComparable<Short> other) {
+    return Short.compare(value, other.get());
   }
 
   @Override

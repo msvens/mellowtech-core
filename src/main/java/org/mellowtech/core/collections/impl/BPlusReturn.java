@@ -15,8 +15,6 @@
  */
 package org.mellowtech.core.collections.impl;
 
-import org.mellowtech.core.bytestorable.BComparable;
-import org.mellowtech.core.bytestorable.BStorable;
 import org.mellowtech.core.collections.KeyValue;
 
 /**
@@ -29,7 +27,7 @@ import org.mellowtech.core.collections.KeyValue;
  * @author Martin Svensson
  */
 
-public class BPlusReturn <K extends BComparable <?,K>, V extends BStorable <?,V>> {
+public class BPlusReturn <A,B> {
   /**
    * Indicates that a block has been split
    */
@@ -53,12 +51,12 @@ public class BPlusReturn <K extends BComparable <?,K>, V extends BStorable <?,V>
   /**
    * In deletion this holds the key/value that was deleted.
    */
-  protected KeyValue <K,V> returnKey = null;
+  protected KeyValue <A,B> returnKey = null;
   /**
    * When splitting a block promo holds the Separator that should be promoted
    * (inserted) into the tree.
    */
-  protected BTreeKey <K> promo = null;
+  protected BTreeKey<A> promo = null;
   /**
    * holds a block number. In search it holds a blocknumber for a newly created
    * block (accordirng to splitting) or in deletion which sibling (either
@@ -82,7 +80,7 @@ public class BPlusReturn <K extends BComparable <?,K>, V extends BStorable <?,V>
    * @param newBlockNo
    *          a block number
    */
-  public BPlusReturn(int action, KeyValue <K,V> returnKey, BTreeKey <K> promo,
+  public BPlusReturn(int action, KeyValue <A,B> returnKey, BTreeKey<A> promo,
       int newBlockNo) {
     this.action = action;
     this.returnKey = returnKey;

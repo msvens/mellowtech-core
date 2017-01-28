@@ -16,10 +16,9 @@
 
 package org.mellowtech.core.collections.impl;
 
-import org.mellowtech.core.bytestorable.BComparable;
-import org.mellowtech.core.bytestorable.BStorable;
-import org.mellowtech.core.bytestorable.CBUtil;
-import org.mellowtech.core.bytestorable.io.BCBuffer;
+import org.mellowtech.core.codec.BBuffer;
+import org.mellowtech.core.codec.BCodec;
+import org.mellowtech.core.codec.CodecUtil;
 import org.mellowtech.core.collections.BTree;
 import org.mellowtech.core.collections.KeyValue;
 import org.mellowtech.core.collections.TreePosition;
@@ -39,14 +38,18 @@ import java.util.stream.Stream;
  * @author msvens
  * @since 3.0.7
  */
-public class HybridTree <A, B extends BComparable<A, B>, C, D extends BStorable<C, D>>
-    implements BTree<A,B,C,D> {
+public class HybridTree <A,B> implements BTree<A,B> {
 
   protected final Path dir;
   protected final String name;
-  private final TreeMap<B,Integer> idx;
+  private final TreeMap<A,Integer> idx;
   private final RecordFile values;
-  private final KeyValue<B, D> keyValues;
+  private final BCodec<A> keyCodec;
+  private final BCodec<B> valueCodec;
+  private final BCodec<KeyValue<A,B>> kvCodec;
+
+  //private final KeyValue<A, C> keyValues;
+  //private final KeyValueCodec<A,C> keyValueStorable;
   private final boolean mapped;
   private Integer rightPtr;
   private long size;
@@ -54,14 +57,18 @@ public class HybridTree <A, B extends BComparable<A, B>, C, D extends BStorable<
   private long modCount = 0;
 
 
-  public HybridTree(Path dir, String name, Class<B> keyType, Class<D> valueType,
+  public HybridTree(Path dir, String name,
+                    BCodec<A> keyCodec,
+                    BCodec<B> valueCodec,
                     RecordFileBuilder valueFileBuilder){
     try {
       this.dir = dir;
       this.name = name;
       this.mapped = valueFileBuilder.isMapped();
       this.values = valueFileBuilder.build(dir.resolve(name+".val"));
-      this.keyValues = new KeyValue<>(keyType.newInstance(), valueType.newInstance());
+      this.keyCodec = keyCodec;
+      this.valueCodec = valueCodec;
+      this.kvCodec = new KeyValueCodec<A, B>(keyCodec,valueCodec);
       idx = new TreeMap<>();
       rebuildIndex();
     } catch(Exception e){
@@ -76,12 +83,12 @@ public class HybridTree <A, B extends BComparable<A, B>, C, D extends BStorable<
   }
 
   @Override
-  public boolean containsKey(B key) throws IOException {
+  public boolean containsKey(A key) throws IOException {
     return getKeyValue(key) != null;
   }
 
   @Override
-  public void createTree(Iterator<KeyValue<B, D>> iterator) throws IOException {
+  public void createTree(Iterator<KeyValue<A,B>> iterator) throws IOException {
     if (!iterator.hasNext()) {
       truncate();
       return;
@@ -89,16 +96,16 @@ public class HybridTree <A, B extends BComparable<A, B>, C, D extends BStorable<
     values.clear();
     idx.clear();
 
-    HybridTree.Block<B,D> vb = newBlock(mapped);
+    HybridTree.Block<A,B> vb = newBlock(mapped);
 
     int s = 0;
-    KeyValue<B, D> tmpKV;
+    KeyValue<A,B> tmpKV;
 
     while(iterator.hasNext()){
       tmpKV = iterator.next();
       if(!vb.sb.fits(tmpKV)){
         updateBlock(vb.bNo, vb.sb);
-        B sep = generateSeparator(vb.sb, tmpKV);
+        A sep = generateSeparator(vb.sb, tmpKV);
         vb = newBlock(mapped);
         int rightNode = vb.bNo;
         addPointer(sep,rightNode);
@@ -119,13 +126,13 @@ public class HybridTree <A, B extends BComparable<A, B>, C, D extends BStorable<
   }
 
   @Override
-  public B getKey(int position) throws IOException {
+  public A getKey(int position) throws IOException {
     if (position < 0 || position >= size())
       throw new IOException("position out of bounds");
     Iterator <Integer> ptrs = blockPointers().iterator();
     while(ptrs.hasNext()){
       Integer bNo = ptrs.next();
-      BCBuffer<KeyValue.KV<B, D>, KeyValue<B, D>> sb = getBlock(bNo);
+      BBuffer<KeyValue<A,B>> sb = getBlock(bNo);
       if (position < sb.getNumberOfElements()) {
         return sb.get(position).getKey();
       }
@@ -135,18 +142,18 @@ public class HybridTree <A, B extends BComparable<A, B>, C, D extends BStorable<
   }
 
   @Override
-  public KeyValue<B, D> getKeyValue(B key) throws IOException {
-    return getBlock(key).get(new KeyValue<>(key,null));
+  public KeyValue<A,B> getKeyValue(A key) throws IOException {
+    return getBlock(key).get(new KeyValue<>(key));
   }
 
   @Override
-  public TreePosition getPosition(B key) throws IOException {
+  public TreePosition getPosition(A key) throws IOException {
     TreePosition tp = getPositionWithMissing(key);
     return tp.exists() ? tp : null;
   }
 
   @Override
-  public TreePosition getPositionWithMissing(B key) throws IOException {
+  public TreePosition getPositionWithMissing(A key) throws IOException {
     int block = findBlock(key);
     if(block < 0) return null;
     return getFilePositionNoStrict(key, block);
@@ -158,20 +165,21 @@ public class HybridTree <A, B extends BComparable<A, B>, C, D extends BStorable<
   }
 
   @Override
-  public Iterator<KeyValue<B, D>> iterator(boolean descend, B from, boolean fromInclusive, B to, boolean toInclusive) {
+  public Iterator<KeyValue<A, B>> iterator(boolean descend, A from, boolean fromInclusive,
+                                           A to, boolean toInclusive) {
     return new HybridTreeIterator(descend,from,fromInclusive,to,toInclusive);
   }
 
   @Override
-  public void put(B key, D value) throws IOException {
+  public void put(A key, B value) throws IOException {
     put(key,value, true);
   }
 
-  public void put(B key, D value, boolean update) {
-    KeyValue<B,D> kv = new KeyValue<>(key,value);
+  public void put(A key, B value, boolean update) {
+    KeyValue<A,B> kv = new KeyValue<>(key,value);
     try {
       Integer bNo = findBlock(kv.getKey());
-      BCBuffer<KeyValue.KV<B, D>, KeyValue<B, D>> block = getBlock(bNo);
+      BBuffer<KeyValue<A,B>> block = getBlock(bNo);
       modCount++;
       if (block.contains(kv)) {
         if (!update)
@@ -187,7 +195,7 @@ public class HybridTree <A, B extends BComparable<A, B>, C, D extends BStorable<
         updateBlock(bNo, block);
         return;
       }
-      HybridTree.Block<B,D> vb = newBlock(mapped);
+      HybridTree.Block<A,B> vb = newBlock(mapped);
       block.split(vb.sb);
       if (kv.compareTo(block.getLast()) <= 0)
         block.insert(kv);
@@ -195,7 +203,7 @@ public class HybridTree <A, B extends BComparable<A, B>, C, D extends BStorable<
         vb.sb.insert(kv);
       updateBlock(bNo, block);
       updateBlock(vb.bNo, vb.sb);
-      B sep = generateSeparator(block, vb.sb);
+      A sep = generateSeparator(block, vb.sb);
       addPointer(sep,vb.bNo);
     } catch (IOException e) {
       throw new Error(e);
@@ -203,7 +211,7 @@ public class HybridTree <A, B extends BComparable<A, B>, C, D extends BStorable<
   }
 
   @Override
-  public void putIfNotExists(B key, D value){
+  public void putIfNotExists(A key, B value){
     put(key,value,false);
   }
 
@@ -219,20 +227,21 @@ public class HybridTree <A, B extends BComparable<A, B>, C, D extends BStorable<
     idx.clear();
     rightPtr = 0;
 
-    BCBuffer<KeyValue.KV<B, D>, KeyValue<B, D>> tmp;
+    BBuffer<KeyValue<A,B>> tmp;
     @SuppressWarnings("unchecked")
-    HybridTree.FirstLastKey<B>[] blocks = new HybridTree.FirstLastKey[values.size()];
+    HybridTree.FirstLastKey<A>[] blocks = new HybridTree.FirstLastKey[values.size()];
     Iterator<Record> iter = values.iterator();
     int i = 0;
     int s = 0;
     while (iter.hasNext()) {
       Record r = iter.next();
-      tmp = new BCBuffer<>(ByteBuffer.wrap(r.data), this.keyValues);
+      tmp = new BBuffer<>(ByteBuffer.wrap(r.data), kvCodec);
       if(tmp.getNumberOfElements() == 0)
         break;
-      KeyValue<B, D> first = tmp.getFirst();
-      KeyValue<B, D> last = tmp.getLast();
-      HybridTree.FirstLastKey<B> sl = new HybridTree.FirstLastKey<>(first.getKey(), last.getKey(), r.record);
+      KeyValue<A,B> first = tmp.getFirst();
+      KeyValue<A,B> last = tmp.getLast();
+      HybridTree.FirstLastKey<A> sl =
+          new HybridTree.FirstLastKey<>(first.getKey(), last.getKey(), r.record);
       blocks[i] = sl;
       i++;
       s += tmp.getNumberOfElements();
@@ -246,21 +255,21 @@ public class HybridTree <A, B extends BComparable<A, B>, C, D extends BStorable<
     size = s;
 
     for (i = 0; i < blocks.length - 1; i++) {
-      HybridTree.FirstLastKey<B> left = blocks[i];
-      HybridTree.FirstLastKey<B> right = blocks[i + 1];
+      HybridTree.FirstLastKey<A> left = blocks[i];
+      HybridTree.FirstLastKey<A> right = blocks[i + 1];
 
-      B sep = generateSeparator(left.last, right.first);
+      A sep = generateSeparator(left.last, right.first);
       addPointer(sep, right.bNo);
     }
   }
 
   @Override
-  public D remove(B key) throws IOException {
+  public B remove(A key) throws IOException {
     try{
       modCount++;
-      Map.Entry<B,Integer> entry = entry(key);
-      BCBuffer<KeyValue.KV<B,D>, KeyValue<B,D>> block = getBlock(entry.getValue());
-      KeyValue<B,D> deleted = block.delete(new KeyValue<>(key,null));
+      Map.Entry<A,Integer> entry = entry(key);
+      BBuffer<KeyValue<A,B>> block = getBlock(entry.getValue());
+      KeyValue<A,B> deleted = block.delete(new KeyValue<>(key));
       if(deleted == null) {
         return null;
       }
@@ -272,17 +281,17 @@ public class HybridTree <A, B extends BComparable<A, B>, C, D extends BStorable<
         return deleted.getValue();
       }
       //get left and right sibling
-      Map.Entry<B,Integer> leftSib = leftEntry(key);
-      Map.Entry<B,Integer> rightSib = rightEntry(key);
-      BCBuffer<KeyValue.KV<B,D>, KeyValue<B,D>> left = null;
-      BCBuffer<KeyValue.KV<B,D>, KeyValue<B,D>> right = null;
+      Map.Entry<A,Integer> leftSib = leftEntry(key);
+      Map.Entry<A,Integer> rightSib = rightEntry(key);
+      BBuffer<KeyValue<A,B>> left = null;
+      BBuffer<KeyValue<A,B>> right = null;
 
       //try to redistribute
       if(leftSib != null){
         left = getBlock(leftSib.getValue());
         if(!isUnderflowed(left)){
           redistributeBlocks(left,block,leftSib.getValue(),entry.getValue());
-          B sep = generateSeparator(left,block);
+          A sep = generateSeparator(left,block);
           replacePointer(leftSib.getKey(),sep);
           return deleted.getValue();
         }
@@ -291,7 +300,7 @@ public class HybridTree <A, B extends BComparable<A, B>, C, D extends BStorable<
         right = getBlock(rightSib.getValue());
         if(!isUnderflowed(right)){
           redistributeBlocks(block,right,entry.getValue(),rightSib.getValue());
-          B sep = generateSeparator(block,right);
+          A sep = generateSeparator(block,right);
           replacePointer(entry.getKey(), sep);
           return deleted.getValue();
         }
@@ -343,18 +352,18 @@ public class HybridTree <A, B extends BComparable<A, B>, C, D extends BStorable<
     Iterator<Integer> iter = blockPointers().iterator();
     while(iter.hasNext()){
       int blockNo = iter.next();
-      BCBuffer<KeyValue.KV<B, D>, KeyValue<B, D>> block = getBlock(blockNo);
-      KeyValue<B,D> first = block.getFirst();
-      KeyValue<B,D> last = block.getLast();
+      BBuffer<KeyValue<A,B>> block = getBlock(blockNo);
+      KeyValue<A,B> first = block.getFirst();
+      KeyValue<A,B> last = block.getLast();
       System.out.println("block: "+blockNo+" "+first.getKey()+":::"+last.getKey());
     }
   }
 
   public void printTree(){
-    Iterator<Map.Entry<B,Integer>> iter = idx.entrySet().iterator();
+    Iterator<Map.Entry<A,Integer>> iter = idx.entrySet().iterator();
     StringBuilder sbuilder = new StringBuilder();
     while(iter.hasNext()){
-      Map.Entry<B,Integer> e = iter.next();
+      Map.Entry<A,Integer> e = iter.next();
       sbuilder.append(e.getValue()+"::"+e.getKey()+"::");
     }
     sbuilder.append(rightPtr);
@@ -362,12 +371,12 @@ public class HybridTree <A, B extends BComparable<A, B>, C, D extends BStorable<
   }
 
   public boolean verifyOrder(){
-    Iterator<KeyValue<B,D>> iter = iterator();
+    Iterator<KeyValue<A,B>> iter = iterator();
     if(iter.hasNext()) {
-      KeyValue<B, D> prev = iter.next();
+      KeyValue<A,B> prev = iter.next();
       while (iter.hasNext()) {
-        KeyValue<B, D> next = iter.next();
-        if (prev.getKey().compareTo(next.getKey()) >= 0) {
+        KeyValue<A,B> next = iter.next();
+        if (prev.compareTo(next) >= 0) {
           System.out.println("wrong order: " + prev.getKey() + " " + next.getKey());
           return false;
         }
@@ -378,12 +387,12 @@ public class HybridTree <A, B extends BComparable<A, B>, C, D extends BStorable<
   }
 
   public boolean verifyReverseOrder(){
-    Iterator<KeyValue<B,D>> iter = iterator(true);
+    Iterator<KeyValue<A,B>> iter = iterator(true);
     if(iter.hasNext()) {
-      KeyValue<B, D> prev = iter.next();
+      KeyValue<A,B> prev = iter.next();
       while (iter.hasNext()) {
-        KeyValue<B, D> next = iter.next();
-        if (prev.getKey().compareTo(next.getKey()) <= 0) {
+        KeyValue<A,B> next = iter.next();
+        if (prev.compareTo(next) <= 0) {
           System.out.println("wrong order: " + prev.getKey() + " " + next.getKey());
           return false;
         }
@@ -393,7 +402,7 @@ public class HybridTree <A, B extends BComparable<A, B>, C, D extends BStorable<
     return true;
   }
 
-  private void addPointer(B sep, int right){
+  private void addPointer(A sep, int right){
     if(idx.isEmpty()){
       idx.put(sep, rightPtr);
       this.rightPtr = right;
@@ -401,7 +410,7 @@ public class HybridTree <A, B extends BComparable<A, B>, C, D extends BStorable<
     }
     //add right
     if(idx.containsKey(sep)) throw new Error("node already contains key: "+sep);
-    Map.Entry<B,Integer> higher = idx.higherEntry(sep);
+    Map.Entry<A,Integer> higher = idx.higherEntry(sep);
     if(higher != null){
       idx.put(sep, higher.getValue());
       idx.put(higher.getKey(), right);
@@ -427,18 +436,18 @@ public class HybridTree <A, B extends BComparable<A, B>, C, D extends BStorable<
     return new MapEntry<>(i,cnt);
   }
 
-  private void deletePointer(Map.Entry<B,Integer> entry){
+  private void deletePointer(Map.Entry<A,Integer> entry){
     if(!idx.containsKey(entry.getKey())) throw new Error("key: "+entry.getKey()+" does not exist");
     idx.remove(entry.getKey());
   }
 
-  private Map.Entry<B,Integer> entry(B key){
-    Map.Entry<B,Integer> ptr = idx.higherEntry(key);
+  private Map.Entry<A,Integer> entry(A key){
+    Map.Entry<A,Integer> ptr = idx.higherEntry(key);
     return ptr != null ? new MapEntry<>(ptr.getKey(), ptr.getValue()) : new MapEntry<>(null, rightPtr);
   }
 
-  private Integer findBlock(B key){
-    Map.Entry<B,Integer> ptr = idx.higherEntry(key);
+  private Integer findBlock(A key){
+    Map.Entry<A,Integer> ptr = idx.higherEntry(key);
     return ptr != null ? ptr.getValue() : rightPtr;
   }
 
@@ -452,8 +461,8 @@ public class HybridTree <A, B extends BComparable<A, B>, C, D extends BStorable<
    * @param large a block with larger keys
    * @return a separator
    */
-  private B generateSeparator(BCBuffer<KeyValue.KV<B, D>, KeyValue<B, D>> small,
-                              BCBuffer<KeyValue.KV<B, D>, KeyValue<B, D>> large) {
+  private A generateSeparator(BBuffer<KeyValue<A,B>> small,
+                              BBuffer<KeyValue<A,B>> large) {
     return generateSeparator(small.getLast().getKey(), large.getFirst().getKey());
   }
 
@@ -464,33 +473,33 @@ public class HybridTree <A, B extends BComparable<A, B>, C, D extends BStorable<
    * @param large the larger value to compare with
    * @return a separator.
    */
-  private B generateSeparator(BCBuffer<KeyValue.KV<B, D>, KeyValue<B, D>> small, KeyValue<B, D> large) {
+  private A generateSeparator(BBuffer<KeyValue<A,B>> small, KeyValue<A,B> large) {
     return generateSeparator(small.getLast().getKey(), large.getKey());
   }
 
-  private B generateSeparator(B small, B large) {
-    return CBUtil.separate(small, large);
+  private A generateSeparator(A small, A large) {
+    return CodecUtil.separate(small, large, keyCodec);
   }
 
-  private BCBuffer<KeyValue.KV<B, D>, KeyValue<B, D>> getBlock(B key){
+  private BBuffer<KeyValue<A,B>> getBlock(A key){
     return getBlock(findBlock(key));
   }
 
-  private BCBuffer<KeyValue.KV<B, D>, KeyValue<B, D>> getBlock(int bno) {
+  private BBuffer<KeyValue<A,B>> getBlock(int bno) {
     try {
-      return mapped ? new BCBuffer<>(values.getMapped(bno), keyValues) :
-          new BCBuffer<>(ByteBuffer.wrap(values.get(bno)), keyValues);
+      return mapped ? new BBuffer<>(values.getMapped(bno), kvCodec) :
+          new BBuffer<>(ByteBuffer.wrap(values.get(bno)), kvCodec);
     } catch (IOException e) {
       throw new Error("could not read value block: " + e);
     }
   }
 
-  private TreePosition getFilePositionNoStrict(B key, int bNo)
+  private TreePosition getFilePositionNoStrict(A key, int bNo)
       throws IOException {
     if (values.size() == 0)
       return null;
-    BCBuffer<KeyValue.KV<B, D>, KeyValue<B, D>> sb = getBlock(bNo);
-    int smallerInBlock = sb.search(new KeyValue<>(key, null));
+    BBuffer<KeyValue<A,B>> sb = getBlock(bNo);
+    int smallerInBlock = sb.search(new KeyValue<>(key));
     boolean exists = true;
     if (smallerInBlock < 0) { //not found
       exists = false;
@@ -504,80 +513,80 @@ public class HybridTree <A, B extends BComparable<A, B>, C, D extends BStorable<
     return new TreePosition(smaller, elements, smallerInBlock, elementsInBlock, exists);
   }
 
-  private boolean isUnderflowed(BCBuffer<?, ?> sb) {
+  private boolean isUnderflowed(BBuffer<?> sb) {
     return sb.getDataAndPointersBytes() < (sb.storageCapacity() / 2);
   }
 
-  private Map.Entry<B,Integer> leftEntry(B key){
+  private Map.Entry<A,Integer> leftEntry(A key){
     return idx.floorEntry(key);
   }
 
-  private HybridTree.Block<B, D> newBlock(boolean mapped) throws IOException {
+  private HybridTree.Block<A,B> newBlock(boolean mapped) throws IOException {
     int bNo;
-    BCBuffer<KeyValue.KV<B, D>, KeyValue<B, D>> buff;
+    BBuffer<KeyValue<A,B>> buff;
     if (mapped) {
       bNo = values.insert(null);
-      buff = new BCBuffer<>(values.getMapped(bNo), keyValues, BCBuffer.PtrType.NORMAL);
+      buff = new BBuffer<>(values.getMapped(bNo), kvCodec, BBuffer.PtrType.NORMAL);
     } else {
-      buff = new BCBuffer<>(values.getBlockSize(), keyValues, BCBuffer.PtrType.NORMAL);
+      buff = new BBuffer<>(values.getBlockSize(), kvCodec, BBuffer.PtrType.NORMAL);
       bNo = values.insert(buff.getArray());
     }
     return new HybridTree.Block<>(buff, bNo);
   }
 
-  private void redistributeBlocks(BCBuffer<KeyValue.KV<B, D>, KeyValue<B, D>> small,
-                                  BCBuffer<KeyValue.KV<B, D>, KeyValue<B, D>> large,
+  private void redistributeBlocks(BBuffer<KeyValue<A,B>> small,
+                                  BBuffer<KeyValue<A,B>> large,
                                   int bSmall, int bLarge) throws IOException {
     @SuppressWarnings("unchecked")
-    BCBuffer<KeyValue.KV<B, D>, KeyValue<B, D>> blocks[] = (BCBuffer<KeyValue.KV<B, D>, KeyValue<B, D>>[]) new BCBuffer[2];
+    BBuffer<KeyValue<A,B>> blocks[] = (BBuffer<KeyValue<A,B>>[]) new BBuffer[2];
     blocks[0] = small;
     blocks[1] = large;
-    BCBuffer.redistribute(blocks);
+    BBuffer.redistribute(blocks);
     updateBlock(bSmall, small);
     updateBlock(bLarge, large);
   }
 
-  private void replacePointer(B oldSep, B newSep){
+  private void replacePointer(A oldSep, A newSep){
     if(!idx.containsKey(oldSep)) throw new Error("oldSep does not exist");
     Integer ptr = idx.remove(oldSep);
     idx.put(newSep, ptr);
   }
 
-  private Map.Entry<B,Integer> rightEntry(B key){
-    B higher = idx.higherKey(key);
+  private Map.Entry<A,Integer> rightEntry(A key){
+    A higher = idx.higherKey(key);
     return higher != null ? new MapEntry<>(higher, findBlock(higher)) : null;
   }
 
-  private void updateBlock(int blockNo, BCBuffer<KeyValue.KV<B, D>, KeyValue<B, D>> sb)
+  private void updateBlock(int blockNo, BBuffer<KeyValue<A,B>> sb)
       throws IOException {
     if (!mapped)
       values.update(blockNo, sb.getArray());
   }
 
-  private static class Block<B extends BComparable<?, B>, D extends BStorable<?, D>> {
-    BCBuffer<KeyValue.KV<B, D>, KeyValue<B, D>> sb;
+  private static class Block<A,B> {
+    BBuffer<KeyValue<A,B>> sb;
     int bNo;
 
-    Block(BCBuffer<KeyValue.KV<B, D>, KeyValue<B, D>> buffer, int blockNo) {
+    Block(BBuffer<KeyValue<A,B>> buffer, int blockNo) {
       this.sb = buffer;
       this.bNo = blockNo;
     }
   }
 
-  static class FirstLastKey<B extends BComparable<?, B>> implements Comparable<HybridTree.FirstLastKey<B>> {
+  static class FirstLastKey<A> implements Comparable<HybridTree.FirstLastKey<A>> {
     int bNo;
-    B first;
-    B last;
+    A first;
+    A last;
 
-    FirstLastKey(B first, B last, int bNo) {
+    FirstLastKey(A first, A last, int bNo) {
       this.bNo = bNo;
       this.first = first;
       this.last = last;
     }
 
     @Override
-    public int compareTo(HybridTree.FirstLastKey<B> o) {
-      return first.compareTo(o.first);
+    public int compareTo(HybridTree.FirstLastKey<A> o) {
+      return ((Comparable<? super A>)first).compareTo(o.first);
     }
 
     @Override
@@ -586,21 +595,21 @@ public class HybridTree <A, B extends BComparable<A, B>, C, D extends BStorable<
     }
   }
 
-  private class HybridTreeIterator implements Iterator<KeyValue<B, D>> {
-    Iterator<KeyValue<B, D>> sbIterator;
+  private class HybridTreeIterator implements Iterator<KeyValue<A,B>> {
+    Iterator<KeyValue<A,B>> sbIterator;
     List<Integer> blocks;
     boolean inclusive = true;
     boolean reverse = false;
     boolean endInclusive = true;
-    KeyValue<B, D> end = null;
+    KeyValue<A,B> end = null;
     int currblock = 0;
-    KeyValue<B, D> next = null;
+    KeyValue<A,B> next = null;
 
 
-    HybridTreeIterator(boolean reverse, B from, boolean inclusive, B to, boolean endInclusive) {
+    HybridTreeIterator(boolean reverse, A from, boolean inclusive, A to, boolean endInclusive) {
       this.inclusive = inclusive;
       this.reverse = reverse;
-      this.end = to == null ? null : new KeyValue<>(to, null);
+      this.end = to == null ? null : new KeyValue<A,B>(to, null);
       this.endInclusive = endInclusive;
       initPtrs();
       setCurrentBlock(from);
@@ -618,13 +627,13 @@ public class HybridTree <A, B extends BComparable<A, B>, C, D extends BStorable<
     }
 
     @Override
-    public KeyValue<B, D> next() {
-      KeyValue<B, D> toRet = next;
+    public KeyValue<A,B> next() {
+      KeyValue<A,B> toRet = next;
       getNext();
       return toRet;
     }
 
-    private boolean checkEnd(KeyValue<B, D> toCheck) {
+    private boolean checkEnd(KeyValue<A,B> toCheck) {
       if (end == null) return true;
       int cmp = reverse ? end.compareTo(toCheck) : toCheck.compareTo(end);
       return cmp < 0 || (endInclusive && cmp == 0);
@@ -636,7 +645,7 @@ public class HybridTree <A, B extends BComparable<A, B>, C, D extends BStorable<
         return;
       }
 
-      KeyValue<B, D> toRet = sbIterator.next();
+      KeyValue<A,B> toRet = sbIterator.next();
       if (toRet == null) {
         sbIterator = null;
         next = null;
@@ -658,37 +667,37 @@ public class HybridTree <A, B extends BComparable<A, B>, C, D extends BStorable<
       blocks = blockPointers().collect(Collectors.toList());
     }
 
-    private void nextBlock(B from) {
+    private void nextBlock(A from) {
       if (currblock >= blocks.size())
         sbIterator = null;
       else {
         sbIterator = from == null ?
             getBlock(blocks.get(currblock)).iterator() :
-            getBlock(blocks.get(currblock)).iterator(false, new KeyValue<>(from, null), inclusive, null, false);
+            getBlock(blocks.get(currblock)).iterator(false, new KeyValue<A,B>(from), inclusive, null, false);
         currblock++;
       }
     }
 
-    private void nextIter(B from) {
+    private void nextIter(A from) {
       if (reverse)
         prevBlock(from);
       else
         nextBlock(from);
     }
 
-    private void prevBlock(B from) {
+    private void prevBlock(A from) {
       if (currblock < 0)
         sbIterator = null;
       else {
         sbIterator = from == null ?
             getBlock(blocks.get(currblock)).iterator(true) :
-            getBlock(blocks.get(currblock)).iterator(true, new KeyValue<>(from, null), inclusive, null, false);
+            getBlock(blocks.get(currblock)).iterator(true, new KeyValue(from), inclusive, null, false);
         currblock--;
 
       }
     }
 
-    private void setCurrentBlock(B from) {
+    private void setCurrentBlock(A from) {
       if (reverse) {
         this.currblock = blocks.size() - 1;
         if (from != null) {

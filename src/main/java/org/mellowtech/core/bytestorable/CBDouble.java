@@ -23,7 +23,7 @@ import java.nio.ByteBuffer;
  * @author Martin Svensson {@literal <msvens@gmail.com>}
  * @since 3.0.1
  */
-public class CBDouble implements BComparable<Double, CBDouble>{
+public class CBDouble implements BComparable<Double>{
 
   private final double value;
 
@@ -79,8 +79,8 @@ public class CBDouble implements BComparable<Double, CBDouble>{
   }
 
   @Override
-  public int compareTo(CBDouble other) {
-    return Double.compare(value, other.value);
+  public int compareTo(BComparable<Double> other) {
+    return Double.compare(value, other.get());
   }
 
   @Override

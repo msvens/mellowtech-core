@@ -19,23 +19,19 @@ package org.mellowtech.core.collections;
 import java.io.IOException;
 import java.util.Iterator;
 
-import org.mellowtech.core.bytestorable.BComparable;
-import org.mellowtech.core.bytestorable.BStorable;
 import org.mellowtech.core.util.RangeIterable;
 
 /**
  * Interface for of a file based sorted tree
  *
- * @param <A> Wrapped BComparable key class
- * @param <B> BComparable key class
- * @param <C> Wrapped BStorable value class
- * @param <D> BStorable value class
+ * @param <A> keyType
+ * @param <B> valueType
  *
  * @author Martin Svensson {@literal <msvens@gmail.com>}
  * @since 3.0.1
  */
-public interface BTree <A,B extends BComparable<A,B>, C, D extends BStorable<C,D>> 
-  extends BMap <A,B,C,D>, RangeIterable<KeyValue<B,D>, B>{
+public interface BTree <A,B>
+  extends BMap <A,B>, RangeIterable<KeyValue<A,B>, A>{
 
 
   /**
@@ -43,7 +39,7 @@ public interface BTree <A,B extends BComparable<A,B>, C, D extends BStorable<C,D
    * @param iterator iterator with key-values
    * @throws IOException if an exception occurs
    */
-  void createTree(Iterator<KeyValue <B,D>> iterator) throws IOException;
+  void createTree(Iterator<KeyValue <A,B>> iterator) throws IOException;
 
   /**
    * Rebuild any index structure for this sorted tree using existing
@@ -62,7 +58,7 @@ public interface BTree <A,B extends BComparable<A,B>, C, D extends BStorable<C,D
    * @return key
    * @throws IOException if an error occurs
    */
-  B getKey(int position) throws IOException;
+  A getKey(int position) throws IOException;
 
   /**
    * Returns the tree position for a given key. TreePosition contains the the
@@ -73,7 +69,7 @@ public interface BTree <A,B extends BComparable<A,B>, C, D extends BStorable<C,D
    * @return null if the key was not found
    * @throws IOException if an error occurs
    */
-  TreePosition getPosition(B key) throws IOException;
+  TreePosition getPosition(A key) throws IOException;
 
   /**
    * Returns the tree position for a given key or the position in which the
@@ -85,10 +81,10 @@ public interface BTree <A,B extends BComparable<A,B>, C, D extends BStorable<C,D
    * @return null if the key was not found
    * @throws java.io.IOException if an error occurs
    */
-  TreePosition getPositionWithMissing(B key) throws IOException;
+  TreePosition getPositionWithMissing(A key) throws IOException;
 
   @Override
-  default Iterator<KeyValue<B,D>> iterator(){
+  default Iterator<KeyValue<A,B>> iterator(){
     return iterator(false, null, false, null, false);
   }
 

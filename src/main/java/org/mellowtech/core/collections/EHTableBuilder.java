@@ -16,8 +16,7 @@
 
 package org.mellowtech.core.collections;
 
-import org.mellowtech.core.bytestorable.BComparable;
-import org.mellowtech.core.bytestorable.BStorable;
+import org.mellowtech.core.codec.BCodec;
 import org.mellowtech.core.collections.impl.EHBlobTableImp;
 import org.mellowtech.core.collections.impl.EHTableImp;
 
@@ -64,42 +63,42 @@ public class EHTableBuilder {
     return this;
   }
 
-  public final <A,B extends BComparable<A,B>, C, D extends BStorable<C,D>> BMap <A,B,C,D>
-  build(Class<B> keyType, Class<D> valueType, String fileName) throws Exception {
-    return build(keyType, valueType, Paths.get(fileName));
+  public final <A,B> BMap <A,B>
+  build(BCodec<A> keyCodec, BCodec<B> valueCodec, String fileName) throws Exception {
+    return build(keyCodec, valueCodec, Paths.get(fileName));
   }
 
-  public final <A,B extends BComparable<A,B>, C, D extends BStorable<C,D>> BMap <A,B,C,D> 
-  build(Class<B> keyType, Class<D> valueType, Path fileName) throws Exception{
-    if(blobValues) return buildBlob(keyType, valueType, fileName);
-    EHTableImp<A,B,C,D> toRet = null;
+  public final <A,B> BMap <A,B>
+  build(BCodec<A> keyCodec, BCodec<B> valueCodec, Path fileName) throws Exception{
+    if(blobValues) return buildBlob(keyCodec, valueCodec, fileName);
+    EHTableImp<A,B> toRet = null;
     //first try to open
     try {
-      toRet = new EHTableImp <> (fileName, keyType, valueType, inMemory);
+      toRet = new EHTableImp <> (fileName, keyCodec, valueCodec, inMemory);
     } catch (Exception e){
-      return new EHTableImp <> (fileName, keyType, valueType, inMemory, bucketSize, maxBuckets);
+      return new EHTableImp <> (fileName, keyCodec, valueCodec, inMemory, bucketSize, maxBuckets);
     }
     if(!forceNew) return toRet;
 
     //delete old and create new:
     toRet.delete();
-    return new EHTableImp <> (fileName, keyType, valueType, inMemory, bucketSize, maxBuckets);
+    return new EHTableImp <> (fileName, keyCodec, valueCodec, inMemory, bucketSize, maxBuckets);
   }
 
-  private final <A,B extends BComparable<A,B>,C,D extends BStorable<C,D>> BMap <A,B,C,D> 
-  buildBlob(Class <B> keyType, Class<D> valueType, Path fileName) throws Exception{
-    BMap <A,B,C,D> toRet = null;
+  private final <A,B> BMap <A,B>
+  buildBlob(BCodec<A> keyCodec, BCodec<B> valueCodec, Path fileName) throws Exception{
+    BMap <A,B> toRet = null;
     //first try to open
     try {
-      toRet = new EHBlobTableImp<>(fileName, keyType, valueType, inMemory);
+      toRet = new EHBlobTableImp<>(fileName, keyCodec, valueCodec, inMemory);
     } catch (Exception e){
-      return new EHBlobTableImp <> (fileName, keyType, valueType, inMemory, bucketSize, maxBuckets);
+      return new EHBlobTableImp <> (fileName, keyCodec, valueCodec, inMemory, bucketSize, maxBuckets);
     }
     if(!forceNew) return toRet;
 
     //delete old and create new:
     toRet.delete();
-    return new EHBlobTableImp <> (fileName, keyType, valueType, inMemory, bucketSize, maxBuckets);
+    return new EHBlobTableImp <> (fileName, keyCodec, valueCodec, inMemory, bucketSize, maxBuckets);
   }
 
 

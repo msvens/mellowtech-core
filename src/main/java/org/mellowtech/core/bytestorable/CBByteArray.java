@@ -26,7 +26,7 @@ import java.util.Arrays;
  *
  */
 
-public class CBByteArray extends BStorableImp <byte[], CBByteArray> implements BComparable <byte[], CBByteArray> {
+public class CBByteArray extends BStorableImp <byte[]> implements BComparable <byte[]> {
 
   /**
    * Initialize to zero sized byte[]
@@ -101,8 +101,8 @@ public class CBByteArray extends BStorableImp <byte[], CBByteArray> implements B
   }
   
   @Override
-  public int compareTo(CBByteArray other){
-    byte[] val1 = other.value;
+  public int compareTo(BComparable<byte[]> other){
+    byte[] val1 = other.get();
     int n = Math.min(value.length, val1.length);
     int i = 0;
     byte c1,c2;

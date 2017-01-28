@@ -16,23 +16,18 @@
 
 package org.mellowtech.core.collections;
 
-import org.mellowtech.core.bytestorable.BComparable;
-import org.mellowtech.core.bytestorable.BStorable;
-
 import java.io.IOException;
 import java.util.Iterator;
 
 /**
  * Interface for a file based key-value map
  *
- * @param <A> Wrapped BComparable key class
- * @param <B> BComparable key class
- * @param <C> Wrapped BStorable value class
- * @param <D> BStorable value class
+ * @param <A> Key type
+ * @param <B> Value type
  * @author Martin Svensson {@literal <msvens@gmail.com>}
  * @since 3.0.1
  */
-public interface BMap<A, B extends BComparable<A, B>, C, D extends BStorable<C, D>> {
+public interface BMap<A,B> {
 
   /**
    * Increase the capacity of this map
@@ -67,7 +62,7 @@ public interface BMap<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
    * @return true if key exists
    * @throws IOException if an error occurs
    */
-  boolean containsKey(B key) throws IOException;
+  boolean containsKey(A key) throws IOException;
 
   /**
    * Delete this map and any file resources attached to it
@@ -85,8 +80,8 @@ public interface BMap<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
    * @return value mapped to key.
    * @throws java.io.IOException if an error occurs
    */
-  default D get(B key) throws IOException {
-    KeyValue<B, D> ret = getKeyValue(key);
+  default B get(A key) throws IOException {
+    KeyValue<A,B> ret = getKeyValue(key);
     return ret != null ? ret.getValue() : null;
   }
 
@@ -97,7 +92,7 @@ public interface BMap<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
    * @return value/key pair mapped to key.
    * @throws java.io.IOException if an error occurs
    */
-  KeyValue<B, D> getKeyValue(B key) throws IOException;
+  KeyValue<A,B> getKeyValue(A key) throws IOException;
 
   /**
    * Check if this map is empty
@@ -113,7 +108,7 @@ public interface BMap<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
    * @return this tree's iterator
    * @see org.mellowtech.core.collections.KeyValue
    */
-  Iterator<KeyValue<B, D>> iterator();
+  Iterator<KeyValue<A,B>> iterator();
 
   /**
    * Insert a key into this the map. Any previous value will be
@@ -123,7 +118,7 @@ public interface BMap<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
    * @param value the value to be inserted/updated
    * @throws IOException if an error occurs
    */
-  void put(B key, D value) throws IOException;
+  void put(A key, B value) throws IOException;
 
   /**
    * Insert a key into this the map if and only if the key
@@ -133,7 +128,7 @@ public interface BMap<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
    * @param value the value to be inserted/updated
    * @throws IOException if an error occurs
    */
-  default void putIfNotExists(B key, D value) throws IOException {
+  default void putIfNotExists(A key, B value) throws IOException {
     if (!containsKey(key))
       put(key, value);
   }
@@ -145,7 +140,7 @@ public interface BMap<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
    * @return the value corresponding to the key
    * @throws IOException if an error occurs
    */
-  D remove(B key) throws IOException;
+  B remove(A key) throws IOException;
 
   /**
    * Save this map to disc

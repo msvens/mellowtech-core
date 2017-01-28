@@ -40,13 +40,12 @@ public class StorableFile {
    * @param template
    *          the BComparable template
    * @param <A> wrapped type
-   * @param <B> BComparable type
    * @return BComparable of type B or null if file is empty
    * @exception IOException
    *              if an error occurs
    */
-  public static <A, B extends BStorable<A,B>> B readFileAsByteStorable(String fileName,
-      B template) throws IOException {
+  public static <A> BStorable<A> readFileAsByteStorable(String fileName,
+      BStorable<A> template) throws IOException {
     ByteBuffer bb = readFileAsByteBuffer(fileName);
     if(bb == null || bb.capacity() < 1) return null;
     return template.from((ByteBuffer) bb.flip());
@@ -62,7 +61,7 @@ public class StorableFile {
    *              if an error occurs
    */
   public static void writeFileAsByteStorable(String fileName,
-      BStorable <?,?> object) throws IOException {
+      BStorable <?> object) throws IOException {
     writeFileAsByteBuffer(fileName, (ByteBuffer) object.to().flip());
   }
 

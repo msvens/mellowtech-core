@@ -19,10 +19,7 @@ package org.mellowtech.core.collections.impl;
 import java.io.IOException;
 import java.util.*;
 
-
-import org.mellowtech.core.bytestorable.BComparable;
-import org.mellowtech.core.bytestorable.BStorable;
-import org.mellowtech.core.bytestorable.ByteStorableException;
+import org.mellowtech.core.codec.BCodec;
 import org.mellowtech.core.collections.BMap;
 import org.mellowtech.core.collections.DiscMap;
 import org.mellowtech.core.collections.EHTableBuilder;
@@ -37,35 +34,33 @@ import org.slf4j.LoggerFactory;
  * Time: 16:55
  * To change this template use File | Settings | File Templates.
  */
-public class DiscBasedHashMap <A,B extends BComparable<A,B>, 
-  C, D extends BStorable<C,D>> implements DiscMap<A,C> {
+public class DiscBasedHashMap <A,B> implements DiscMap<A,B> {
 
-  private final B keyMapping;
-  private final D valueMapping;
-  private BMap<A,B,C,D> eht;
+  private final BCodec<A> keyCodec;
+  private final BCodec<B> valueCodec;
+  private BMap<A,B> eht;
   private final Logger logger = LoggerFactory.getLogger(Class.class);
   public static final int DEFAULT_BUCKET_SIZE = 1024*8;
   public static final int MAX_BUCKETS = 1024*1024*2;
 
 
-  public DiscBasedHashMap(Class <B> keyType, Class <D> valueType,
+  public DiscBasedHashMap(BCodec<A> keyCodec, BCodec<B> valueCodec,
                             String fileName, boolean blobValues, boolean inMemory) throws Exception{
-    this(keyType, valueType, fileName, blobValues, inMemory, DEFAULT_BUCKET_SIZE, MAX_BUCKETS);
+    this(keyCodec, valueCodec, fileName, blobValues, inMemory, DEFAULT_BUCKET_SIZE, MAX_BUCKETS);
   }
 
-  public DiscBasedHashMap(Class <B> keyType, Class <D> valueType,
+  public DiscBasedHashMap(BCodec<A> keyCodec, BCodec<B> valueCodec,
                           String fileName, boolean blobValues, boolean inMemory, int bucketSize,
                           int maxBuckets) throws Exception{
     
-    this(keyType, valueType, fileName, new EHTableBuilder().inMemory(inMemory).blobValues(blobValues).bucketSize(bucketSize).maxBuckets(maxBuckets));
+    this(keyCodec, valueCodec, fileName, new EHTableBuilder().inMemory(inMemory).blobValues(blobValues).bucketSize(bucketSize).maxBuckets(maxBuckets));
   }
   
-  public DiscBasedHashMap(Class <B> keyType, Class <D> valueType, String fileName,
+  public DiscBasedHashMap(BCodec<A> keyCodec, BCodec<B> valueCodec, String fileName,
       EHTableBuilder builder) throws Exception{
-    this.keyMapping = keyType.newInstance();
-    this.valueMapping = valueType.newInstance();
-    //this.fName = fileName;
-    this.eht = builder.build(keyType, valueType, fileName);
+    this.keyCodec = keyCodec;
+    this.valueCodec = valueCodec;
+    this.eht = builder.build(keyCodec, valueCodec, fileName);
   }
 
   /****************overwritten disc hmap methods******************************/
@@ -88,7 +83,7 @@ public class DiscBasedHashMap <A,B extends BComparable<A,B>,
   }
 
   @Override
-  public Iterator<Entry<A, C>> iterator() {
+  public Iterator<Entry<A,B>> iterator() {
     return new DiscBasedHashIterator();
   }
 
@@ -101,7 +96,7 @@ public class DiscBasedHashMap <A,B extends BComparable<A,B>,
     }
     catch(Exception e){
       logger.error("", e);
-      throw new ByteStorableException(e);
+      throw new Error(e);
     }
   }
 
@@ -112,7 +107,7 @@ public class DiscBasedHashMap <A,B extends BComparable<A,B>,
     }
     catch(Exception e){
       logger.error("", e);
-      throw new ByteStorableException(e);
+      throw new Error(e);
     }
   }
 
@@ -122,7 +117,7 @@ public class DiscBasedHashMap <A,B extends BComparable<A,B>,
   @SuppressWarnings("unchecked")
   public boolean containsKey(Object key){
     try{
-      return eht.containsKey(keyMapping.create((A) key));
+      return eht.containsKey((A) key);
     }
     catch(Exception e){
       logger.error("", e);
@@ -133,11 +128,11 @@ public class DiscBasedHashMap <A,B extends BComparable<A,B>,
   @Override
   @SuppressWarnings("unchecked")
   public boolean containsValue(Object value) {
-    Iterator <KeyValue<B,D>> iter = eht.iterator();
-    D find = valueMapping.create((C)value);
+    Iterator <KeyValue<A,B>> iter = eht.iterator();
+    B find = (B) value;
     while(iter.hasNext()){
-      KeyValue <B,D> kv = iter.next();
-      D toComp = kv.getValue();
+      KeyValue <A,B> kv = iter.next();
+      B toComp = kv.getValue();
       if(toComp.equals(find))
         return true;
     }
@@ -146,10 +141,11 @@ public class DiscBasedHashMap <A,B extends BComparable<A,B>,
 
   @Override
   @SuppressWarnings("unchecked")
-  public C get(Object key) {
+  public B get(Object key) {
     try{
-      D ret = eht.get(keyMapping.create((A)key));
-      return ret != null ? ret.get() : null;
+      return eht.get((A)key);
+      /*BStorable<C> ret = eht.get(keyMapping.create((A)key));
+      return ret != null ? ret.get() : null;*/
     }
     catch(Exception e){
       logger.error("", e);
@@ -158,11 +154,11 @@ public class DiscBasedHashMap <A,B extends BComparable<A,B>,
   }
 
   @Override
-  public C put(A key, C value) {
-    B bsk = keyMapping.create(key);
-    D vsk = valueMapping.create(value);
+  public B put(A key, B value) {
+    /*BComparable<A> bsk = keyMapping.create(key);
+    BStorable<C> vsk = valueMapping.create(value);*/
     try{
-      eht.put(bsk, vsk);
+      eht.put(key,value);
     }
     catch(Exception e){
       logger.error("", e);
@@ -172,11 +168,12 @@ public class DiscBasedHashMap <A,B extends BComparable<A,B>,
 
   @Override
   @SuppressWarnings("unchecked")
-  public C remove(Object key) {
-    B bs = keyMapping.create((A) key);
+  public B remove(Object key) {
+    //BComparable<A> bs = keyMapping.create((A) key);
     try{
-      D v = eht.remove(bs);
-      return v != null ? v.get() : null;
+      return eht.remove((A)key);
+      /*BStorable<C> v = eht.remove(bs);
+      return v != null ? v.get() : null;*/
     }
     catch(IOException e){
       logger.error("", e);
@@ -185,8 +182,8 @@ public class DiscBasedHashMap <A,B extends BComparable<A,B>,
   }
 
   @Override
-  public void putAll(Map<? extends A,? extends C> m) {
-    for (Entry<? extends A, ? extends C> e : m.entrySet()) {
+  public void putAll(Map<? extends A,? extends B> m) {
+    for (Entry<? extends A, ? extends B> e : m.entrySet()) {
       this.put(e.getKey(), e.getValue());
     }
   }
@@ -206,18 +203,18 @@ public class DiscBasedHashMap <A,B extends BComparable<A,B>,
   }
 
   @Override
-  public Collection <C> values() {
+  public Collection <B> values() {
     return new DBValueCollection<>(this);
   }
 
   @Override
-  public  Set<Map.Entry<A,C>> entrySet() {
+  public  Set<Map.Entry<A,B>> entrySet() {
     return new DBEntrySet<>(this);
   }
 
-  private class DiscBasedHashIterator implements Iterator<Entry<A,C>>{
+  private class DiscBasedHashIterator implements Iterator<Entry<A,B>>{
 
-    Iterator <KeyValue <B,D>> iter;
+    Iterator <KeyValue <A,B>> iter;
 
     DiscBasedHashIterator(){
       iter = eht.iterator();
@@ -229,14 +226,15 @@ public class DiscBasedHashMap <A,B extends BComparable<A,B>,
     }
 
     @Override
-    public Entry<A, C> next() {
-      KeyValue <B,D> next = iter.next();
+    public Entry<A,B> next() {
+      KeyValue <A,B> next = iter.next();
       if(next == null) return null;
-      MapEntry <A,C> toRet = new MapEntry <> ();
+      return next;
+      /*MapEntry <A,C> toRet = new MapEntry <> ();
       toRet.setKey(next.getKey().get());
       if(next.getValue() != null)
         toRet.setValue(next.getValue().get());
-      return toRet;
+      return toRet;*/
     }
 
     @Override

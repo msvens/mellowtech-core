@@ -127,10 +127,9 @@ public enum PrimitiveType {
    * Wrap an object in a BStorable
    * @param obj object to wrap
    * @param <A> Wrapped type
-   * @param <B> BStorable type
    * @return BStorable
    */
-  public static <A,B extends BStorable<A,B>> BStorable <A,B> get(A obj) {
+  public static <A> BStorable <A> get(A obj) {
     PrimitiveType t = type(obj);
     return fromType(t);
     
@@ -188,7 +187,7 @@ public enum PrimitiveType {
    * @param obj BStorable object to test
    * @return PrimitiveType of null if no PrimitiveType is found
    */
-  public static PrimitiveType typeStorable(BStorable<?,?> obj){
+  public static PrimitiveType typeStorable(BStorable<?> obj){
     if(obj instanceof CBString)
       return PrimitiveType.StringObject;
     else if(obj instanceof CBByte)

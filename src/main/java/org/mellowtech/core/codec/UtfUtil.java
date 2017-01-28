@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 
-package org.mellowtech.core.bytestorable;
+package org.mellowtech.core.codec;
+
+import org.mellowtech.core.bytestorable.CBUtil;
 
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
@@ -239,10 +241,7 @@ public class UtfUtil {
    * @param b destination buffer
    */
   public static void encode(final char[] str, final ByteBuffer b) {
-    /*if(b.hasArray()){
-      encode(str, b.array(), b.position());
-      return;
-    }*/
+
     int len = str.length;
     int c;
 
@@ -269,6 +268,7 @@ public class UtfUtil {
         b.put((byte) (0x80 | ((c >> 0) & 0x3F)));
       }
     }
+
   }
 
   /**
@@ -353,7 +353,7 @@ public class UtfUtil {
         break;
       default:
         /* 10xx xxxx, 1111 xxxx */
-        throw new Error("malformed input around byte " + count+" "+length+" "+to+" "+offset+" "+(c >> 4)+" "+CBUtil.decodeInt(b, count)+" "+b[count-1]+" "+b[count-2]+" "+b[count-3]);
+        throw new Error("malformed input around byte " + count+" "+length+" "+to+" "+offset+" "+(c >> 4)+" "+ CBUtil.decodeInt(b, count)+" "+b[count-1]+" "+b[count-2]+" "+b[count-3]);
       }
     }
     // The number of chars produced may be less than length
@@ -445,7 +445,6 @@ public class UtfUtil {
       System.out.println(toRet);
       return toRet;
     }*/
-    
     int count = 0, c_count = 0;
     int c, char2, char3;
     char arr[] = new char[length];
@@ -517,10 +516,9 @@ public class UtfUtil {
    * @return char array value
    */
   public static char[] decodeChars(final ByteBuffer b, int length){
-    if(b.hasArray()){
+    /*if(b.hasArray()){
       return decodeChars(b.array(), b.position(), length);
-    }
-    
+    }*/
     int count = 0, c_count = 0;
     int c, char2, char3;
     char arr[] = new char[length];
@@ -530,6 +528,7 @@ public class UtfUtil {
       if (c > 127)
         break;
       b.get();
+      count++;
       arr[c_count++] = (char) c;
     }
 
@@ -1150,6 +1149,31 @@ public class UtfUtil {
     }
     //the string starts the same (or are actually the same)
     return length1 - length2;
+  }
+
+  //normal string comaarisons:
+  public static int compare(char[] str1, char[] str2, char[] charMap) {
+    //char[] obj1 = other.get();
+    int n = Math.min(str1.length, str2.length);
+    int i = 0;
+    char c1,c2;
+    if (charMap == null){
+      while(n-- != 0){
+        c1 = str1[i];
+        c2 = str2[i];
+        if(c1 != c2) return c1 - c2;
+        i++;
+      }
+    }
+    else {
+      while(n-- != 0){
+        c1 = charMap[(int) str1[i]];
+        c2 = charMap[(int) str2[i]];
+        if(c1 != c2) return c1-c2;
+        i++;
+      }
+    }
+    return str1.length - str2.length;
   }
 
 }

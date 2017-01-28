@@ -23,9 +23,8 @@ package org.mellowtech.core.bytestorable;
  * @author Martin Svensson {@literal <msvens@gmail.com>}
  * @since 3.0.1
  * @param <A> type of value
- * @param <B> self type
  */
-public abstract class BStorableImp <A,B extends BStorable<A,B>> implements BStorable <A,B>{
+public abstract class BStorableImp <A> implements BStorable <A>{
 
   /**
    * Wrapped value

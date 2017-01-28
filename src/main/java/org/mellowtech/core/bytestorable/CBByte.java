@@ -25,7 +25,7 @@ import java.nio.ByteBuffer;
  * @since 3.0.1
  */
 
-public class CBByte implements BComparable <Byte, CBByte> {
+public class CBByte implements BComparable <Byte> {
 
   private final byte value;
 
@@ -81,8 +81,8 @@ public class CBByte implements BComparable <Byte, CBByte> {
   }
 
   @Override
-  public int compareTo(CBByte other) {
-    return this.value - other.value;
+  public int compareTo(BComparable<Byte> other) {
+    return this.value - other.get();
   }
 
   @Override

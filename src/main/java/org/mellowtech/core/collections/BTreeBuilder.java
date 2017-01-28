@@ -16,15 +16,13 @@
 
 package org.mellowtech.core.collections;
 
-import org.mellowtech.core.bytestorable.BComparable;
-import org.mellowtech.core.bytestorable.BStorable;
+import org.mellowtech.core.codec.BCodec;
 import org.mellowtech.core.collections.impl.*;
 import org.mellowtech.core.io.RecordFileBuilder;
 import org.mellowtech.core.io.impl.MultiBlockFile;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Optional;
 
 /**
  * A Builder for sorted disc based maps. There are basically 4 different parameters to consider
@@ -198,40 +196,35 @@ public class BTreeBuilder {
 
   /**
    * Create/Open a new disc based tree
-   * @param keyType BComparable keyType
-   * @param valueType BStorable valueType
+   * @param keyCodec Byte codec for keys
+   * @param valueCodec Byte codec for values
    * @param fileName the path to this tree
-   * @param <A> key wrapped type
-   * @param <B> key self type
-   * @param <C> value wrapped type
-   * @param <D> value self type
+   * @param <A> key type
+   * @param <B> value type
    * @return a new disc based tree
    * @throws Exception if tree could not be created/opened
    */
   @Deprecated
-  public <A,B extends BComparable<A,B>, C, D extends BStorable<C,D>> BTree <A,B,C,D>
-  build(Class<B> keyType, Class<D> valueType, String fileName) throws Exception{
+  public <A,B> BTree <A,B>
+  build(BCodec<A> keyCodec, BCodec<B> valueCodec, String fileName) throws Exception{
     Path p = Paths.get(fileName);
     Path dir = p.getParent();
-    return build(keyType, valueType,dir,p.getFileName().toString());
+    return build(keyCodec, valueCodec,dir,p.getFileName().toString());
 
   }
 
   /**
    * Create/Open a new disc based tree
-   * @param keyType BComparable keyType
-   * @param valueType BStorable valueType
+   * @param keyCodec Byte codec for keys
+   * @param valueCodec Byte codec for values
    * @param dir directory where to store this tree
    * @param name name of the tree
-   * @param <A> key wrapped type
-   * @param <B> key self type
-   * @param <C> value wrapped type
-   * @param <D> value self type
+   * @param <A> key type
+   * @param <B> value type
    * @return a new disc based tree
    * @throws Exception if tree could not be created/opened
    */
-  public <A,B extends BComparable<A,B>, C, D extends BStorable<C,D>> BTree <A,B,C,D>
-  build(Class<B> keyType, Class<D> valueType, Path dir, String name) throws Exception{
+  public <A,B> BTree <A,B> build(BCodec<A> keyCodec, BCodec<B> valueCodec, Path dir, String name) throws Exception{
 
     RecordFileBuilder vfb = new RecordFileBuilder();
     vfb.maxBlocks(maxBlocks).blockSize(valueBlockSize).multiFileSize(multiFileSize);
@@ -243,11 +236,11 @@ public class BTreeBuilder {
       vfb.disc();
 
     if(memoryIndex){
-      return blobValues ? new HybridBlobTree<>(dir,name,keyType,valueType,vfb) :
-          new HybridTree<>(dir,name,keyType,valueType,vfb);
+      return blobValues ? new HybridBlobTree<>(dir,name,keyCodec,valueCodec,vfb) :
+          new HybridTree<>(dir,name,keyCodec,valueCodec,vfb);
     } else {
-      return blobValues ? new BTreeBlobImp<>(dir,name,keyType,valueType,indexBlockSize,maxIndexBlocks,vfb) :
-          new BTreeImp<>(dir,name,keyType,valueType,indexBlockSize,maxIndexBlocks,vfb);
+      return blobValues ? new BTreeBlobImp<>(dir,name,keyCodec,valueCodec,indexBlockSize,maxIndexBlocks,vfb) :
+          new BTreeImp<>(dir,name,keyCodec,valueCodec,indexBlockSize,maxIndexBlocks,vfb);
     }
   }
   

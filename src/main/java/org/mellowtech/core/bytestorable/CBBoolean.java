@@ -25,7 +25,7 @@ import java.nio.ByteBuffer;
  * @since 3.0.1
  */
 
-public class CBBoolean implements BComparable <Boolean, CBBoolean> {
+public class CBBoolean implements BComparable <Boolean> {
 
   private final boolean value;
   
@@ -97,8 +97,8 @@ public class CBBoolean implements BComparable <Boolean, CBBoolean> {
   }
 
   @Override
-  public int compareTo(CBBoolean other) {
-    return Boolean.compare(value, other.value);
+  public int compareTo(BComparable<Boolean> other) {
+    return Boolean.compare(value, other.get());
   }
 
   @Override

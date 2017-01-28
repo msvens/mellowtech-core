@@ -24,9 +24,8 @@ import java.nio.file.Path;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.mellowtech.core.bytestorable.BComparable;
-import org.mellowtech.core.bytestorable.BStorable;
-import org.mellowtech.core.bytestorable.io.BCBuffer;
+import org.mellowtech.core.codec.BBuffer;
+import org.mellowtech.core.codec.BCodec;
 import org.mellowtech.core.collections.BMap;
 import org.mellowtech.core.collections.KeyValue;
 import org.mellowtech.core.io.Record;
@@ -40,8 +39,7 @@ import org.slf4j.LoggerFactory;
  * @author msvens
  *
  */
-public class EHTableImp <A, B extends BComparable <A,B>, C, D extends BStorable<C,D>>
-  implements BMap <A,B,C,D>{
+public class EHTableImp <A,B> implements BMap <A,B>{
   
   private static final int VERSION = 12;
 
@@ -51,53 +49,52 @@ public class EHTableImp <A, B extends BComparable <A,B>, C, D extends BStorable<
   private int dirDepth;
   private int size = 0;
   private RecordFile bucketFile = null;
-  private KeyValue <B,D> kvType = null;
+  private final KeyValueCodec <A,B> kvCodec;
   private int maxDirectory;
-  private B keyType;
-  private D valueType;
+  private final BCodec<A> keyCodec;
+  private final BCodec<B> valueCodec;
   private int bucketSize;
   private boolean inMemory;
   private IntBuffer reserve;
   private Path p;
   
-  public EHTableImp(Path path, Class<B> keyType, Class<D> valueType, boolean inMemory) throws Exception{
-    this.keyType = keyType.newInstance();
-    this.valueType = valueType.newInstance();
-    kvType = new KeyValue <> (this.keyType,this.valueType);
+  public EHTableImp(Path path, BCodec<A> keyCodec, BCodec<B> valueCodec, boolean inMemory) throws Exception{
+    this.keyCodec = keyCodec;
+    this.valueCodec = valueCodec;
+    this.kvCodec = new KeyValueCodec<>(keyCodec,valueCodec);
     this.inMemory = inMemory;
     this.p = path;
     openFile();
   }
   
-  public EHTableImp(Path path, Class<B> keyType, Class<D> valueType, boolean inMemory, int bucketSize, int maxBuckets)
+  public EHTableImp(Path path, BCodec<A> keyCodec, BCodec<B> valueCodec, boolean inMemory, int bucketSize, int maxBuckets)
     throws Exception{
 
-    this.keyType = keyType.newInstance();
-    this.valueType = valueType.newInstance();
-    kvType = new KeyValue <> (this.keyType,this.valueType);
+    this.keyCodec = keyCodec;
+    this.valueCodec = valueCodec;
+    this.kvCodec = new KeyValueCodec<>(keyCodec,valueCodec);
     this.inMemory = inMemory;
     this.p = path;
     createFile(bucketSize, maxBuckets);
   }
   
-  public boolean containsKey(B key) throws IOException {
-    //KeyValue <B,D> kv = new KeyValue <> (key, null);
+  public boolean containsKey(A key) throws IOException {
     return readBucket(key).contains(toKV(key));
   }
 
-  private KeyValue <B,D> toKV(B key){return new KeyValue <> (key);}
+  private KeyValue <A,B> toKV(A key){return new KeyValue <> (key);}
   
   @Override
-  public final KeyValue<B, D> getKeyValue(B key) throws IOException {
+  public final KeyValue<A,B> getKeyValue(A key) throws IOException {
     return readBucket(key).get(toKV(key));
   }
   
-  public void put(B key, D value) throws IOException{
-    if (key.byteSize() + value.byteSize() > bucketSize / 10)
+  public void put(A key, B value) throws IOException{
+    KeyValue<A,B> kv = new KeyValue <> (key,value);
+    if (kvCodec.byteSize(kv) > bucketSize / 10)
       throw new IOException("size of key value too large. you should increase bucket size");
-    KeyValue <B,D> kv = new KeyValue <> (key,value);
     int rrn = find(kv);
-    BCBuffer <KeyValue.KV<B,D>, KeyValue <B,D>> bucket = readBucket(rrn);
+    BBuffer <KeyValue<A,B>> bucket = readBucket(rrn);
 
 
     //delete any previous key
@@ -117,16 +114,15 @@ public class EHTableImp <A, B extends BComparable <A,B>, C, D extends BStorable<
     }
   }
   
-  public void putIfNotExists(B key, D value) throws IOException{
+  public void putIfNotExists(A key, B value) throws IOException{
     if(!containsKey(key))
       put(key,value);
   }
   
-  public D remove(B key) throws IOException {
-    //KeyValue <B,D> toDelete = new KeyValue <> (key, null);
+  public B remove(A key) throws IOException {
     int rrn = find(key);
-    BCBuffer <KeyValue.KV<B,D>, KeyValue <B,D>> bucket = readBucket(rrn);
-    KeyValue <B,D> deleted = bucket.delete(toKV(key));
+    BBuffer <KeyValue<A,B>> bucket = readBucket(rrn);
+    KeyValue<A,B> deleted = bucket.delete(toKV(key));
     if (deleted == null)
       return null;
     size--;
@@ -139,7 +135,7 @@ public class EHTableImp <A, B extends BComparable <A,B>, C, D extends BStorable<
     return size < 1;
   }
   
-  public Iterator <KeyValue <B,D>> iterator(){
+  public Iterator <KeyValue <A,B>> iterator(){
     return new EHTIterator();
   }
   
@@ -175,7 +171,7 @@ public class EHTableImp <A, B extends BComparable <A,B>, C, D extends BStorable<
     final AtomicInteger total = new AtomicInteger(0);
     final AtomicInteger used = new AtomicInteger(0);
     bucketFile.forEach(r -> {
-      BCBuffer<KeyValue.KV<B,D>, KeyValue<B,D>> tmp = new BCBuffer<>(ByteBuffer.wrap(r.data), kvType);
+      BBuffer<KeyValue<A,B>> tmp = new BBuffer<>(ByteBuffer.wrap(r.data), kvCodec);
       used.addAndGet(tmp.getDataAndPointersBytes());
       total.addAndGet(tmp.storageCapacity());
     });
@@ -185,7 +181,7 @@ public class EHTableImp <A, B extends BComparable <A,B>, C, D extends BStorable<
   public double emptyBuckets() throws IOException {
     final AtomicInteger empty = new AtomicInteger(0);
     bucketFile.forEach(r -> {
-      BCBuffer<KeyValue.KV<B,D>, KeyValue<B,D>> tmp = new BCBuffer<>(ByteBuffer.wrap(r.data), kvType);
+      BBuffer<KeyValue<A,B>> tmp = new BBuffer<>(ByteBuffer.wrap(r.data), kvCodec);
       if(tmp.getNumberOfElements() < 1)
         empty.incrementAndGet();
     });
@@ -217,15 +213,15 @@ public class EHTableImp <A, B extends BComparable <A,B>, C, D extends BStorable<
   }
 
   
-  private int find(KeyValue <B,D> kv){
+  private int find(KeyValue <A,B> kv){
     return find(kv.getKey());
   }
   
-  private int find(B key){
+  private int find(A key){
     return directory[makeAddress(dirDepth, key)];
   }
 
-  private int findBuddy(BCBuffer <KeyValue.KV<B,D>, KeyValue <B,D>> bucket) {
+  private int findBuddy(BBuffer <KeyValue<A,B>> bucket) {
     int bucketDepth = readBucketDepth(bucket);
     if (dirDepth == 0)
       return -1;
@@ -235,12 +231,12 @@ public class EHTableImp <A, B extends BComparable <A,B>, C, D extends BStorable<
     return sharedAdress ^ 1;
   }
 
-  private void combineBucket(BCBuffer <KeyValue.KV<B,D>, KeyValue <B,D>> bucket, int rrn) throws IOException {
+  private void combineBucket(BBuffer <KeyValue<A,B>> bucket, int rrn) throws IOException {
     int bAdress = findBuddy(bucket);
     if (bAdress == -1)
       return;
     int brrn = directory[bAdress];
-    BCBuffer <KeyValue.KV<B,D>, KeyValue<B,D>> bBucket = readBucket(brrn);
+    BBuffer <KeyValue<A,B>> bBucket = readBucket(brrn);
     if(bucket.fits(bBucket)){
       bucket.merge(bBucket);
       directory[bAdress] = rrn;
@@ -271,7 +267,7 @@ public class EHTableImp <A, B extends BComparable <A,B>, C, D extends BStorable<
     return true;
   }
   
-  private void splitBucket(BCBuffer <KeyValue.KV<B,D>, KeyValue <B,D>> bucket) throws IOException {
+  private void splitBucket(BBuffer <KeyValue<A,B>> bucket) throws IOException {
     int bucketAddr = find(bucket.get(0));
 
     logger.trace(DataTypeUtils.printBits((short) find(bucket.get(0))) + " " + (bucket.get(0)).getKey());
@@ -292,10 +288,10 @@ public class EHTableImp <A, B extends BComparable <A,B>, C, D extends BStorable<
     writeDirectory(directory);
 }
   
-  private void redistribute(BCBuffer <KeyValue.KV<B,D>, KeyValue <B,D>> oldBucket,
-                            BCBuffer <KeyValue.KV<B,D>, KeyValue <B,D>> newBucket, int oldAddr) {
-    KeyValue <B,D> keyValue;
-    for (Iterator <KeyValue <B,D>> it = oldBucket.iterator(); it.hasNext();) {
+  private void redistribute(BBuffer <KeyValue<A,B>> oldBucket,
+                            BBuffer <KeyValue<A,B>> newBucket, int oldAddr) {
+    KeyValue<A,B> keyValue;
+    for (Iterator <KeyValue <A,B>> it = oldBucket.iterator(); it.hasNext();) {
       keyValue = it.next();
       if (find(keyValue) != oldAddr) {
         it.remove();
@@ -308,18 +304,19 @@ public class EHTableImp <A, B extends BComparable <A,B>, C, D extends BStorable<
     bucketFile.delete(rrn);
   }
   
-  private void writeBucket(int record, BCBuffer <KeyValue.KV<B,D>, KeyValue <B,D>> bucket) throws IOException{
+  private void writeBucket(int record, BBuffer <KeyValue<A,B>> bucket) throws IOException{
     bucketFile.update(record, bucket.getArray());
   }
 
-  private BCBuffer<KeyValue.KV<B,D>, KeyValue<B,D>> readBucket(B key) throws IOException {
+  private BBuffer<KeyValue<A,B>> readBucket(A key) throws IOException {
     return readBucket(find(key));
   }
 
-  private BCBuffer<KeyValue.KV<B,D>, KeyValue<B,D>> readBucket(int record) throws IOException{
+  private BBuffer<KeyValue<A,B>> readBucket(int record) throws IOException{
     try{
-      return new BCBuffer<>(ByteBuffer.wrap(bucketFile.get(record)), kvType);
+      return new BBuffer<>(ByteBuffer.wrap(bucketFile.get(record)), kvCodec);
     } catch(IOException e){
+
       logger.warn("Could not read block", e);
       throw e;
     }
@@ -345,7 +342,7 @@ public class EHTableImp <A, B extends BComparable <A,B>, C, D extends BStorable<
       directory[i] = bucketAddr;
   }
   
-  private Range findRange(BCBuffer <KeyValue.KV<B,D>, KeyValue <B,D>> bucket) {
+  private Range findRange(BBuffer <KeyValue<A,B>> bucket) {
     int depth = this.readBucketDepth(bucket);
     int shared = makeAddress(depth, bucket.getFirst().getKey());
     int toFill = dirDepth - (depth + 1);
@@ -361,7 +358,7 @@ public class EHTableImp <A, B extends BComparable <A,B>, C, D extends BStorable<
     return r;
   }
 
-  private static <B extends BComparable <?,B>> int makeAddress(int depth, B key){
+  private static <B> int makeAddress(int depth, B key){
     int hashVal = key.hashCode();
     int ret = 0;
     int mask = 1;
@@ -377,8 +374,8 @@ public class EHTableImp <A, B extends BComparable <A,B>, C, D extends BStorable<
   
   private BlockRecord createNewBucket() throws IOException {
     try{
-      BCBuffer <KeyValue.KV<B,D>, KeyValue <B,D>> toRet = new BCBuffer<>(bucketSize, kvType,
-          BCBuffer.PtrType.NORMAL, (short) 4);
+      BBuffer <KeyValue<A,B>> toRet = new BBuffer<>(bucketSize, kvCodec,
+          BBuffer.PtrType.NORMAL, (short) 4);
       writeBucketDepth(toRet, 0);
       int rrn = bucketFile.insert(toRet.getArray());
       return new BlockRecord(rrn, toRet);
@@ -409,18 +406,6 @@ public class EHTableImp <A, B extends BComparable <A,B>, C, D extends BStorable<
     (inMemory ? rfb.mem() : rfb.disc()).maxBlocks(maxBlocks);
     bucketFile = rfb.blockSize(bucketSize).reserve(16+(4*maxBlocks)).build(p);
     clearFile();
-    /*bucketFile.clear();
-    directory = new int[1];
-    dirDepth = 0;
-    size = 0;
-    maxDirectory = maxBlocks;
-    this.bucketSize = bucketSize;
-    reserve = bucketFile.mapReserve().asIntBuffer();
-    writeVersion(EHTableImp.VERSION);
-    writeDepth(dirDepth);
-    writeNumItems(size);
-    //BlockRecord br = createNewBucket();
-    directory[0] = createNewBucket().record;*/
   }
 
   private void clearFile() throws IOException{
@@ -437,13 +422,13 @@ public class EHTableImp <A, B extends BComparable <A,B>, C, D extends BStorable<
     directory[0] = createNewBucket().record;
   }
   
-  private void writeBucketDepth(BCBuffer <KeyValue.KV<B,D>, KeyValue <B,D>> bucket, int depth){
+  private void writeBucketDepth(BBuffer <KeyValue<A,B>> bucket, int depth){
     ByteBuffer bb = bucket.getBlock();
     bb.position(bucket.getReservedSpaceStart());
     bb.putInt(depth);
   }
   
-  private int readBucketDepth(BCBuffer <KeyValue.KV<B,D>, KeyValue <B,D>> bucket){
+  private int readBucketDepth(BBuffer <KeyValue<A,B>> bucket){
     ByteBuffer bb = bucket.getBlock();
     bb.position(bucket.getReservedSpaceStart());
     return bb.getInt();
@@ -489,8 +474,8 @@ public class EHTableImp <A, B extends BComparable <A,B>, C, D extends BStorable<
   
   private class BlockRecord {
     int record = 0;
-    BCBuffer <KeyValue.KV<B,D>, KeyValue <B,D>> block;
-    BlockRecord(int r, BCBuffer<KeyValue.KV<B, D>, KeyValue<B, D>> b){
+    BBuffer <KeyValue<A,B>> block;
+    BlockRecord(int r, BBuffer<KeyValue<A,B>> b){
       record = r;
       block = b;
     }
@@ -500,11 +485,11 @@ public class EHTableImp <A, B extends BComparable <A,B>, C, D extends BStorable<
     int from, to;
   }
   
-  private class EHTIterator implements Iterator <KeyValue<B, D>> {
+  private class EHTIterator implements Iterator <KeyValue<A,B>> {
     Iterator <Record> fileIterator = bucketFile.iterator();
     
-    Iterator <KeyValue <B,D>> bucketIterator;
-    BCBuffer <KeyValue.KV<B,D>, KeyValue <B,D>> sb;
+    Iterator <KeyValue <A,B>> bucketIterator;
+    BBuffer <KeyValue<A,B>> sb;
     
     byte b[];
 
@@ -512,7 +497,7 @@ public class EHTableImp <A, B extends BComparable <A,B>, C, D extends BStorable<
       if (!fileIterator.hasNext())
         return;
       b = fileIterator.next().data;
-      sb = new BCBuffer<>(ByteBuffer.wrap(b), kvType);
+      sb = new BBuffer<>(ByteBuffer.wrap(b), kvCodec);
       bucketIterator = sb.iterator();
     }
 
@@ -521,7 +506,7 @@ public class EHTableImp <A, B extends BComparable <A,B>, C, D extends BStorable<
         return true;
       while (fileIterator.hasNext()) {
         b = fileIterator.next().data;
-        sb = new BCBuffer<>(ByteBuffer.wrap(b), kvType);
+        sb = new BBuffer<>(ByteBuffer.wrap(b), kvCodec);
         bucketIterator = sb.iterator();
         if (bucketIterator.hasNext())
           return true;
@@ -529,7 +514,7 @@ public class EHTableImp <A, B extends BComparable <A,B>, C, D extends BStorable<
       return false;
     }
 
-    public KeyValue <B,D> next() {
+    public KeyValue <A,B> next() {
       return bucketIterator.next();
     }
 

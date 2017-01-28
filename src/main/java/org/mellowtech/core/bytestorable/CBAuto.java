@@ -25,12 +25,12 @@ import java.nio.ByteBuffer;
  * automatically by CBAuto. The only restriction is that one can only
  * use primitive types as defined in PrimitiveType
  * <p>
- *   CBAuto relies on BSField annotations to find which fields to serialize
+ *   CBAuto relies on BField annotations to find which fields to serialize
  * </p>
  * <pre>
  *   {@code
  *   public class MyCBAuto extends CBAuto<MyCBAuto> {
- *    BSField(1) public String f1;
+ *    BField(1) public String f1;
  *
  *    //subclass needs to implement empty constructor
  *    public MyCBAuto(){
@@ -49,7 +49,7 @@ import java.nio.ByteBuffer;
  * @see BSField
  * @see PrimitiveType
  */
-public abstract class CBAuto <A extends CBAuto<A>> implements BStorable <A, A>{
+public abstract class CBAuto <A extends CBAuto<A>> implements BStorable <A>{
 
   /**
    * Default constructor parses this class using AutoBytes. Subclasses

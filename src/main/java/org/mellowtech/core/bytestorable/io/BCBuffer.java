@@ -27,7 +27,7 @@ import java.util.Iterator;
 
 
 /**
- * The BCBuffer keeps a sorted byte array of BComparables. The buffer
+ * The BBuffer keeps a sorted byte array of BComparables. The buffer
  * into two sections, the first section is the pointers
  * to the actual keys stored in the array. All sorting, searching, rearranging is
  * done in the pointers section. Thus, keys does not have to be physically
@@ -46,13 +46,12 @@ import java.util.Iterator;
  * @author Martin Svensson {@literal <msvens@gmail.com>}
  * @since 3.0.4
  * @param <A> type of value
- * @param <B> BComparable type
  */
-public class BCBuffer<A, B extends BComparable<A, B>> implements RangeIterable<B, B> {
+public class BCBuffer<A> implements RangeIterable<BComparable<A>, BComparable<A>> {
 
 
   private ByteBuffer block;
-  private B keyType;
+  private BComparable<A> keyType;
   private PtrType ptrType;
   //TODO: maybe remove tmpArr. Unnecessary optimization?
   private byte[] tmpArr = new byte[128];
@@ -69,7 +68,7 @@ public class BCBuffer<A, B extends BComparable<A, B>> implements RangeIterable<B
    * @param block data
    * @param template BComparable template
    */
-  public BCBuffer(ByteBuffer block, B template) {
+  public BCBuffer(ByteBuffer block, BComparable<A> template) {
     this(block, template, false, null, (short) -1);
   }
 
@@ -80,7 +79,7 @@ public class BCBuffer<A, B extends BComparable<A, B>> implements RangeIterable<B
    * @param ptrType size of the pointer
    * @param reservedSpace allocate some reserved space in the beginning of the buffer
    */
-  public BCBuffer(int blockSize, B template, PtrType ptrType, short reservedSpace) {
+  public BCBuffer(int blockSize, BComparable<A> template, PtrType ptrType, short reservedSpace) {
     this(ByteBuffer.allocate(blockSize), template, true, ptrType, reservedSpace);
   }
 
@@ -90,7 +89,7 @@ public class BCBuffer<A, B extends BComparable<A, B>> implements RangeIterable<B
    * @param template BComparable template
    * @param ptrType ptr type
    */
-  public BCBuffer(int blockSize, B template, PtrType ptrType) {
+  public BCBuffer(int blockSize, BComparable<A> template, PtrType ptrType) {
     this(ByteBuffer.allocate(blockSize), template, true, ptrType, (short) 0);
   }
 
@@ -100,7 +99,7 @@ public class BCBuffer<A, B extends BComparable<A, B>> implements RangeIterable<B
    * @param template BComparable template
    * @param ptrType ptr type
    */
-  public BCBuffer(byte[] block, B template, PtrType ptrType){
+  public BCBuffer(byte[] block, BComparable<A> template, PtrType ptrType){
     this(ByteBuffer.wrap(block), template, ptrType, (short) 0);
   }
 
@@ -111,7 +110,7 @@ public class BCBuffer<A, B extends BComparable<A, B>> implements RangeIterable<B
    * @param ptrType ptr type
    * @param reservedSpace bytes to reserve
    */
-  public BCBuffer(ByteBuffer block, B template, PtrType ptrType, short reservedSpace) {
+  public BCBuffer(ByteBuffer block, BComparable<A> template, PtrType ptrType, short reservedSpace) {
     this(block, template, true, ptrType, reservedSpace);
   }
 
@@ -121,7 +120,7 @@ public class BCBuffer<A, B extends BComparable<A, B>> implements RangeIterable<B
    * @param template BComparable template
    * @param ptrType ptr type
    */
-  public BCBuffer(ByteBuffer block, B template, PtrType ptrType){
+  public BCBuffer(ByteBuffer block, BComparable<A> template, PtrType ptrType){
     this(block, template, ptrType, (short) 0);
   }
 
@@ -134,7 +133,7 @@ public class BCBuffer<A, B extends BComparable<A, B>> implements RangeIterable<B
    * @param ptrType pointer type
    * @param reservedSpace number of bytes to reserve
    */
-  protected BCBuffer(ByteBuffer block, B template, boolean newBlock,
+  protected BCBuffer(ByteBuffer block, BComparable<A> template, boolean newBlock,
                      PtrType ptrType, short reservedSpace) {
     try {
       this.keyType = template;
@@ -165,10 +164,10 @@ public class BCBuffer<A, B extends BComparable<A, B>> implements RangeIterable<B
     return optimal;
   }
 
-  private static <A, B extends BComparable<A, B>> void getKeysPrevious(BCBuffer<A, B>[] blocks, int index,
+  private static <A> void getKeysPrevious(BCBuffer<A>[] blocks, int index,
                                                                        int optimal) {
     int blockBytes;
-    B current;
+    BComparable<A> current;
     int diff;
     int diffPut;
     while (true) {
@@ -186,10 +185,10 @@ public class BCBuffer<A, B extends BComparable<A, B>> implements RangeIterable<B
     }
   }
 
-  private static <A, B extends BComparable<A, B>> void putKeysPrevious(BCBuffer<A, B>[] blocks, int index,
+  private static <A> void putKeysPrevious(BCBuffer<A>[] blocks, int index,
                                                                        int optimal) {
     int blockBytes;
-    B current;
+    BComparable<A> current;
     int diff;
     int diffPut;
     while (true) {
@@ -211,9 +210,8 @@ public class BCBuffer<A, B extends BComparable<A, B>> implements RangeIterable<B
    *
    * @param blocks An array of BCBuffers that should be redistributed.
    * @param <A> value type
-   * @param <B> BComparable type
    */
-  public static <A, B extends BComparable<A, B>> void redistribute(BCBuffer<A, B>[] blocks) {
+  public static <A> void redistribute(BCBuffer<A>[] blocks) {
     // first the total num bytes written and calculate the
     // optimal bytes in each block:
     int totalBytes = 0;
@@ -249,7 +247,7 @@ public class BCBuffer<A, B extends BComparable<A, B>> implements RangeIterable<B
    * @param element the element to search for.
    * @return true if found
    */
-  public boolean contains(B element) {
+  public boolean contains(BComparable<A> element) {
     return search(element) >= 0;
   }
 
@@ -259,7 +257,7 @@ public class BCBuffer<A, B extends BComparable<A, B>> implements RangeIterable<B
    * @param element The element to delete
    * @return The deleted element or null
    */
-  public B delete(B element) {
+  public BComparable<A> delete(BComparable<A> element) {
     return delete(search(element));
   }
 
@@ -269,14 +267,14 @@ public class BCBuffer<A, B extends BComparable<A, B>> implements RangeIterable<B
    * @param idx index
    * @return the deleted key or null if no such idx
    */
-  public B delete(int idx) {
+  public BComparable<A> delete(int idx) {
     if (idx >= high || idx < 0)
       return null;
 
     // read the physical position:
     int pPos = getPhysicalPos(idx);
     block.position(pPos);
-    B toDelete = keyType.from(block);
+    BComparable<A> toDelete = keyType.from(block);
     int firstPos = capacity - bytesWritten;
     int byteSize = toDelete.byteSize();
     if (idx < high - 1) { // we have to compact the array:
@@ -307,7 +305,7 @@ public class BCBuffer<A, B extends BComparable<A, B>> implements RangeIterable<B
    * @param element the element to check
    * @return True if element can be stored.
    */
-  public boolean fits(B element) {
+  public boolean fits(BComparable<A> element) {
     return reservedSpace + headerSize + bytesWritten + ((high + 1) * ptrSize)
         + element.byteSize() <= capacity;
   }
@@ -319,7 +317,7 @@ public class BCBuffer<A, B extends BComparable<A, B>> implements RangeIterable<B
    * @param other buffer to check.
    * @return true if the two buffers can be merged.
    */
-  public boolean fits(BCBuffer<A, B> other) {
+  public boolean fits(BCBuffer<A> other) {
     int totDataBytes = other.getDataBytes() + getDataBytes();
     int totElements = other.getNumberOfElements() + getNumberOfElements();
     if (reservedSpace + headerSize + totDataBytes + (totElements * ptrSize) > capacity)
@@ -335,7 +333,7 @@ public class BCBuffer<A, B extends BComparable<A, B>> implements RangeIterable<B
    * @param additional additional element
    * @return true if the the buffers and element can be merged.
    */
-  public boolean fits(BCBuffer<A, B> other, B additional) {
+  public boolean fits(BCBuffer<A> other, BComparable<A> additional) {
     int totDataBytes = other.getDataBytes() + getDataBytes()
         + additional.byteSize();
     int totElements = other.getNumberOfElements() + getNumberOfElements() + 1;
@@ -348,7 +346,7 @@ public class BCBuffer<A, B extends BComparable<A, B>> implements RangeIterable<B
    * @param idx index of element
    * @return element or null if the index was out of range
    */
-  public B get(int idx) {
+  public BComparable<A> get(int idx) {
     if (idx >= high || idx < 0)
       return null;
     block.position(getPhysicalPos(idx));
@@ -361,7 +359,7 @@ public class BCBuffer<A, B extends BComparable<A, B>> implements RangeIterable<B
    * @param element Element to find
    * @return element or null if not found
    */
-  public B get(B element) {
+  public BComparable<A> get(BComparable<A> element) {
     return get(search(element));
   }
 
@@ -430,7 +428,7 @@ public class BCBuffer<A, B extends BComparable<A, B>> implements RangeIterable<B
    *
    * @return element or null if buffer is empty
    */
-  public B getFirst() {
+  public BComparable<A> getFirst() {
     return get(0);
   }
 
@@ -439,7 +437,7 @@ public class BCBuffer<A, B extends BComparable<A, B>> implements RangeIterable<B
    *
    * @return element or null if buffer is empty
    */
-  public B getLast() {
+  public BComparable<A> getLast() {
     return get(high - 1);
   }
 
@@ -495,7 +493,7 @@ public class BCBuffer<A, B extends BComparable<A, B>> implements RangeIterable<B
    * @param element The element to insert.
    * @return the index if successful, -1 otherwise.
    */
-  public int insert(B element) {
+  public int insert(BComparable<A> element) {
     // check if it can be inserted here:
     if (!fits(element))
       return -1;
@@ -530,7 +528,7 @@ public class BCBuffer<A, B extends BComparable<A, B>> implements RangeIterable<B
    * @param element element to insert
    * @return true if the element was inserted
    */
-  public boolean insertUnsorted(B element) {
+  public boolean insertUnsorted(BComparable<A> element) {
     if (!fits(element))
       return false;
     int pPos = capacity - bytesWritten - element.byteSize();
@@ -553,7 +551,8 @@ public class BCBuffer<A, B extends BComparable<A, B>> implements RangeIterable<B
   }
 
   @Override
-  public Iterator<B> iterator(boolean descend, B from, boolean fromInclusive, B to, boolean toInclusive) {
+  public Iterator<BComparable<A>> iterator(boolean descend, BComparable<A> from, boolean fromInclusive,
+                                           BComparable<A> to, boolean toInclusive) {
     return descend ? new BCBufferDescendIter(this, from, fromInclusive, to, toInclusive) :
         new BCBufferIter(this, from, fromInclusive, to, toInclusive);
   }
@@ -563,16 +562,16 @@ public class BCBuffer<A, B extends BComparable<A, B>> implements RangeIterable<B
    * @param other buffer to merge with
    * @return this buffer
    */
-  public BCBuffer<A, B> merge(BCBuffer<A, B> other) {
+  public BCBuffer<A> merge(BCBuffer<A> other) {
     //rewrite needs to always copy to this buffer
     if(other.isEmpty()) return this;
     else if(isEmpty() || other.getFirst().compareTo(getLast()) > 0){ //all keys in other are large...can insert unsorted
-      for(B key : other){
+      for(BComparable<A> key : other){
         if(!insertUnsorted(key))
           throw new BufferOverflowException();
       }
     } else { //insert as usual
-      for(B key : other){
+      for(BComparable<A> key : other){
         if(insert(key) < 0)
           throw new BufferOverflowException();
       }
@@ -587,10 +586,10 @@ public class BCBuffer<A, B extends BComparable<A, B>> implements RangeIterable<B
    * @return index
    * @see java.util.Arrays#binarySearch(Object[], Object)
    */
-  public int search(B element) {
+  public int search(BComparable<A> element) {
     int highSearch = high - 1;
     int low = 0, mid;
-    B current;
+    BComparable<A> current;
     while (low <= highSearch) {
       mid = (low + highSearch) / 2;
       block.position(getPhysicalPos(mid));
@@ -613,7 +612,7 @@ public class BCBuffer<A, B extends BComparable<A, B>> implements RangeIterable<B
    * @return index
    * @see java.util.Arrays#binarySearch(Object[], Object)
    */
-  public int searchBC(B element) {
+  public int searchBC(BComparable<A> element) {
     int low = 0;
     int highSearch = high - 1, mid;
     ByteBuffer bbKey = element.to();
@@ -645,7 +644,7 @@ public class BCBuffer<A, B extends BComparable<A, B>> implements RangeIterable<B
    * @param parallelSort If true use Arrays.parallelSort, otherwise use Arrays.sort
    * @return this buffer
    */
-  public BCBuffer<A, B> sort(boolean parallelSort) {
+  public BCBuffer<A> sort(boolean parallelSort) {
     BComparable toSort[] = new BComparable[high];
     int elems = high;
     for (int i = 0; i < elems; i++) {
@@ -657,7 +656,7 @@ public class BCBuffer<A, B extends BComparable<A, B>> implements RangeIterable<B
       Arrays.sort(toSort);
     clear();
     for (int i = 0; i < elems; i++) {
-      insertUnsorted((B) toSort[i]);
+      insertUnsorted(toSort[i]);
     }
     return this;
   }
@@ -667,7 +666,7 @@ public class BCBuffer<A, B extends BComparable<A, B>> implements RangeIterable<B
    * the larger elements and contain a copy of the reserved space
    * @return buffer with larger elements
    */
-  public BCBuffer<A, B> split() {
+  public BCBuffer<A> split() {
     return split(new BCBuffer<>(capacity, keyType, ptrType, (short) (reservedSpace - 2)));
   }
 
@@ -677,9 +676,9 @@ public class BCBuffer<A, B extends BComparable<A, B>> implements RangeIterable<B
    * @param other buffer to split to
    * @return buffer with larger elements
    */
-  public BCBuffer<A, B> split(BCBuffer<A, B> other) {
+  public BCBuffer<A> split(BCBuffer<A> other) {
     int half = bytesWritten / 2;
-    B lastKey;
+    BComparable<A> lastKey;
     int numWritten = 0;
 
     //TODO: could be more efficient?
@@ -742,7 +741,7 @@ public class BCBuffer<A, B extends BComparable<A, B>> implements RangeIterable<B
    * @param element   element to update
    * @param idx position of element
    */
-  public void update(B element, int idx) {
+  public void update(BComparable<A> element, int idx) {
     block.position(getPhysicalPos(idx));
     element.to(block);
   }
@@ -754,8 +753,8 @@ public class BCBuffer<A, B extends BComparable<A, B>> implements RangeIterable<B
   public boolean isSorted(){
     if(getNumberOfElements() < 2)
       return true;
-    B prev = get(0);
-    B next;
+    BComparable<A> prev = get(0);
+    BComparable<A> next;
     for(int i = 1; i < getNumberOfElements() -1; i++){
       next = get(i);
       if(prev.compareTo(next) >= 0)
@@ -870,7 +869,7 @@ public class BCBuffer<A, B extends BComparable<A, B>> implements RangeIterable<B
     block.putShort(0, (short) (reservedSpace - 2));
   }
 
-  int getLowerBound(B key, boolean inclusive) {
+  int getLowerBound(BComparable<A> key, boolean inclusive) {
     int pos = 0;
     if (key == null) return pos;
     pos = search(key);
@@ -882,7 +881,7 @@ public class BCBuffer<A, B extends BComparable<A, B>> implements RangeIterable<B
     }
   }
 
-  int getUpperBound(B key, boolean inclusive) {
+  int getUpperBound(BComparable<A> key, boolean inclusive) {
     int pos = high - 1;
     if (key == null || getNumberOfElements() < 1) return pos;
     pos = search(key);

@@ -26,9 +26,9 @@ import java.util.Iterator;
  * @author msvens
  * @since 08/01/16
  */
-class BCBufferIter<A, B extends BComparable<A, B>> implements Iterator<B> {
+class BCBufferIter<A> implements Iterator<BComparable<A>> {
 
-  BCBuffer<A,B> block;
+  BCBuffer<A> block;
 
   int count;
   int cursor = 0;
@@ -36,11 +36,11 @@ class BCBufferIter<A, B extends BComparable<A, B>> implements Iterator<B> {
   int lastRet = -1;
 
 
-  public BCBufferIter(BCBuffer<A,B> block) {
+  public BCBufferIter(BCBuffer<A> block) {
     this(block, null, false, null, false);
   }
 
-  public BCBufferIter(BCBuffer<A,B> block, B start, boolean inclusive, B end, boolean endInclusive) {
+  public BCBufferIter(BCBuffer<A> block, BComparable<A> start, boolean inclusive, BComparable<A> end, boolean endInclusive) {
     this.block = block;
     this.count = block.getNumberOfElements();
     cursor = block.getLowerBound(start, inclusive);
@@ -51,9 +51,9 @@ class BCBufferIter<A, B extends BComparable<A, B>> implements Iterator<B> {
   public boolean hasNext() {return cursor <= stop;}
 
   @Override
-  public B next() {
+  public BComparable<A> next() {
     if(cursor > stop) return null;
-    B key = block.get(cursor);
+    BComparable<A> key = block.get(cursor);
     lastRet = cursor;
     cursor++;
     return key;
@@ -75,18 +75,19 @@ class BCBufferIter<A, B extends BComparable<A, B>> implements Iterator<B> {
  * @author msvens
  * @since 08/01/16
  */
-class BCBufferDescendIter<A, B extends BComparable<A, B>> implements Iterator <B> {
+class BCBufferDescendIter<A> implements Iterator <BComparable<A>> {
 
-  BCBuffer<A,B> block;
+  BCBuffer<A> block;
   int cursor;
   int lastRet = -1;
   int stop = 0;
 
-  public BCBufferDescendIter(BCBuffer<A,B> block){
+  public BCBufferDescendIter(BCBuffer<A> block){
     this(block, null, false, null, false);
   }
 
-  public BCBufferDescendIter(BCBuffer <A,B> block, B start, boolean inclusive, B end, boolean endInclusive){
+  public BCBufferDescendIter(BCBuffer <A> block, BComparable<A> start, boolean inclusive,
+                             BComparable<A> end, boolean endInclusive){
     this.block = block;
     cursor = block.getUpperBound(start, inclusive);
     stop = block.getLowerBound(end, endInclusive);
@@ -98,9 +99,9 @@ class BCBufferDescendIter<A, B extends BComparable<A, B>> implements Iterator <B
   }
 
   @Override
-  public B next() {
+  public BComparable<A> next() {
     if(cursor < stop) return null;
-    B ret = block.get(cursor);
+    BComparable<A> ret = block.get(cursor);
     lastRet = cursor;
     cursor--;
     return ret;

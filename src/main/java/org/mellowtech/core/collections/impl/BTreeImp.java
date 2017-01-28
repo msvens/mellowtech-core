@@ -16,11 +16,9 @@
 
 package org.mellowtech.core.collections.impl;
 
-import org.mellowtech.core.bytestorable.BComparable;
-import org.mellowtech.core.bytestorable.BStorable;
-import org.mellowtech.core.bytestorable.CBAuto;
-import org.mellowtech.core.bytestorable.CBUtil;
-import org.mellowtech.core.bytestorable.io.BCBuffer;
+import org.mellowtech.core.codec.BBuffer;
+import org.mellowtech.core.codec.BCodec;
+import org.mellowtech.core.codec.CodecUtil;
 import org.mellowtech.core.collections.BTree;
 import org.mellowtech.core.collections.KeyValue;
 import org.mellowtech.core.collections.TreePosition;
@@ -37,11 +35,10 @@ import java.util.*;
 
 /**
  * @author Martin Svensson {@literal <msvens@gmail.com>}
- * @since 2016-01-12
+ * @since 3.0.0
  */
 @SuppressWarnings("unchecked")
-public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, D>>
-    implements BTree<A, B, C, D> {
+public class BTreeImp<A,B> implements BTree<A,B> {
 
 
   private final String IDX_EXT = ".idx";
@@ -66,11 +63,14 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
   /**
    * Used for reading and writing key/value pairs to the key file.
    */
-  private KeyValue<B, D> keyValues;
+  private final BCodec<A> keyCodec;
+  private final BCodec<B> valueCodec;
+  private final KeyValueCodec<A,B> kvCodec;
+  private final BTreeKeyCodec<A> btCodec;
+
   /**
    * Used for reading and writing keys to the index.
    */
-  private BTreeKey<B> indexKeys;
   private int size = 0;
 
   //How the tree is stored on disc
@@ -80,23 +80,19 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
   //How disc data should be accessed
   private boolean useMappedValue = false;
 
-  public BTreeImp(Path dir, String name, Class<B> keyType, Class<D> valueType,
+  public BTreeImp(Path dir, String name, BCodec<A> keyCodec, BCodec<B> valueCodec,
                   int indexBlockSize, int maxIndexBlocks, RecordFileBuilder valueFileBuilder) throws Exception{
 
-    keyValues = new KeyValue <> (keyType.newInstance(), valueType.newInstance());
-    indexKeys = new BTreeKey <> (keyType.newInstance(), 0);
+    this.keyCodec = keyCodec;
+    this.valueCodec = valueCodec;
+    this.kvCodec = new KeyValueCodec<>(keyCodec,valueCodec);
+    this.btCodec = new BTreeKeyCodec<A>(keyCodec);
 
     this.dir = dir;
     this.name = name;
     this.useMappedValue = valueFileBuilder.isMapped();
     openTree(indexBlockSize, maxIndexBlocks, valueFileBuilder);
-    //first try to open then create
-    /*try{
-      openTree(indexBlockSize, maxIndexBlocks, valueFileBuilder);
-    } catch(Exception e){
 
-      createTree(indexBlockSize, valueBlockSize, maxIndexBlocks, multiValueFile, maxBlocks, multiFileSize);
-    }*/
   }
 
   @Override
@@ -113,7 +109,7 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
   }
 
   @Override
-  public boolean containsKey(B key) throws IOException {
+  public boolean containsKey(A key) throws IOException {
     return getKeyValue(key) != null;
   }
 
@@ -127,7 +123,7 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
    * @throws java.io.IOException if an error occurs
    */
   @Override
-  public void createTree(Iterator<KeyValue<B, D>> iterator) throws IOException {
+  public void createTree(Iterator<KeyValue<A,B>> iterator) throws IOException {
     if (!iterator.hasNext()) {
       truncate();
       return;
@@ -137,21 +133,21 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
     idxFile.clear();
     leafLevel = -1;
 
-    ValueBlock<B, D> vb = newValueBlock();
+    ValueBlock<A,B> vb = newValueBlock();
     rootPage = vb.bNo;
     int bNo = rootPage;
 
-    KeyValue<B, D> tmpKV;
+    KeyValue<A,B> tmpKV;
     @SuppressWarnings("unchecked")
-    IdxBlock<B>[] levels = (IdxBlock<B>[]) new IdxBlock<?>[20];
+    IdxBlock<A>[] levels = (IdxBlock<A>[]) new IdxBlock<?>[20];
     int s = 0;
     while (iterator.hasNext()) {
       tmpKV = iterator.next();
       if (!vb.sb.fits(tmpKV)) {
         updateValueBlock(vb.bNo, vb.sb);
-        BTreeKey<B> sep = generateSeparator(vb.sb, tmpKV);
+        BTreeKey<A> sep = generateSeparator(vb.sb, tmpKV);
         //TODO: This must be a bug...should be leftNode = bNo and rightNode the new node
-        sep.get().leftNode = bNo - 1;
+        sep.leftNode = bNo - 1;
         insertSeparator(sep, levels, 0, bNo);
         vb = newValueBlock();
       }
@@ -178,20 +174,20 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
   }
 
   @Override
-  public D get(B key) throws IOException {
-    KeyValue<B, D> kv = getKeyValue(key);
+  public B get(A key) throws IOException {
+    KeyValue<A,B> kv = getKeyValue(key);
     return (kv == null) ? null : kv.getValue();
   }
 
   @Override
-  public B getKey(int pos) throws IOException {
+  public A getKey(int pos) throws IOException {
     if (pos < 0 || pos >= size)
       throw new IOException("position out of bounds");
     List<Integer> blocks = getLogicalBlocks(rootPage, leafLevel);
     int curr = 0;
     for (; curr < blocks.size(); curr++) {
       int bNo = blocks.get(curr);
-      BCBuffer<KeyValue.KV<B, D>, KeyValue<B, D>> sb = getValueBlock(bNo);
+      BBuffer<KeyValue<A,B>> sb = getValueBlock(bNo);
       if (pos < sb.getNumberOfElements()) {
         return sb.get(pos).getKey();
       }
@@ -201,7 +197,7 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
   }
 
   @Override
-  public KeyValue<B, D> getKeyValue(B key) throws IOException {
+  public KeyValue<A,B> getKeyValue(A key) throws IOException {
     int block = searchBlock(key);
     if (block == -1)
       return null;
@@ -209,7 +205,7 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
   }
 
   @Override
-  public TreePosition getPosition(B key) throws IOException {
+  public TreePosition getPosition(A key) throws IOException {
     int block = searchBlock(key);
     if (block == -1)
       return null;
@@ -217,7 +213,7 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
   }
 
   @Override
-  public TreePosition getPositionWithMissing(B key) throws IOException {
+  public TreePosition getPositionWithMissing(A key) throws IOException {
     int block = searchBlock(key);
     if (block == -1)
       return null;
@@ -230,17 +226,19 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
   }
 
   @Override
-  public Iterator<KeyValue<B, D>> iterator(boolean descending, B from, boolean inclusive, B to, boolean toInclusive) {
+  public Iterator<KeyValue<A,B>> iterator(boolean descending,
+                                          A from, boolean inclusive,
+                                          A to, boolean toInclusive) {
     return new BTreeIterator<>(this, descending, from, inclusive, to, toInclusive);
   }
 
   @Override
-  public void put(B key, D value) throws IOException {
+  public void put(A key, B value) throws IOException {
     insertUpdate(key, value, true);
   }
 
   @Override
-  public void putIfNotExists(B key, D value) throws IOException {
+  public void putIfNotExists(A key, B value) throws IOException {
     insertUpdate(key, value, false);
   }
 
@@ -252,16 +250,16 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
       return;
     }
 
-    BCBuffer<KeyValue.KV<B, D>, KeyValue<B, D>> tmp;
+    BBuffer<KeyValue<A,B>> tmp;
     SmallLarge[] blocks = new SmallLarge[valueFile.size()];
     Iterator<Record> iter = valueFile.iterator();
     int i = 0;
     int s = 0;
     while (iter.hasNext()) {
       Record r = iter.next();
-      tmp = new BCBuffer<>(ByteBuffer.wrap(r.data), this.keyValues);
-      KeyValue<B, D> first = tmp.getFirst();
-      KeyValue<B, D> last = tmp.getLast();
+      tmp = new BBuffer<>(ByteBuffer.wrap(r.data), kvCodec);
+      KeyValue<A,B> first = tmp.getFirst();
+      KeyValue<A,B> last = tmp.getLast();
       SmallLarge sl = new SmallLarge<>(first.getKey(), last.getKey(), r.record);
       blocks[i] = sl;
       i++;
@@ -275,12 +273,12 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
     rootPage = blocks[0].bNo;
     size = s;
     idxFile.clear();
-    IdxBlock<B>[] levels = (IdxBlock<B>[]) new IdxBlock<?>[20];
+    IdxBlock<A>[] levels = (IdxBlock<A>[]) new IdxBlock<?>[20];
     for (i = 0; i < blocks.length - 1; i++) {
-      SmallLarge<B> left = blocks[i];
-      SmallLarge<B> right = blocks[i + 1];
-      BTreeKey<B> sep = generateSeparator(left.large, right.small);
-      sep.get().leftNode = left.bNo;
+      SmallLarge<A> left = blocks[i];
+      SmallLarge<A> right = blocks[i + 1];
+      BTreeKey<A> sep = generateSeparator(left.large, right.small);
+      sep.leftNode = left.bNo;
       insertSeparator(sep, levels, 0, right.bNo);
     }
     if (levels[0] != null)
@@ -288,10 +286,10 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
   }
 
   @Override
-  public D remove(B key) {
+  public B remove(A key) {
     try {
-      KeyValue<B, D> kv = new KeyValue<>(key, null);
-      BPlusReturn<B, D> ret;
+      KeyValue<A,B> kv = new KeyValue<>(key);
+      BPlusReturn<A,B> ret;
       if (leafLevel == -1) { // no index...delete directly to value file:
         ret = deleteKeyValue(kv, rootPage, -1, -1);
         if (ret == null) return null;
@@ -301,7 +299,7 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
         } else
           return null;
       }
-      BTreeKey<B> searchKey = new BTreeKey<>(key, -1);
+      BTreeKey<A> searchKey = new BTreeKey<>(key, -1);
       ret = delete(rootPage, -1, -1, searchKey, kv, 0);
 
       if (ret != null && ret.action == BPlusReturn.SPLIT) { // the underlying
@@ -363,10 +361,10 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
     rootPage = newValueBlock().bNo;
   }
 
-  protected final BPlusReturn<B, D> delete(int pNo, int pBlock, int pSearch, BTreeKey<B> key,
-                                           KeyValue<B, D> kv, int level) throws IOException {
-    BCBuffer<BTreeKey.Entry<B>, BTreeKey<B>> sb = getIndexBlock(pNo);
-    BPlusReturn<B, D> ret;
+  protected final BPlusReturn<A,B> delete(int pNo, int pBlock, int pSearch, BTreeKey<A> key,
+                                           KeyValue<A,B> kv, int level) throws IOException {
+    BBuffer<BTreeKey<A>> sb = getIndexBlock(pNo);
+    BPlusReturn<A,B> ret;
     int search = sb.search(key);
     int node = getNode(search, sb);
     if (level == leafLevel) {
@@ -400,7 +398,7 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
     }
     // the child caused a split...add new key...continue as insert...
     if (ret.action == BPlusReturn.SPLIT) { // since keys are variable length
-      BTreeKey<B> promo = insertKey(sb, pNo, ret.promo);
+      BTreeKey<A> promo = insertKey(sb, pNo, ret.promo);
       if (promo != null) {
         ret.action = BPlusReturn.SPLIT;
         ret.promo = promo;
@@ -433,7 +431,7 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
     while (iter.hasNext()) {
       int record = iter.next().record;
       sb.append("RECORD: ").append(record).append('\n');
-      BCBuffer<BTreeKey.Entry<B>, BTreeKey<B>> block = getIndexBlock(record);
+      BBuffer<BTreeKey<A>> block = getIndexBlock(record);
       sb.append(block.toString()).append('\n');
     }
   }
@@ -441,7 +439,7 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
   protected final void printValueBlocks(StringBuilder sb) throws IOException {
     Iterator<Record> iter = valueFile.iterator();
     while (iter.hasNext()) {
-      BCBuffer<KeyValue.KV<B, D>, KeyValue<B, D>> block = getValueBlock(iter.next().record);
+      BBuffer<KeyValue<A,B>> block = getValueBlock(iter.next().record);
       sb.append(block.toString()).append('\n');
     }
   }
@@ -451,8 +449,8 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
       throws IOException {
     if (pNo == -1) // no root
       return;
-    BCBuffer<BTreeKey.Entry<B>, BTreeKey<B>> sb = getIndexBlock(pNo);
-    BTreeKey<B> bKey;
+    BBuffer<BTreeKey<A>> sb = getIndexBlock(pNo);
+    BTreeKey<A> bKey;
     preTab(level, buff);
     if (level == leafLevel) { // final level
       if (printLeaf) {
@@ -466,7 +464,7 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
       buff.append(sb);
       for (int i = 0; i < sb.getNumberOfElements(); i++) {
         bKey = sb.get(i);
-        buildOutputTree(bKey.get().leftNode, buff, level + 1, printLeaf);
+        buildOutputTree(bKey.leftNode, buff, level + 1, printLeaf);
         if (i + 1 == sb.getNumberOfElements())
           buildOutputTree(getLastPointer(sb), buff, level + 1, printLeaf);
       }
@@ -480,7 +478,7 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
    * @param sb a sorted block to check
    * @return true if the block has the minimum amount of information
    */
-  private boolean checkUnderflow(BCBuffer<?, ?> sb) {
+  private boolean checkUnderflow(BBuffer<?> sb) {
     return sb.getDataAndPointersBytes() > (sb.storageCapacity() / 2);
   }
 
@@ -491,18 +489,18 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
    * @return ret where actions is set to BPlusReturn.NONE
    * @throws IOException if an error occurs
    */
-  private BPlusReturn<B, D> collapseRoot(BPlusReturn<B, D> ret) throws IOException {
+  private BPlusReturn<A,B> collapseRoot(BPlusReturn<A,B> ret) throws IOException {
 
     if (leafLevel == -1) {
       return null;
     }
-    BCBuffer<BTreeKey.Entry<B>, BTreeKey<B>> sb = getIndexBlock(rootPage);
+    BBuffer<BTreeKey<A>> sb = getIndexBlock(rootPage);
     if (sb.getNumberOfElements() > 1) {
       int pos = ret.keyPos;
       // this case should not happen...but keep it just in case:
       if (pos == sb.getNumberOfElements()) {
         pos--;
-        setLastPointer(sb, sb.get(pos).get().leftNode);
+        setLastPointer(sb, sb.get(pos).leftNode);
         sb.delete(pos);
       } else
         sb.delete(pos);
@@ -527,14 +525,14 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
       throws IOException {
     if (leafLevel == -1) return true;
     if (pNo == -1) return true;
-    BTreeKey<B> bKey;
-    BCBuffer<BTreeKey.Entry<B>, BTreeKey<B>> sb = getIndexBlock(pNo);
+    BTreeKey<A> bKey;
+    BBuffer<BTreeKey<A>> sb = getIndexBlock(pNo);
     if (level == leafLevel) {
       return countValueBlock(highBlock, result, sb);
     } else {
       for (int i = 0; i < sb.getNumberOfElements(); i++) {
         bKey = sb.get(i);
-        if (count(bKey.get().leftNode, level + 1, leafLevel, result, highBlock))
+        if (count(bKey.leftNode, level + 1, leafLevel, result, highBlock))
           return true;
 
         if (i + 1 == sb.getNumberOfElements())
@@ -553,16 +551,16 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
 
   //Logical iteration
   private boolean countValueBlock(int stopBlock, MapEntry<Integer, Integer> entry,
-                                  BCBuffer<BTreeKey.Entry<B>, BTreeKey<B>> sb) throws IOException {
+                                  BBuffer<BTreeKey<A>> sb) throws IOException {
     boolean foundStop = false;
-    BTreeKey<B> bKey;
+    BTreeKey<A> bKey;
     for (int i = 0; i < sb.getNumberOfElements(); i++) {
       bKey = sb.get(i);
-      if (bKey.get().leftNode == stopBlock) {
+      if (bKey.leftNode == stopBlock) {
         foundStop = true;
         break;
       }
-      BCBuffer<KeyValue.KV<B, D>, KeyValue<B, D>> valBlock = getValueBlock(bKey.get().leftNode);
+      BBuffer<KeyValue<A,B>> valBlock = getValueBlock(bKey.leftNode);
       entry.setValue(entry.getValue() + valBlock.getNumberOfElements());
       entry.setKey(entry.getKey() + 1);
       if (i + 1 == sb.getNumberOfElements()) {
@@ -571,7 +569,7 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
           foundStop = true;
           break;
         }
-        valBlock = getValueBlock(bKey.get().leftNode);
+        valBlock = getValueBlock(bKey.leftNode);
         entry.setValue(entry.getValue() + valBlock.getNumberOfElements());
         entry.setKey(entry.getKey() + 1);
       }
@@ -586,10 +584,10 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
    * @param rootKey key in the new root.
    * @throws IOException if an error occurs
    */
-  private void createRoot(BTreeKey<B> rootKey) throws IOException {
-    IdxBlock<B> block = newIdxBlock();
-    setLastPointer(block.sb, rootKey.get().leftNode);
-    rootKey.get().leftNode = rootPage;
+  private void createRoot(BTreeKey<A> rootKey) throws IOException {
+    IdxBlock<A> block = newIdxBlock();
+    setLastPointer(block.sb, rootKey.leftNode);
+    rootKey.leftNode = rootPage;
     block.sb.insert(rootKey);
     rootPage = block.bNo;
     leafLevel++;
@@ -602,9 +600,9 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
    * @param keyIndex the key to recplace
    * @param sb       a block of sotred BTree keys.
    */
-  private void deleteAndReplace(BTreeKey<B> keyIndex, BCBuffer<BTreeKey.Entry<B>, BTreeKey<B>> sb) {
+  private void deleteAndReplace(BTreeKey<A> keyIndex, BBuffer<BTreeKey<A>> sb) {
     if (keyIndex.compareTo(sb.getLast()) == 0)
-      setLastPointer(sb, keyIndex.get().leftNode);
+      setLastPointer(sb, keyIndex.leftNode);
     sb.delete(keyIndex);
   }
 
@@ -628,10 +626,10 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
    * three things (see above).
    * @throws IOException if an error occurs
    */
-  private BPlusReturn<B, D> deleteKeyValue(KeyValue<B, D> key, int bNo, int leftNo,
+  private BPlusReturn<A,B> deleteKeyValue(KeyValue<A,B> key, int bNo, int leftNo,
                                                    int rightNo) throws IOException {
-    BCBuffer<KeyValue.KV<B, D>, KeyValue<B, D>> sb = getValueBlock(bNo);
-    KeyValue<B, D> deletedKey = sb.delete(key);
+    BBuffer<KeyValue<A,B>> sb = getValueBlock(bNo);
+    KeyValue<A,B> deletedKey = sb.delete(key);
     if (deletedKey == null) {
       return null;
     }
@@ -640,7 +638,7 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
       return new BPlusReturn<>(BPlusReturn.NONE, deletedKey, null, -1);
     }
     // reblance...first redistribute:
-    BCBuffer<KeyValue.KV<B, D>, KeyValue<B, D>> sib;
+    BBuffer<KeyValue<A,B>> sib;
     if (leftNo != -1) {
       sib = getValueBlock(leftNo);
       if (checkUnderflow(sib)) {
@@ -683,11 +681,11 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
     return new BPlusReturn<>(BPlusReturn.NONE, deletedKey, null, -1);
   }
 
-  private void extractPointers(List<Integer> list, BCBuffer<BTreeKey.Entry<B>, BTreeKey<B>> sb) {
-    BTreeKey<B> bKey;
+  private void extractPointers(List<Integer> list, BBuffer<BTreeKey<A>> sb) {
+    BTreeKey<A> bKey;
     for (int i = 0; i < sb.getNumberOfElements(); i++) {
       bKey = sb.get(i);
-      list.add(bKey.get().leftNode);
+      list.add(bKey.leftNode);
       if (i + 1 == sb.getNumberOfElements())
         list.add(getLastPointer(sb));
     }
@@ -703,11 +701,12 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
    * @param large a block with larger keys
    * @return a separator
    */
-  private BTreeKey<B> generateSeparator(BCBuffer<KeyValue.KV<B, D>, KeyValue<B, D>> small,
-                                                BCBuffer<KeyValue.KV<B, D>, KeyValue<B, D>> large) {
-    BTreeKey<B> nKey = new BTreeKey<>();
-    nKey.get().key = CBUtil.separate(small.getLast().getKey(), large.getFirst().getKey());
-    return nKey;
+  private BTreeKey<A> generateSeparator(BBuffer<KeyValue<A,B>> small,
+                                             BBuffer<KeyValue<A,B>> large) {
+    return generateSeparator(small.getLast().getKey(), large.getFirst().getKey());
+    /*BTreeKeyCodec<A> nKey = new BTreeKeyCodec<>();
+    nKey.get().key = CBUtil.separate(small.getLast().get().getKey(), large.getFirst().get().getKey());
+    return nKey;*/
   }
 
   /**
@@ -717,19 +716,19 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
    * @param large the larger value to compare with
    * @return a separator.
    */
-  private BTreeKey<B> generateSeparator(BCBuffer<KeyValue.KV<B, D>, KeyValue<B, D>> small, KeyValue<B, D> large) {
-    BTreeKey<B> nKey = new BTreeKey<>();
-    nKey.get().key = CBUtil.separate(small.getLast().getKey(), large.getKey());
+  private BTreeKey<A> generateSeparator(BBuffer<KeyValue<A,B>> small, KeyValue<A,B> large) {
+    return generateSeparator(small.getLast().getKey(), large.getKey());
+    /*BTreeKeyCodec<A> nKey = new BTreeKeyCodec<>();
+    nKey.get().key = CBUtil.separate(small.getLast().get().getKey(), large.getKey());
+    return nKey;*/
+  }
+
+  private BTreeKey<A> generateSeparator(A small, A large) {
+    BTreeKey<A> nKey = new BTreeKey<>(CodecUtil.separate(small, large, keyCodec),0);
     return nKey;
   }
 
-  private BTreeKey<B> generateSeparator(B small, B large) {
-    BTreeKey<B> nKey = new BTreeKey<>();
-    nKey.get().key = CBUtil.separate(small, large);
-    return nKey;
-  }
-
-  private BCBuffer<BTreeKey.Entry<B>, BTreeKey<B>> getIndexBlock(int blockNo)
+  private BBuffer<BTreeKey<A>> getIndexBlock(int blockNo)
       throws IOException {
     return getMappedIndex(blockNo);
   }
@@ -740,7 +739,7 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
    * @param sb sorted block of BTree keys.
    * @return the last pointer.
    */
-  private int getLastPointer(BCBuffer<BTreeKey.Entry<B>, BTreeKey<B>> sb) {
+  private int getLastPointer(BBuffer<BTreeKey<A>> sb) {
     return sb.getBlock().getInt(sb.getReservedSpaceStart());
   }
 
@@ -750,12 +749,12 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
     return toRet;
   }
 
-  private BCBuffer<BTreeKey.Entry<B>, BTreeKey<B>> getMappedIndex(int blockNo)
+  private BBuffer<BTreeKey<A>> getMappedIndex(int blockNo)
       throws IOException {
     return toIndexBlock(idxFile.getMapped(blockNo));
   }
 
-  private BCBuffer<KeyValue.KV<B, D>, KeyValue<B, D>> getMappedValue(int blockNo)
+  private BBuffer<KeyValue<A,B>> getMappedValue(int blockNo)
       throws IOException {
     return toValueBlock(valueFile.getMapped(blockNo));
   }
@@ -767,13 +766,13 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
    * @param sb     the sorted block where to find the neighbor.
    * @return the node (i.e block number) to the right neighbor.
    */
-  private int getNextNeighbor(int search, BCBuffer<BTreeKey.Entry<B>, BTreeKey<B>> sb) {
+  private int getNextNeighbor(int search, BBuffer<BTreeKey<A>> sb) {
     int pos = getNextPos(search);
     if (pos > sb.getNumberOfElements())
       return -1;
     if (pos == sb.getNumberOfElements())
       return getLastPointer(sb);
-    return sb.get(pos).get().leftNode;
+    return sb.get(pos).leftNode;
   }
 
   /**
@@ -796,11 +795,11 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
    * @param sb     the block to search
    * @return node
    */
-  private int getNode(int search, BCBuffer<BTreeKey.Entry<B>, BTreeKey<B>> sb) {
+  private int getNode(int search, BBuffer<BTreeKey<A>> sb) {
     int pos = getPos(search);
     if (pos == sb.getNumberOfElements())
       return getLastPointer(sb);
-    return sb.get(pos).get().leftNode;
+    return sb.get(pos).leftNode;
   }
 
   /**
@@ -825,11 +824,11 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
    * @return the node (i.e block number) to the left child or -1 if there are no
    * left child.
    */
-  private int getPreviousNeighbor(int search, BCBuffer<BTreeKey.Entry<B>, BTreeKey<B>> sb) {
+  private int getPreviousNeighbor(int search, BBuffer<BTreeKey<A>> sb) {
     int pos = getPreviousPos(search);
     if (pos == -1)
       return -1;
-    return sb.get(pos).get().leftNode;
+    return sb.get(pos).leftNode;
   }
 
   /**
@@ -843,7 +842,7 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
     return pos - 1;
   }
 
-  private BCBuffer<KeyValue.KV<B, D>, KeyValue<B, D>> getValue(int blockNo)
+  private BBuffer<KeyValue<A,B>> getValue(int blockNo)
       throws IOException {
     return toValueBlock(valueFile.get(blockNo));
   }
@@ -860,13 +859,13 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
    * @param pBlock  the block number for the parent block.
    * @throws IOException if an error occurs
    */
-  private void handleMerge(BCBuffer<BTreeKey.Entry<B>, BTreeKey<B>> sb, BPlusReturn<B, D> ret, int cBlock,
-                                   int pSearch, int pBlock) throws IOException {
+  private void handleMerge(BBuffer<BTreeKey<A>> sb, BPlusReturn<A,B> ret, int cBlock,
+                           int pSearch, int pBlock) throws IOException {
     // get position to remove:
     int pos = ret.keyPos;
     if (pos == sb.getNumberOfElements()) {
       pos--;
-      setLastPointer(sb, sb.get(pos).get().leftNode);
+      setLastPointer(sb, sb.get(pos).leftNode);
       sb.delete(pos);
     } else
       sb.delete(pos);
@@ -876,16 +875,16 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
       return;
     }
     // reblance blocks...start with redistribute:
-    BCBuffer<BTreeKey.Entry<B>, BTreeKey<B>> parent = getIndexBlock(pBlock);
+    BBuffer<BTreeKey<A>> parent = getIndexBlock(pBlock);
     int leftSib, rightSib;
-    BCBuffer<BTreeKey.Entry<B>, BTreeKey<B>> sib;
+    BBuffer<BTreeKey<A>> sib;
     // redistribute:
     leftSib = getPreviousNeighbor(pSearch, parent);
     if (leftSib != -1) {
       sib = getIndexBlock(leftSib);
       if (checkUnderflow(sib)) {
-        BTreeKey<B> pKey = parent.get(getPreviousPos(pSearch));
-        //BTreeKey pKey = (BTreeKey) parent.getKey(helper.getPos(pSearch));
+        BTreeKey<A> pKey = parent.get(getPreviousPos(pSearch));
+        //BTreeKeyCodec pKey = (BTreeKeyCodec) parent.getKey(helper.getPos(pSearch));
         if (shiftRight(sib, sb, pKey)) {
           ret.promo = pKey;
           ret.action = BPlusReturn.REDISTRIBUTE;
@@ -899,7 +898,7 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
     if (rightSib != -1) {
       sib = getIndexBlock(rightSib);
       if (checkUnderflow(sib)) {
-        BTreeKey<B> pKey = parent.get(getPos(pSearch));
+        BTreeKey<A> pKey = parent.get(getPos(pSearch));
         if (shiftLeft(sb, sib, pKey)) {
           ret.promo = pKey;
           ret.action = BPlusReturn.REDISTRIBUTE;
@@ -909,11 +908,11 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
       }
     }
     // worst case scenario...merge:
-    BTreeKey<B> pKey;
+    BTreeKey<A> pKey;
     if (leftSib != -1) {
       sib = getIndexBlock(leftSib);
       pKey = parent.get(getPreviousPos(pSearch));
-      pKey.get().leftNode = getLastPointer(sib);
+      pKey.leftNode = getLastPointer(sib);
       if (sb.fits(sib, pKey)) {
         sb.merge(sib);
         sb.insert(pKey);
@@ -926,7 +925,7 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
     if (rightSib != -1) {
       sib = getIndexBlock(rightSib);
       pKey = parent.get(getPos(pSearch));
-      pKey.get().leftNode = getLastPointer(sb);
+      pKey.leftNode = getLastPointer(sb);
       if (sib.fits(sb, pKey)) {
         sib.merge(sb);
         sib.insert(pKey);
@@ -953,31 +952,31 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
    *               deleted.
    * @throws IOException if an error occurs
    */
-  private void handleRedistribute(BCBuffer<BTreeKey.Entry<B>, BTreeKey<B>> sb, int cBlock, BPlusReturn<B, D> ret)
+  private void handleRedistribute(BBuffer<BTreeKey<A>> sb, int cBlock, BPlusReturn<A,B> ret)
       throws IOException {
     int pos = ret.keyPos;
-    BTreeKey<B> changed, next;
+    BTreeKey<A> changed, next;
     int tmp;
     changed = sb.delete(pos);
     // no need to do some more work?
-    if (changed.get().key.byteSize() >= ret.promo.get().key.byteSize()) {
-      changed.get().key = ret.promo.get().key;
+    if (keyCodec.byteSize(changed.key) >= keyCodec.byteSize(ret.promo.key)) {
+      changed.key = ret.promo.key;
       sb.insert(changed);
     } else { // treat as normal insert...tweak pointers to fit insertKey scheme
-      changed.get().key = ret.promo.get().key;
+      changed.key = ret.promo.key;
       if (pos < sb.getNumberOfElements()) {
         next = sb.get(pos);
-        tmp = next.get().leftNode;
-        next.get().leftNode = changed.get().leftNode;
-        changed.get().leftNode = tmp;
+        tmp = next.leftNode;
+        next.leftNode = changed.leftNode;
+        changed.leftNode = tmp;
         sb.update(next, pos);
       } else {
-        tmp = changed.get().leftNode;
-        changed.get().leftNode = getLastPointer(sb);
+        tmp = changed.leftNode;
+        changed.leftNode = getLastPointer(sb);
         setLastPointer(sb, tmp);
       }
 
-      BTreeKey<B> promo = insertKey(sb, cBlock, changed);
+      BTreeKey<A> promo = insertKey(sb, cBlock, changed);
       if (promo != null) {
         ret.promo = promo;
         ret.action = BPlusReturn.SPLIT;
@@ -991,17 +990,17 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
     return dir.resolve(name + IDX_EXT);
   }
 
-  private BTreeKey<B> insert(int bNo, BTreeKey<B> key, KeyValue<B, D> kv, int level,
-                                     boolean update) throws IOException {
-    BCBuffer<BTreeKey.Entry<B>, BTreeKey<B>> sb = getIndexBlock(bNo);
-    BTreeKey<B> keyIndex = null;
+  private BTreeKey<A> insert(int bNo, BTreeKey<A> key, KeyValue<A,B> kv, int level,
+                                  boolean update) throws IOException {
+    BBuffer<BTreeKey<A>> sb = getIndexBlock(bNo);
+    BTreeKey<A> keyIndex = null;
     if (level == leafLevel) {
       try {
-        BPlusReturn<B, D> ret = insertKeyValue(kv, getNode(sb.search(key), sb),
+        BPlusReturn<A,B> ret = insertKeyValue(kv, getNode(sb.search(key), sb),
             update);
         if (ret != null) { // this forced a split...
           keyIndex = ret.promo;
-          keyIndex.get().leftNode = ret.newBlockNo;
+          keyIndex.leftNode = ret.newBlockNo;
         }
       } catch (Exception e) {
         logger.error("cannot insert KeyValue into block {} with key {} and keyValue {}",bNo,key,kv);
@@ -1024,41 +1023,41 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
    * @param keyIndex the key to insert
    * @param sb       a block of sorted BTree keys
    */
-  private void insertAndReplace(BTreeKey<B> keyIndex, BCBuffer<BTreeKey.Entry<B>, BTreeKey<B>> sb) {
+  private void insertAndReplace(BTreeKey<A> keyIndex, BBuffer<BTreeKey<A>> sb) {
     int index = sb.insert(keyIndex);
-    int tmp = keyIndex.get().leftNode;
+    int tmp = keyIndex.leftNode;
     if (index == sb.getNumberOfElements() - 1) { // last key
-      keyIndex.get().leftNode = getLastPointer(sb);
+      keyIndex.leftNode = getLastPointer(sb);
       setLastPointer(sb, tmp);
       sb.update(keyIndex, index);
       return;
     }
-    BTreeKey<B> nextKey = sb.get(index + 1);
-    keyIndex.get().leftNode = nextKey.get().leftNode;
-    nextKey.get().leftNode = tmp;
+    BTreeKey<A> nextKey = sb.get(index + 1);
+    keyIndex.leftNode = nextKey.leftNode;
+    nextKey.leftNode = tmp;
     sb.update(keyIndex, index);
     sb.update(nextKey, index + 1);
   }
 
-  private BTreeKey<B> insertKey(BCBuffer<BTreeKey.Entry<B>, BTreeKey<B>> sb, int pNo, BTreeKey<B> keyIndex)
+  private BTreeKey<A> insertKey(BBuffer<BTreeKey<A>> sb, int pNo, BTreeKey<A> keyIndex)
       throws IOException {
     if (sb.fits(keyIndex)) {
       insertAndReplace(keyIndex, sb);
       return null;
     }
     //we need to expand index
-    IdxBlock <B> ib = newIdxBlock();
+    IdxBlock <A> ib = newIdxBlock();
     sb.split(ib.sb);
-    BTreeKey<B> first = ib.sb.getFirst();
-    setLastPointer(sb, first.get().leftNode);
+    BTreeKey<A> first = ib.sb.getFirst();
+    setLastPointer(sb, first.leftNode);
     if(keyIndex.compareTo(sb.getLast()) < 0){
       insertAndReplace(keyIndex, sb);
     } else {
       insertAndReplace(keyIndex, ib.sb);
     }
-    BTreeKey<B> promo = ib.sb.getFirst();
+    BTreeKey<A> promo = ib.sb.getFirst();
     deleteAndReplace(promo, ib.sb);
-    promo.get().leftNode = ib.bNo;
+    promo.leftNode = ib.bNo;
     return promo;
   }
 
@@ -1078,9 +1077,10 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
    * returned.
    * @throws IOException if an error occurs
    */
-  private BPlusReturn<B, D> insertKeyValue(KeyValue<B, D> keyValue, int bNo,
+  private BPlusReturn<A,B> insertKeyValue(KeyValue<A,B> keyValue, int bNo,
                                                    boolean update) throws IOException {
-    BCBuffer<KeyValue.KV<B, D>, KeyValue<B, D>> sb;
+    BBuffer<KeyValue<A,B>> sb;
+    //KeyValue<A,B> kvs = new KeyValueCodec<A, C>(keyValue);
     try {
       sb = getValueBlock(bNo);
       if (sb.contains(keyValue)) {
@@ -1119,17 +1119,17 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
    * the current block can not hold the data the block will be split into two
    * and the levels possibly increased.
    */
-  private void insertSeparator(BTreeKey<B> sep, IdxBlock<B>[] levels, int current,
+  private void insertSeparator(BTreeKey<A> sep, IdxBlock<A>[] levels, int current,
                                int rightNode) throws IOException {
-    BCBuffer<BTreeKey.Entry<B>, BTreeKey<B>> sb;
+    BBuffer<BTreeKey<A>> sb;
     if (levels[current] == null) { // we have to create a new level
       levels[current] = newIdxBlock();
     }
     sb = levels[current].sb;
     if (!sb.fits(sep)) { // save and promote the last key up...
-      BTreeKey<B> promo = sb.delete(sb.getNumberOfElements() - 1);
-      setLastPointer(sb, promo.get().leftNode);
-      promo.get().leftNode = levels[current].bNo;
+      BTreeKey<A> promo = sb.delete(sb.getNumberOfElements() - 1);
+      setLastPointer(sb, promo.leftNode);
+      promo.leftNode = levels[current].bNo;
 
       // create the new block:
       levels[current] = newIdxBlock();
@@ -1142,41 +1142,41 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
     sb.insertUnsorted(sep);
   }
 
-  private void insertUpdate(B key, D value, boolean update)
+  private void insertUpdate(A key, B value, boolean update)
       throws IOException {
-    KeyValue<B, D> kv = new KeyValue<>(key, value);
+    KeyValue<A,B> kv = new KeyValue<>(key, value);
     if (leafLevel == -1) {
       // no index...to insert directly to value file...in first logical block:
-      BPlusReturn<B, D> ret = insertKeyValue(kv, rootPage, update);
+      BPlusReturn<A,B> ret = insertKeyValue(kv, rootPage, update);
       if (ret != null && ret.action == BPlusReturn.SPLIT) {
         // we now have to value blocks time for index
-        ret.promo.get().leftNode = ret.newBlockNo;
+        ret.promo.leftNode = ret.newBlockNo;
         createRoot(ret.promo);
       }
       return;
     }
-    BTreeKey<B> searchKey = new BTreeKey<>(key, -1);
-    BTreeKey<B> rootKey = insert(rootPage, searchKey, kv, 0, update);
+    BTreeKey<A> searchKey = new BTreeKey<>(key, -1);
+    BTreeKey<A> rootKey = insert(rootPage, searchKey, kv, 0, update);
     if (rootKey != null)
       createRoot(rootKey);
   }
 
-  private IdxBlock<B> newIdxBlock() throws IOException {
+  private IdxBlock<A> newIdxBlock() throws IOException {
     int bNo;
-    BCBuffer<BTreeKey.Entry<B>, BTreeKey<B>> buff;
+    BBuffer<BTreeKey<A>> buff;
     bNo = idxFile.insert(null);
-    buff = new BCBuffer<>(idxFile.getMapped(bNo), indexKeys, BCBuffer.PtrType.NORMAL, (short) 4);
+    buff = new BBuffer<>(idxFile.getMapped(bNo), btCodec, BBuffer.PtrType.NORMAL, (short) 4);
     return new IdxBlock<>(buff, bNo);
   }
 
-  private ValueBlock<B, D> newValueBlock() throws IOException {
+  private ValueBlock<A,B> newValueBlock() throws IOException {
     int bNo;
-    BCBuffer<KeyValue.KV<B, D>, KeyValue<B, D>> buff;
+    BBuffer<KeyValue<A,B>> buff;
     if (useMappedValue) {
       bNo = valueFile.insert(null);
-      buff = new BCBuffer<>(valueFile.getMapped(bNo), keyValues, BCBuffer.PtrType.NORMAL);
+      buff = new BBuffer<>(valueFile.getMapped(bNo), kvCodec, BBuffer.PtrType.NORMAL);
     } else {
-      buff = new BCBuffer<>(valueFile.getBlockSize(), keyValues, BCBuffer.PtrType.NORMAL);
+      buff = new BBuffer<>(valueFile.getBlockSize(), kvCodec, BBuffer.PtrType.NORMAL);
       bNo = valueFile.insert(buff.getArray());
     }
     return new ValueBlock<>(buff, bNo);
@@ -1242,13 +1242,13 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
     size = bb.getInt();
   }
 
-  private void redistributeValueBlocks(BCBuffer<KeyValue.KV<B, D>, KeyValue<B, D>> small,
-                                               BCBuffer<KeyValue.KV<B, D>, KeyValue<B, D>> large,
+  private void redistributeValueBlocks(BBuffer<KeyValue<A,B>> small,
+                                               BBuffer<KeyValue<A,B>> large,
                                                int bSmall, int bLarge) throws IOException {
-    BCBuffer<KeyValue.KV<B, D>, KeyValue<B, D>> blocks[] = (BCBuffer<KeyValue.KV<B, D>, KeyValue<B, D>>[]) new BCBuffer[2];
+    BBuffer<KeyValue<A,B>> blocks[] = (BBuffer<KeyValue<A,B>>[]) new BBuffer[2];
     blocks[0] = small;
     blocks[1] = large;
-    BCBuffer.redistribute(blocks);
+    BBuffer.redistribute(blocks);
     updateValueBlock(bSmall, small);
     updateValueBlock(bLarge, large);
   }
@@ -1261,12 +1261,12 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
    * @return the Key/value pair or null if the key did not exist
    * @throws IOException if an error occurs
    */
-  private KeyValue<B, D> searchValueFile(B key, int bNo)
+  private KeyValue<A,B> searchValueFile(A key, int bNo)
       throws IOException {
     if (valueFile.size() == 0)
       return null;
-    BCBuffer<KeyValue.KV<B, D>, KeyValue<B, D>> sb = getValueBlock(bNo);
-    return sb.get(new KeyValue<>(key, null));
+    BBuffer<KeyValue<A,B>> sb = getValueBlock(bNo);
+    return sb.get(new KeyValue<>(key));
   }
 
   /**
@@ -1280,12 +1280,12 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
    * @return the Key/value pair or null if the key did not exist
    * @throws java.io.IOException if an error occurs
    */
-  private TreePosition searchValueFilePosition(B key, int bNo)
+  private TreePosition searchValueFilePosition(A key, int bNo)
       throws IOException {
     if (valueFile.size() == 0)
       return null;
-    BCBuffer<KeyValue.KV<B, D>, KeyValue<B, D>> sb = getValueBlock(bNo);
-    int smallerInBlock = sb.search(new KeyValue<>(key, null));
+    BBuffer<KeyValue<A,B>> sb = getValueBlock(bNo);
+    int smallerInBlock = sb.search(new KeyValue<A, B>(key));
     if (smallerInBlock < 0) return null;
     int elements = size;
     int elementsInBlock = sb.getNumberOfElements();
@@ -1305,12 +1305,12 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
    * @return the Key/value pair or null if the key did not exist
    * @throws java.io.IOException if an error occurs
    */
-  private TreePosition searchValueFilePositionNoStrict(B key, int bNo)
+  private TreePosition searchValueFilePositionNoStrict(A key, int bNo)
       throws IOException {
     if (valueFile.size() == 0)
       return null;
-    BCBuffer<KeyValue.KV<B, D>, KeyValue<B, D>> sb = getValueBlock(bNo);
-    int smallerInBlock = sb.search(new KeyValue<>(key, null));
+    BBuffer<KeyValue<A,B>> sb = getValueBlock(bNo);
+    int smallerInBlock = sb.search(new KeyValue<A,B>(key));
     boolean exists = true;
     if (smallerInBlock < 0) { //not found
       exists = false;
@@ -1339,7 +1339,7 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
    * @param sb      a block of sorted BTree keys.
    * @param pointer a pointer (i.e block number).
    */
-  private void setLastPointer(BCBuffer<BTreeKey.Entry<B>, BTreeKey<B>> sb, int pointer) {
+  private void setLastPointer(BBuffer<BTreeKey<A>> sb, int pointer) {
     sb.getBlock().putInt(sb.getReservedSpaceStart(), pointer);
   }
 
@@ -1360,29 +1360,29 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
    * @param parent the parent node in the index.
    * @return true if at least one key was shifted
    */
-  private boolean shiftLeft(BCBuffer<BTreeKey.Entry<B>, BTreeKey<B>> left,
-                                    BCBuffer<BTreeKey.Entry<B>, BTreeKey<B>> right,
-                                    BTreeKey<B> parent) {
+  private boolean shiftLeft(BBuffer<BTreeKey<A>> left,
+                                    BBuffer<BTreeKey<A>> right,
+                                    BTreeKey<A> parent) {
     // check if we gain anything from a shift, i.e. the minimum shift:
-    if (parent.byteSize() + left.getDataBytes() >= right.getDataBytes()
-        - right.getFirst().byteSize()) {
+    if (btCodec.byteSize(parent) + left.getDataBytes() >= right.getDataBytes()
+        - btCodec.byteSize(right.getFirst())) {
       return false;
     }
     // first set parent lefkey to first left key in right and save the old left:
-    int parentLeft = parent.get().leftNode;
+    int parentLeft = parent.leftNode;
     for (; ; ) {
-      parent.get().leftNode = getLastPointer(left);
+      parent.leftNode = getLastPointer(left);
       left.insertUnsorted(parent);
-      BTreeKey<B> newParent = right.delete(0);
-      parent.get().leftNode = newParent.get().leftNode;
-      parent.get().key = newParent.get().key;
-      setLastPointer(left, parent.get().leftNode);
+      BTreeKey<A> newParent = right.delete(0);
+      parent.leftNode = newParent.leftNode;
+      parent.key = newParent.key;
+      setLastPointer(left, parent.leftNode);
       // now check if to continue:
-      if (parent.byteSize() + left.getDataBytes() >= right.getDataBytes()
-          - right.getFirst().byteSize())
+      if (btCodec.byteSize(parent) + left.getDataBytes() >= right.getDataBytes()
+          - btCodec.byteSize(right.getFirst()))
         break;
     }
-    parent.get().leftNode = parentLeft;
+    parent.leftNode = parentLeft;
     return true;
   }
 
@@ -1395,49 +1395,49 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
    * @return true if at least one key was shifted
    * @see #shiftLeft
    */
-  private boolean shiftRight(BCBuffer<BTreeKey.Entry<B>, BTreeKey<B>> left,
-                                     BCBuffer<BTreeKey.Entry<B>, BTreeKey<B>> right,
-                                     BTreeKey<B> parent) {
+  private boolean shiftRight(BBuffer<BTreeKey<A>> left,
+                                     BBuffer<BTreeKey<A>> right,
+                                     BTreeKey<A> parent) {
     // check if we gain anything from a shift, i.e. the minimum shift:
-    if (parent.byteSize() + right.getDataBytes() >= left.getDataBytes()
-        - left.getLast().byteSize()) {
+    if (btCodec.byteSize(parent) + right.getDataBytes() >= left.getDataBytes()
+        - btCodec.byteSize(left.getLast())) {
       return false;
     }
     // first set parent lefkey to first left key in right and save the old left:
-    int parentLeft = parent.get().leftNode;
+    int parentLeft = parent.leftNode;
     for (; ; ) {
-      parent.get().leftNode = getLastPointer(left);
+      parent.leftNode = getLastPointer(left);
       right.insert(parent);
-      BTreeKey<B> newParent = left.delete(left.getNumberOfElements() - 1);
-      parent.get().leftNode = newParent.get().leftNode;
-      parent.get().key = newParent.get().key;
-      setLastPointer(left, parent.get().leftNode);
+      BTreeKey<A> newParent = left.delete(left.getNumberOfElements() - 1);
+      parent.leftNode = newParent.leftNode;
+      parent.key = newParent.key;
+      setLastPointer(left, parent.leftNode);
       // now check if to continue:
-      if (parent.byteSize() + right.getDataBytes() >= left.getDataBytes()
-          - left.getLast().byteSize())
+      if (btCodec.byteSize(parent) + right.getDataBytes() >= left.getDataBytes()
+          - btCodec.byteSize(left.getLast()))
         break;
     }
-    parent.get().leftNode = parentLeft;
+    parent.leftNode = parentLeft;
     return true;
   }
 
-  private BCBuffer<BTreeKey.Entry<B>, BTreeKey<B>> toIndexBlock(ByteBuffer data) {
-    return new BCBuffer<>(data, indexKeys);
+  private BBuffer<BTreeKey<A>> toIndexBlock(ByteBuffer data) {
+    return new BBuffer<>(data, btCodec);
   }
 
-  /*private BCBuffer<BTreeKey.Entry<B>, BTreeKey<B>> toIndexBlock(byte[] data) {
+  /*private BBuffer<BTreeKeyCodec.Entry<B>, BTreeKeyCodec<B>> toIndexBlock(byte[] data) {
     return toIndexBlock(ByteBuffer.wrap(data));
   }*/
 
-  private BCBuffer<KeyValue.KV<B, D>, KeyValue<B, D>> toValueBlock(byte[] data) {
+  private BBuffer<KeyValue<A,B>> toValueBlock(byte[] data) {
     return toValueBlock(ByteBuffer.wrap(data));
   }
 
-  private BCBuffer<KeyValue.KV<B, D>, KeyValue<B, D>> toValueBlock(ByteBuffer data) {
-    return new BCBuffer<>(data, keyValues);
+  private BBuffer<KeyValue<A,B>> toValueBlock(ByteBuffer data) {
+    return new BBuffer<>(data, kvCodec);
   }
 
-  private void updateValueBlock(int blockNo, BCBuffer<KeyValue.KV<B, D>, KeyValue<B, D>> sb)
+  private void updateValueBlock(int blockNo, BBuffer<KeyValue<A,B>> sb)
       throws IOException {
     if (!useMappedValue)
       valueFile.update(blockNo, sb.getArray());
@@ -1450,7 +1450,7 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
   /**
    * CreateIndex calls this method to write all created index blocks to file.
    */
-  private void writeIndexBlocks(IdxBlock<B>[] levels) throws IOException {
+  private void writeIndexBlocks(IdxBlock<A>[] levels) throws IOException {
     //boolean removeLast = false;
     int rPage = 0;
     int i = 0;
@@ -1474,30 +1474,30 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
     }
 
     if (pNo == -1) return;
-    BTreeKey<B> bKey;
-    BCBuffer<BTreeKey.Entry<B>, BTreeKey<B>> sb = getIndexBlock(pNo);
+    BTreeKey<A> bKey;
+    BBuffer<BTreeKey<A>> sb = getIndexBlock(pNo);
     if (level == leafLevel) {
       extractPointers(ptr, sb);
     } else {
       for (int i = 0; i < sb.getNumberOfElements(); i++) {
         bKey = sb.get(i);
-        buildPointers(bKey.get().leftNode, ptr, level + 1, leafLevel);
+        buildPointers(bKey.leftNode, ptr, level + 1, leafLevel);
         if (i + 1 == sb.getNumberOfElements())
           buildPointers(getLastPointer(sb), ptr, level + 1, leafLevel);
       }
     }
   }
 
-  final BCBuffer<KeyValue.KV<B, D>, KeyValue<B, D>> getValueBlock(int blockNo)
+  final BBuffer<KeyValue<A,B>> getValueBlock(int blockNo)
       throws IOException {
     return useMappedValue ? getMappedValue(blockNo) : getValue(blockNo);
   }
 
-  final int searchBlock(B key) {
+  final int searchBlock(A key) {
     try {
       if (leafLevel == -1)
         return rootPage;
-      BTreeKey<B> bTreeKey = new BTreeKey<>(key, 0);
+      BTreeKey<A> bTreeKey = new BTreeKey<>(key, 0);
       return searchBlock(rootPage, bTreeKey, 0);
     } catch (IOException e) {
       logger.warn("could not find block", e);
@@ -1505,48 +1505,48 @@ public class BTreeImp<A, B extends BComparable<A, B>, C, D extends BStorable<C, 
     }
   }
 
-  private int searchBlock(int bNo, BTreeKey<B> key, int level) throws IOException {
-    BCBuffer<BTreeKey.Entry<B>, BTreeKey<B>> sb = getIndexBlock(bNo);
+  private int searchBlock(int bNo, BTreeKey<A> key, int level) throws IOException {
+    BBuffer<BTreeKey<A>> sb = getIndexBlock(bNo);
     if (level == leafLevel) {
       return getNode(sb.search(key), sb);
     }
     return searchBlock(getNode(sb.search(key), sb), key, level + 1);
   }
 
-  private static class IdxBlock<B extends BComparable<?, B>> {
-    BCBuffer<BTreeKey.Entry<B>, BTreeKey<B>> sb;
+  private static class IdxBlock<A> {
+    BBuffer<BTreeKey<A>> sb;
     int bNo;
 
-    IdxBlock(BCBuffer<BTreeKey.Entry<B>, BTreeKey<B>> buffer, int blockNo) {
+    IdxBlock(BBuffer<BTreeKey<A>> buffer, int blockNo) {
       sb = buffer;
       bNo = blockNo;
     }
   }
 
-  private static class ValueBlock<B extends BComparable<?, B>, D extends BStorable<?, D>> {
-    BCBuffer<KeyValue.KV<B, D>, KeyValue<B, D>> sb;
+  private static class ValueBlock<A,B> {
+    BBuffer<KeyValue<A,B>> sb;
     int bNo;
 
-    ValueBlock(BCBuffer<KeyValue.KV<B, D>, KeyValue<B, D>> buffer, int blockNo) {
+    ValueBlock(BBuffer<KeyValue<A,B>> buffer, int blockNo) {
       this.sb = buffer;
       this.bNo = blockNo;
     }
   }
 
-  static class SmallLarge<B extends BComparable<?, B>> implements Comparable<SmallLarge<B>> {
+  static class SmallLarge<A> implements Comparable<SmallLarge<A>> {
     int bNo;
-    B small;
-    B large;
+    A small;
+    A large;
 
-    SmallLarge(B small, B large, int bNo) {
+    SmallLarge(A small, A large, int bNo) {
       this.bNo = bNo;
       this.small = small;
       this.large = large;
     }
 
     @Override
-    public int compareTo(SmallLarge<B> o) {
-      return small.compareTo(o.small);
+    public int compareTo(SmallLarge<A> o) {
+      return ((Comparable<? super A>)small).compareTo(o.small);
     }
   }
 

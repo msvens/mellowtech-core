@@ -28,7 +28,7 @@ import java.util.*;
  * @see PrimitiveType
  * @param <E> type of element in this list needs to be a supported one
  */
-public class CBList <E> extends BStorableImp <List<E>, CBList<E>> implements List<E> {
+public class CBList <E> extends BStorableImp <List<E>> implements List<E> {
 
   /**
    * Initialize to the empty list
@@ -52,7 +52,7 @@ public class CBList <E> extends BStorableImp <List<E>, CBList<E>> implements Lis
     ArrayList <E> elems = new ArrayList <> (numElems);
     PrimitiveType pt = PrimitiveType.fromOrdinal(bb.get());
     @SuppressWarnings("unchecked")
-    BStorable <E,?> template = PrimitiveType.fromType(pt);
+    BStorable <E> template = PrimitiveType.fromType(pt);
     for(int i = 0; i < numElems; i++){
       elems.add(template.from(bb).get());
     }

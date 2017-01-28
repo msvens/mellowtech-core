@@ -16,8 +16,7 @@
 
 package org.mellowtech.core.collections.impl;
 
-import org.mellowtech.core.bytestorable.BComparable;
-import org.mellowtech.core.bytestorable.BStorable;
+import org.mellowtech.core.codec.BCodec;
 import org.mellowtech.core.collections.BTree;
 import org.mellowtech.core.collections.KeyValue;
 import org.mellowtech.core.collections.TreePosition;
@@ -29,33 +28,35 @@ import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Iterator;
-import java.util.logging.Level;
 
 import static java.nio.file.StandardOpenOption.*;
 
 /**
  * @author msvens
- * @since 11/07/16
+ * @since 3.0.0
  */
-public class HybridBlobTree<A,B extends BComparable<A,B>,C,D extends BStorable<C,D>>
-    implements BTree<A,B,C,D> {
+public class HybridBlobTree<A,B>
+    implements BTree<A,B> {
 
   private FileChannel blobs;
 
-  private HybridTree <A,B,?,BlobPointer> tree;
+  private HybridTree <A,BlobPointer> tree;
 
-  private D template;
+  private BCodec<B> valueCodec;
 
 
   /*public HybridBlobTree(Path dir, String name, Class<B> keyType, Class<D> valueType, boolean mapped) throws Exception {
-    tree = new HybridTree<>(dir, name, keyType, BlobPointer.class,-1,-1,mapped);
+    tree = new HybridTree<>(dir, name, keyType, BlobPointerCodec.class,-1,-1,mapped);
     this.template = valueType.newInstance();
     blobs = FileChannel.open(blobPath(), WRITE, READ);
   }*/
 
-  public HybridBlobTree(Path dir, String name, Class<B> keyType, Class<D> valueType, RecordFileBuilder valueFileBuilder) throws Exception {
-    tree = new HybridTree <> (dir, name, keyType, BlobPointer.class, valueFileBuilder);
-    this.template = valueType.newInstance();
+  public HybridBlobTree(Path dir, String name,
+                        BCodec<A> keyCodec,
+                        BCodec<B> valueCodec,
+                        RecordFileBuilder valueFileBuilder) throws Exception {
+    tree = new HybridTree <> (dir, name, keyCodec, new BlobPointerCodec(), valueFileBuilder);
+    this.valueCodec = valueCodec;
     blobs = FileChannel.open(blobPath(), CREATE, WRITE, READ);
     if(tree.isEmpty() && blobs.size() > 0){
       blobs.truncate(0);
@@ -102,62 +103,59 @@ public class HybridBlobTree<A,B extends BComparable<A,B>,C,D extends BStorable<C
   }
 
   @Override
-  public boolean containsKey(B key) throws IOException {
+  public boolean containsKey(A key) throws IOException {
     return tree.containsKey(key);
   }
 
   @Override
-  public void put(B key, D value) throws IOException {
-    int size = value.byteSize();
+  public void put(A key, B value) throws IOException {
+    int size = valueCodec.byteSize(value);
     long fpos = blobs.size();
     BlobPointer bp = new BlobPointer(fpos, size);
-    ByteBuffer bb = value.to(); bb.flip();
+    ByteBuffer bb = valueCodec.to(value); bb.flip();
     tree.put(key, bp);
     blobs.write(bb, fpos);
   }
 
   @Override
-  public void putIfNotExists(B key, D value) throws IOException {
+  public void putIfNotExists(A key, B value) throws IOException {
     if(containsKey(key)) return;
     put(key, value);
   }
 
   @Override
-  public D remove(B key) throws IOException{
+  public B remove(A key) throws IOException{
     BlobPointer bp = tree.remove(key);
     return bp != null ? getValue(bp) : null;
   }
 
   @Override
-  public D get(B key) throws IOException {
+  public B get(A key) throws IOException {
     BlobPointer bp = tree.get(key);
     return bp != null ? getValue(bp) : null;
   }
 
   @Override
-  public B getKey(int position) throws IOException {
+  public A getKey(int position) throws IOException {
     return tree.getKey(position);
   }
 
   @Override
-  public KeyValue<B,D> getKeyValue(B key) throws IOException {
-    KeyValue <B,BlobPointer> tmp = tree.getKeyValue(key);
+  public KeyValue<A,B> getKeyValue(A key) throws IOException {
+    BlobPointer tmp = tree.get(key);
     if(tmp != null){
-      KeyValue <B,D> kv = new KeyValue<>(tmp.getKey(), null);
-      if(tmp.getValue() != null)
-        kv.setValue(getValue(tmp.getValue()));
-      return kv;
+      return new KeyValue<>(key, getValue(tmp));
     } else
       return null;
   }
 
   @Override
-  public TreePosition getPosition(B key) throws IOException {
+  public TreePosition getPosition(A key) throws IOException {
     return tree.getPosition(key);
   }
 
   @Override
-  public TreePosition getPositionWithMissing(B key) throws IOException {
+  public TreePosition getPositionWithMissing(A key) throws IOException {
     return tree.getPositionWithMissing(key);
   }
 
@@ -167,7 +165,7 @@ public class HybridBlobTree<A,B extends BComparable<A,B>,C,D extends BStorable<C
   }*/
 
   @Override
-  public Iterator<KeyValue<B,D>> iterator(boolean descending, B from, boolean inclusive, B to, boolean toInclusive) {
+  public Iterator<KeyValue<A,B>> iterator(boolean descending, A from, boolean inclusive, A to, boolean toInclusive) {
     return new HybridBlobTree.HybridBlobTreeIterator(descending, from, inclusive, to, toInclusive);
   }
 
@@ -176,22 +174,24 @@ public class HybridBlobTree<A,B extends BComparable<A,B>,C,D extends BStorable<C
     tree.compact();
   }
 
-  private D getValue(BlobPointer bp) throws IOException{
-    ByteBuffer bb = ByteBuffer.allocate(bp.getbSize());
-    blobs.read(bb, bp.getfPointer());
+  private B getValue(BlobPointer bpe) throws IOException{
+    ByteBuffer bb = ByteBuffer.allocate(bpe.bSize);
+    blobs.read(bb, bpe.fPointer);
     bb.flip();
-    return template.from(bb);
+    return valueCodec.from(bb);
   }
 
-  private class HybridBlobTreeIterator implements Iterator <KeyValue <B,D>>{
+  private class HybridBlobTreeIterator implements Iterator <KeyValue <A,B>>{
 
-    Iterator <KeyValue <B, BlobPointer>> iter;
+    Iterator <KeyValue <A,BlobPointer>> iter;
 
     /*public HybridBlobTreeIterator(){
       iter = tree.iterator();
     }*/
 
-    public HybridBlobTreeIterator(boolean descending, B from, boolean inclusive, B to, boolean toInclusive){
+    public HybridBlobTreeIterator(boolean descending, A from, boolean inclusive,
+                                  A to, boolean toInclusive){
+
       iter = tree.iterator(descending, from, inclusive, to, toInclusive);
     }
 
@@ -201,10 +201,10 @@ public class HybridBlobTree<A,B extends BComparable<A,B>,C,D extends BStorable<C
     }
 
     @Override
-    public KeyValue<B,D> next() {
-      KeyValue <B, BlobPointer> next = iter.next();
+    public KeyValue<A,B> next() {
+      KeyValue <A, BlobPointer> next = iter.next();
       if(next == null) return null;
-      KeyValue <B,D> toRet = new KeyValue<>(next.getKey(), null);
+      KeyValue <A,B> toRet = new KeyValue<>(next.getKey(), null);
       if(next.getValue() != null){
         try{
           toRet.setValue(getValue(next.getValue()));
@@ -228,9 +228,9 @@ public class HybridBlobTree<A,B extends BComparable<A,B>,C,D extends BStorable<C
   }
 
   @Override
-  public void createTree(Iterator<KeyValue<B,D>> iterator) throws IOException {
+  public void createTree(Iterator<KeyValue<A,B>> iterator) throws IOException {
     blobs.truncate(0);
-    BlobMapCreateIterator <B,D> iter = new BlobMapCreateIterator <> (iterator,blobs);
+    BlobMapCreateIterator <A,B> iter = new BlobMapCreateIterator <> (iterator,blobs,valueCodec);
     tree.createTree(iter);
   }
 }

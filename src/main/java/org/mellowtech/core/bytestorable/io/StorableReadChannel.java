@@ -25,14 +25,13 @@ import org.mellowtech.core.bytestorable.CBUtil;
 /**
  * Reads BStorables from a given byte channel.
  * @param <A> Wrapped BStorable class
- * @param <B> BStorable class
  * 
  * @author Martin Svensson {@literal <msvens@gmail.com>}
  * @since 3.0.1
  */
-public class StorableReadChannel <A, B extends BStorable <A,B>> {
+public class StorableReadChannel <A> {
 
-  private B mTemplate;
+  private BStorable<A> mTemplate;
   private ReadableByteChannel mRbc;
   private ByteBuffer mBuffer;
   private boolean endOfChannel = false;
@@ -46,7 +45,7 @@ public class StorableReadChannel <A, B extends BStorable <A,B>> {
    * @param template
    *          a ByteStorable template
    */
-  public StorableReadChannel(ReadableByteChannel rbc, B template) {
+  public StorableReadChannel(ReadableByteChannel rbc, BStorable<A> template) {
     mTemplate = template;
     mRbc = rbc;
     mBuffer = ByteBuffer.allocate(4096 * 4);
@@ -81,7 +80,7 @@ public class StorableReadChannel <A, B extends BStorable <A,B>> {
    * @exception IOException
    *              if an error occurs
    */
-  public B next() throws IOException {
+  public BStorable<A> next() throws IOException {
     //int read;
     int slack = CBUtil.slackOrSize(mBuffer, mTemplate);
     // if(slack <= 0)
@@ -131,7 +130,7 @@ public class StorableReadChannel <A, B extends BStorable <A,B>> {
    * Install a new template, may be needed for optimized conditions.
    * @param pTemplate BStorable template
    */
-  public void setTemplate(B pTemplate) {
+  public void setTemplate(BStorable<A> pTemplate) {
     mTemplate = pTemplate;
   } // setTemplate
 }

@@ -24,7 +24,7 @@ import java.nio.ByteBuffer;
  * @author Martin Svensson {@literal <msvens@gmail.com>}
  * @since 3.0.1
  */
-public class CBLong implements BComparable <Long,CBLong>{
+public class CBLong implements BComparable <Long>{
   
   private final long value;
 
@@ -83,8 +83,8 @@ public class CBLong implements BComparable <Long,CBLong>{
   }
 
   @Override
-  public int compareTo(CBLong other) {
-    return Long.compare(value, other.value);
+  public int compareTo(BComparable<Long> other) {
+    return Long.compare(value, other.get());
   }
 
   @Override

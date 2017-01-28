@@ -23,7 +23,7 @@ import java.nio.ByteBuffer;
  * @author Martin Svensson {@literal <msvens@gmail.com>}
  * @since 3.0.1
  */
-public class CBFloat implements BComparable<Float,CBFloat> {
+public class CBFloat implements BComparable<Float> {
 
   private final float value;
 
@@ -82,8 +82,8 @@ public class CBFloat implements BComparable<Float,CBFloat> {
   }
 
   @Override
-  public int compareTo(CBFloat other) {
-    return Float.compare(value, other.value);
+  public int compareTo(BComparable<Float> other) {
+    return Float.compare(value, other.get());
   }
 
   @Override

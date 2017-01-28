@@ -32,7 +32,7 @@ import java.nio.charset.StandardCharsets;
  * @version 3.0.4
  * @see CBString
  */
-public class CBZByteArray implements BStorable<byte[], CBZByteArray> {
+public class CBZByteArray implements BStorable<byte[]> {
 
   private static LZ4Compressor compressor = LZ4Factory.fastestInstance().fastCompressor();
   private static LZ4FastDecompressor decompressor = LZ4Factory.fastestInstance().fastDecompressor();

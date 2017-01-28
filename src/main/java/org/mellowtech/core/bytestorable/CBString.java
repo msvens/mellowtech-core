@@ -18,6 +18,7 @@ package org.mellowtech.core.bytestorable;
 import java.nio.ByteBuffer;
 import java.util.Locale;
 
+import org.mellowtech.core.codec.UtfUtil;
 import org.mellowtech.core.util.CompiledLocale;
 
 /**
@@ -37,7 +38,7 @@ import org.mellowtech.core.util.CompiledLocale;
  * @version 2.0 (total rewrite)
  * @see UtfUtil
  */
-public class CBString extends BComparableImp<String, CBString>{
+public class CBString extends BComparableImp<String>{
 
   private static char[] charMap = null;
   private static Locale locale = null;
@@ -114,11 +115,11 @@ public class CBString extends BComparableImp<String, CBString>{
   public CBString create(String str) {return new CBString(str);}
   
   @Override
-  public int compareTo(CBString other) {
+  public int compareTo(BComparable<String> other) {
     if (charMap == null)
-      return value.compareTo(other.value);
+      return value.compareTo(other.get());
 
-    String str1 = other.value;
+    String str1 = other.get();
     int n = Math.min(value.length(), str1.length());
     int i = 0;
     while (n-- != 0) {

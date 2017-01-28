@@ -19,6 +19,7 @@ package org.mellowtech.core.bytestorable;
 import net.jpountz.lz4.LZ4Compressor;
 import net.jpountz.lz4.LZ4Factory;
 import net.jpountz.lz4.LZ4FastDecompressor;
+import org.mellowtech.core.codec.UtfUtil;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -33,7 +34,7 @@ import java.nio.charset.StandardCharsets;
  * @version 3.0.4
  * @see CBString
  */
-public class CBZString implements BStorable<String, CBZString> {
+public class CBZString implements BStorable<String> {
 
   private static LZ4Compressor compressor = LZ4Factory.fastestInstance().fastCompressor();
   private static LZ4FastDecompressor decompressor = LZ4Factory.fastestInstance().fastDecompressor();

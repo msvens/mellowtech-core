@@ -24,7 +24,7 @@ import java.util.Date;
  * @author Martin Svensson {@literal <msvens@gmail.com>}
  * @since 3.0.1
  */
-public class CBDate extends BStorableImp <Date, CBDate> implements BComparable<Date, CBDate>{
+public class CBDate extends BStorableImp <Date> implements BComparable<Date>{
 
 
   /**
@@ -70,8 +70,8 @@ public class CBDate extends BStorableImp <Date, CBDate> implements BComparable<D
   }
 
   @Override
-  public int compareTo(CBDate other) {
-    return value.compareTo(other.value);
+  public int compareTo(BComparable<Date> other) {
+    return value.compareTo(other.get());
   }
 
   @Override

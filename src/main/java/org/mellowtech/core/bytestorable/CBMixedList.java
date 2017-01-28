@@ -27,7 +27,7 @@ import java.util.*;
  * @since 3.0.1
  * @see PrimitiveType
  */
-public class CBMixedList extends BStorableImp <List <Object>, CBMixedList> implements List<Object> {
+public class CBMixedList extends BStorableImp <List <Object>> implements List<Object> {
 
 
   /**

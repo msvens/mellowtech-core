@@ -33,7 +33,7 @@ import java.util.Set;
  * @param <K> key type
  * @param <V> value type
  */
-public class CBMap <K,V> extends BStorableImp <Map<K,V>, CBMap<K,V>> implements Map<K,V> {
+public class CBMap <K,V> extends BStorableImp <Map<K,V>> implements Map<K,V> {
 
   /**
    * Instantiate with an empty HashMap
@@ -74,8 +74,8 @@ public class CBMap <K,V> extends BStorableImp <Map<K,V>, CBMap<K,V>> implements 
     if(keyType == null || valueType == null)
       throw new ByteStorableException("Unrecognized types");
     
-    BStorable <K,?> keyTemp = PrimitiveType.fromType(keyType);
-    BStorable <V,?> valueTemp = PrimitiveType.fromType(valueType);
+    BStorable <K> keyTemp = PrimitiveType.fromType(keyType);
+    BStorable <V> valueTemp = PrimitiveType.fromType(valueType);
     
     Map <K,V> tmpMap = new HashMap <> ();
     

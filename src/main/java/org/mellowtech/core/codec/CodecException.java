@@ -1,4 +1,3 @@
-
 /*
  * Copyright 2015 mellowtech.org
  *
@@ -15,31 +14,34 @@
  * limitations under the License.
  */
 
-package org.mellowtech.core.bytestorable;
+package org.mellowtech.core.codec;
 
 /**
- * Subclasses of CBRecord should let their "record" implement
- * this interface. and annotate whatever fields that should
- * be included int the serialization of the record
- *
- * <p>
- * To create a record with two fields you would simply implement
- * AutoRecord and add your annotated fields
- * </p>
- * <pre style="code">
- * public class ARecord implements AutoRecord {
- *   ...
- *   {@literal @}BSField(1) public Integer f1;
- *   {@literal @}BSField(2) public String f2;
- *   ...
- * }
- * </pre>
+ * General runtime exception for BStorables
  *
  * @author Martin Svensson {@literal <msvens@gmail.com>}
  * @since 3.0.1
- * @see CBRecord
+ * @see RuntimeException
  */
+public class CodecException extends RuntimeException {
 
-public interface AutoRecord {
+  public CodecException() {
+    super();
+  }
 
+  public CodecException(String message) {
+    super(message);
+  }
+
+  public CodecException(String message, Throwable cause) {
+    super(message, cause);
+  }
+
+  public CodecException(Throwable cause) {
+    super(cause);
+  }
+
+  protected CodecException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
+    super(message, cause, enableSuppression, writableStackTrace);
+  }
 }

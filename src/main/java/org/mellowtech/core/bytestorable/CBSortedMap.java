@@ -29,7 +29,7 @@ import java.util.*;
  * @param <K> key type
  * @param <V> value type
  */
-public class CBSortedMap<K,V> extends BStorableImp <SortedMap<K,V>, CBSortedMap<K,V>> implements SortedMap<K,V> {
+public class CBSortedMap<K,V> extends BStorableImp <SortedMap<K,V>> implements SortedMap<K,V> {
 
 
   /**
@@ -103,8 +103,8 @@ public class CBSortedMap<K,V> extends BStorableImp <SortedMap<K,V>, CBSortedMap<
     if(keyType == null || valueType == null)
       throw new ByteStorableException("Unrecognized types");
 
-    BStorable <K,?> keyTemp = PrimitiveType.fromType(keyType);
-    BStorable <V,?> valueTemp = PrimitiveType.fromType(valueType);
+    BStorable <K> keyTemp = PrimitiveType.fromType(keyType);
+    BStorable <V> valueTemp = PrimitiveType.fromType(valueType);
 
     SortedMap <K,V> tmpMap = new TreeMap <> ();
 

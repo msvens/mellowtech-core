@@ -23,7 +23,7 @@ import java.nio.ByteBuffer;
  * @author Martin Svensson {@literal <msvens@gmail.com>}
  * @since 3.0.1
  */
-public class CBInt implements BComparable<Integer,CBInt> {
+public class CBInt implements BComparable<Integer> {
   
   private final int value;
 
@@ -82,15 +82,15 @@ public class CBInt implements BComparable<Integer,CBInt> {
   }
 
   @Override
-  public int compareTo(CBInt other) {
-    return Integer.compare(value, other.value);
+  public int compareTo(BComparable<Integer> other) {
+    return Integer.compare(value, other.get());
   }
 
   @Override
   public boolean equals(Object other) {
     return other instanceof CBInt && value == ((CBInt) other).value;
   }
-  
+
   @Override
   public int hashCode(){return value;}
   

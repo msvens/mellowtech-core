@@ -16,7 +16,8 @@
 
 package org.mellowtech.core.sort;
 
-import org.mellowtech.core.bytestorable.BComparable;
+
+import org.mellowtech.core.codec.BCodec;
 
 /**
  * A Heap that is backed up by a byte[].
@@ -24,12 +25,12 @@ import org.mellowtech.core.bytestorable.BComparable;
  * @author Martin Svensson
  * @version 1.0
  */
-public class ByteHeap <A, B extends BComparable<A,B>> implements BufferHeap {
+public class ByteHeap <A> implements BufferHeap {
   private int heap[];
   private float inc;
   private int size;
   private byte[] bb;
-  private B bc;
+  private BCodec<A> codec;
 
   /**
    * Create a new heap that uses a specified byte[] for comparing objects and a
@@ -37,13 +38,13 @@ public class ByteHeap <A, B extends BComparable<A,B>> implements BufferHeap {
    * 
    * @param bb
    *          buffer of bytes
-   * @param bc
+   * @param codec
    *          byte comparator
    * @exception Exception
    *              if an error occurs
    */
-  public ByteHeap(byte[] bb, B bc) throws Exception {
-    this(100, 2.0f, bb, bc);
+  public ByteHeap(byte[] bb, BCodec<A> codec) throws Exception {
+    this(100, 2.0f, bb, codec);
   }
 
   /**
@@ -54,13 +55,13 @@ public class ByteHeap <A, B extends BComparable<A,B>> implements BufferHeap {
    *          preallocate X number of offsets, defaults to 100
    * @param bb
    *          buffer of bytes
-   * @param bc
+   * @param codec
    *          byte comparator
    * @exception Exception
    *              if an error occurs
    */
-  public ByteHeap(int initSize, byte[] bb, B bc) throws Exception {
-    this(initSize, 2.0f, bb, bc);
+  public ByteHeap(int initSize, byte[] bb, BCodec<A> codec) throws Exception {
+    this(initSize, 2.0f, bb, codec);
   }
 
   /**
@@ -74,18 +75,18 @@ public class ByteHeap <A, B extends BComparable<A,B>> implements BufferHeap {
    *          defaults to 200 %
    * @param bb
    *          buffer of bytes
-   * @param bc
+   * @param codec
    *          byte comparator
    * @exception Exception
    *              if an error occurs
    */
   public ByteHeap(int initSize, float incrementFactor, byte[] bb,
-      B bc) throws Exception {
+      BCodec<A> codec) throws Exception {
 
-    if (bb == null || bc == null)
+    if (bb == null || codec == null)
       throw new Exception("The ByteBuffer and ByteComparable can not be null");
     this.bb = bb;
-    this.bc = bc;
+    this.codec = codec;
     heap = new int[initSize];
     inc = incrementFactor;
     size = 0;
@@ -111,7 +112,7 @@ public class ByteHeap <A, B extends BComparable<A,B>> implements BufferHeap {
     // bubble up:
     int child = ++size;
 
-    while ((child > 1) && bc.byteCompare(c, heap[(child / 2) - 1], bb) < 0) {
+    while ((child > 1) && codec.byteCompare(c, heap[(child / 2) - 1], bb) < 0) {
       heap[child - 1] = heap[(child / 2) - 1];
       child /= 2;
     }
@@ -130,7 +131,7 @@ public class ByteHeap <A, B extends BComparable<A,B>> implements BufferHeap {
     int T = heap[0];
     size--;
     heap[0] = heap[size];
-    bubbleDown(heap, 1, size, bb, bc);
+    bubbleDown(heap, 1, size, bb, codec);
     return T;
   }
 
@@ -160,21 +161,20 @@ public class ByteHeap <A, B extends BComparable<A,B>> implements BufferHeap {
    *          array of offsets
    * @param bb
    *          a buffer that stores the objects
-   * @param bc
+   * @param codec
    *          a byte comparator
    * @param <A> Wrapped BComparable class
-   * @param <B> BComparable class
    * @return a new ByteBufferHeap
    * @exception Exception
    *              if an error occurs
    */
-  public static final <A, B extends BComparable<A,B>> ByteHeap <A,B> heapify(int[] objs, byte[] bb, B bc)
+  public static final <A> ByteHeap <A> heapify(int[] objs, byte[] bb, BCodec<A> codec)
       throws Exception {
 
-    ByteHeap <A,B> h = new ByteHeap <> (bb, bc);
+    ByteHeap <A> h = new ByteHeap <> (bb, codec);
     int N = objs.length;
     for (int k = N / 2; k > 0; k--) {
-      bubbleDown(objs, k, N, bb, bc);
+      bubbleDown(objs, k, N, bb, codec);
     }
     h.size = objs.length;
     h.heap = objs;
@@ -188,20 +188,20 @@ public class ByteHeap <A, B extends BComparable<A,B>> implements BufferHeap {
    *          an array of offsets to be sorted
    * @param bb
    *          the buffer that stores the objects
-   * @param bc
+   * @param codec
    *          a byte comparator
    */
-  public static final void heapSort(int[] objs, byte[] bb, BComparable<?,?> bc) {
+  public static final void heapSort(int[] objs, byte[] bb, BCodec<?> codec) {
     int N = objs.length;
     for (int k = N / 2; k > 0; k--) {
-      bubbleDownReverse(objs, k, N, bb, bc);
+      bubbleDownReverse(objs, k, N, bb, codec);
     }
     do {
       int T = objs[0];
       objs[0] = objs[N - 1];
       objs[N - 1] = T;
       N = N - 1;
-      bubbleDownReverse(objs, 1, N, bb, bc);
+      bubbleDownReverse(objs, 1, N, bb, codec);
     }
     while (N > 1);
   }
@@ -220,18 +220,18 @@ public class ByteHeap <A, B extends BComparable<A,B>> implements BufferHeap {
   }
 
   private static final void bubbleDown(int[] objs, int node, int max,
-      byte[] bb, BComparable <?,?> bc) {
+      byte[] bb, BCodec <?> codec) {
 
     int T = objs[node - 1];
     int half = max / 2;
     while (node <= half) {
       int j = node + node;
 
-      if ((j < max) && (bc.byteCompare(objs[j - 1], objs[j], bb) > 0)) {
+      if ((j < max) && (codec.byteCompare(objs[j - 1], objs[j], bb) > 0)) {
         j++;
       }
 
-      if (bc.byteCompare(T, objs[j - 1], bb) > 0) {
+      if (codec.byteCompare(T, objs[j - 1], bb) > 0) {
         objs[node - 1] = objs[j - 1];
         node = j;
       }
@@ -242,7 +242,7 @@ public class ByteHeap <A, B extends BComparable<A,B>> implements BufferHeap {
   }
 
   private static final void bubbleDownReverse(int[] objs, int k, int N,
-      byte[] bb, BComparable <?,?> bc) {
+      byte[] bb, BCodec <?> bc) {
     // int T = a[k - 1];
     int T = objs[k - 1];
     while (k <= N / 2) {

@@ -34,7 +34,7 @@ import java.util.Set;
  * @param <E> element type
  *
  */
-public class CBSet<E> extends BStorableImp <Set<E>, CBSet<E>> implements Set <E>{
+public class CBSet<E> extends BStorableImp <Set<E>> implements Set <E>{
 
 
   /**
@@ -60,7 +60,7 @@ public class CBSet<E> extends BStorableImp <Set<E>, CBSet<E>> implements Set <E>
     if(elemType == null)
       throw new ByteStorableException("Unrecognized type");
 
-    BStorable <E,?> elemTemp = PrimitiveType.fromType(elemType);
+    BStorable <E> elemTemp = PrimitiveType.fromType(elemType);
 
     for(int i = 0; i < elems; i++){
       E e = elemTemp.from(bb).get();

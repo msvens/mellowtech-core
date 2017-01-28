@@ -31,9 +31,8 @@ import java.nio.channels.WritableByteChannel;
  * @since 3.0.1
  *
  * @param <A> type of value
- * @param <B> self type
  */
-public interface BStorable <A, B extends BStorable<A,B>> {
+public interface BStorable <A> {
 
   /**
    * Size of serialized instance (including any size indicators)
@@ -58,11 +57,11 @@ public interface BStorable <A, B extends BStorable<A,B>> {
    * @param a valut to instantiate with
    * @return new instance
    */
-  default B create(A a){
+  default BStorable<A> create(A a){
     try {
       @SuppressWarnings("unchecked")
-      Constructor <B> c = (Constructor<B>) this.getClass().getConstructor(a.getClass());
-      return c.newInstance(a);
+      Constructor c = this.getClass().getConstructor(a.getClass());
+      return (BStorable<A>) c.newInstance(a);
     }
     catch(Exception e){
       throw new ByteStorableException("no such constructor method");
@@ -73,7 +72,7 @@ public interface BStorable <A, B extends BStorable<A,B>> {
    * Deep copy of this instance
    * @return new instance
    */
-  default B deepCopy(){
+  default BStorable<A> deepCopy(){
     ByteBuffer bb = to();
     bb.flip();
     return from(bb);
@@ -85,7 +84,7 @@ public interface BStorable <A, B extends BStorable<A,B>> {
    * @param bb buffer to read from
    * @return new instance
    */
-  B from(ByteBuffer bb);
+  BStorable<A> from(ByteBuffer bb);
 
   /**
    * Deserialize and return a new instance of
@@ -94,7 +93,7 @@ public interface BStorable <A, B extends BStorable<A,B>> {
    * @param offset offset in the array
    * @return new instance
    */
-  default B from(byte[] b, int offset) {
+  default BStorable<A> from(byte[] b, int offset) {
     ByteBuffer bb = ByteBuffer.wrap(b);
     bb.position(offset);
     return from(bb);
@@ -106,7 +105,7 @@ public interface BStorable <A, B extends BStorable<A,B>> {
    * @return new instance
    * @throws IOException if unexpected end of stream
    */
-  default B from(InputStream is) throws IOException{
+  default BStorable<A> from(InputStream is) throws IOException{
       ByteBuffer bb = ByteBuffer.allocate(4);
       int b;
       int i;
@@ -136,7 +135,7 @@ public interface BStorable <A, B extends BStorable<A,B>> {
    * @return new instance
    * @throws IOException if underlying channel throws exception
    */
-  default B from(ReadableByteChannel rbc) throws IOException{
+  default BStorable<A> from(ReadableByteChannel rbc) throws IOException{
     ByteBuffer bb = ByteBuffer.allocate(4);
     ByteBuffer one = ByteBuffer.allocate(1);
     //int b;

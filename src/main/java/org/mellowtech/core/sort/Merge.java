@@ -20,11 +20,12 @@ import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
+import java.util.Comparator;
 import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
 
-import org.mellowtech.core.bytestorable.BComparable;
-import org.mellowtech.core.bytestorable.CBUtil;
+import org.mellowtech.core.codec.BCodec;
+import org.mellowtech.core.codec.CodecUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,22 +42,20 @@ public class Merge{
 
   private static final Logger logger = LoggerFactory.getLogger(Merge.class);
 
-  private static class Container<A,B extends BComparable<A,B>> implements Comparable<Container<A,B>> {
-    B store;
+  private static class Container<A> implements Comparable<Container<A>> {
+    A store;
     int node;
-
-    Container(B bs, int node) {
-      store = bs;
+    public Container(A store, int node){
+      this.store = store;
       this.node = node;
     }
 
-    public int compareTo(Container<A,B> o) {
-      return this.store.compareTo(o.store);
+    @Override
+    public int compareTo(Container<A> o) {
+      return ((Comparable<? super A>)store).compareTo(o.store);
     }
 
-    public String toString() {
-      return node + " " + store.toString();
-    }
+    public String toString(){return node + " " + store.toString();}
   }
 
   /**
@@ -79,7 +78,7 @@ public class Merge{
    * 
    * @param fNames
    *          the list of files to merge
-   * @param template
+   * @param codec
    *          the type of objects to merge
    * @param input
    *          the input buffer
@@ -93,12 +92,11 @@ public class Merge{
    *          true if the set of files are compressed using
    *          java.util.zip.DeflaterOutputStream.
    * @param <A> Wrapped BComparable type
-   * @param <B> BComparable type
    * @exception Exception
    *              if an error occurs
    */
   @SuppressWarnings("unchecked")
-  public static <A, B extends BComparable<A,B>> void merge(String fNames[], B template,
+  public static <A> void merge(String fNames[], BCodec<A> codec,
       ByteBuffer input, ByteBuffer output, WritableByteChannel outputChannel,
       String dir, boolean compressed) throws Exception {
 
@@ -131,18 +129,18 @@ public class Merge{
       buffers[i].flip();
 
       // input buffer:
-      input(channels, buffers, i, heap, template);
+      input(channels, buffers, i, heap, codec);
     }
 
 
     // merge files:
-    Container <A,B> low;
+    Container <A> low;
     while (true) {
-      low = (Container<A, B>) heap.delete();
+      low = (Container<A>) heap.delete();
       if (low == null)
         break;
-      writeOutput(low.store, outputChannel, output);
-      input(channels, buffers, low.node, heap, template);
+      writeOutput(low.store, codec, outputChannel, output);
+      input(channels, buffers, low.node, heap, codec);
     }
     // flush remaining:
     output.flip();
@@ -159,7 +157,7 @@ public class Merge{
    * 
    * @param fNames
    *          the list of files to merge
-   * @param template
+   * @param codec
    *          the type of objects to merge
    * @param input
    *          the input buffer
@@ -173,11 +171,10 @@ public class Merge{
    *          true if the runs are compressed using
    *          java.util.zip.DeflaterOutputStream
    * @param <A> Wrapped BComparable type
-   * @param <B> BComparable type
    * @exception Exception
    *              if an error occurs
    */
-  public static <A, B extends BComparable<A,B>> void mergeDirect(String fNames[], B template,
+  public static <A> void mergeDirect(String fNames[], BCodec<A> codec,
       ByteBuffer input, ByteBuffer output, WritableByteChannel outputChannel,
       String dir, boolean compressed) throws Exception {
     // create local containers:
@@ -188,10 +185,10 @@ public class Merge{
     output.clear();
     BufferHeap bufferHeap;
     try {
-      bufferHeap = new ByteHeap <> (input.array(), template);
+      bufferHeap = new ByteHeap <> (input.array(), codec);
     }
     catch (Exception e) {
-      bufferHeap = new ByteBufferHeap <> (input, template);
+      bufferHeap = new ByteBufferHeap <> (input, codec);
     }
 
     // fill local containers:
@@ -217,7 +214,7 @@ public class Merge{
       buffers[i].flip();
 
       // input buffer:
-      input(channels, buffers, i * mBlockSize, bufferHeap, template);
+      input(channels, buffers, i * mBlockSize, bufferHeap, codec);
 
     }
 
@@ -227,8 +224,8 @@ public class Merge{
       low = bufferHeap.delete();
       if (low == -1)
         break;
-      writeOutput(low, input, outputChannel, output, template);
-      input(channels, buffers, low, bufferHeap, template);
+      writeOutput(low, input, outputChannel, output, codec);
+      input(channels, buffers, low, bufferHeap, codec);
     }
     // flush remaining:
     output.flip();
@@ -236,11 +233,11 @@ public class Merge{
   }
 
   private static void writeOutput(int offset, ByteBuffer input,
-      WritableByteChannel outChannel, ByteBuffer output, BComparable<?,?> template)
+      WritableByteChannel outChannel, ByteBuffer output, BCodec<?> codec)
       throws Exception {
     input.position(offset);
 
-    int size = template.byteSize(input);
+    int size = codec.byteSize(input);
     if (size > output.remaining()) {
       output.flip();
       outChannel.write(output);
@@ -251,25 +248,25 @@ public class Merge{
     input.limit(input.capacity());
   }
 
-  private static void writeOutput(BComparable<?,?> low,
+  private static <A> void writeOutput(A low, BCodec<A> codec,
       WritableByteChannel outChannel, ByteBuffer output) throws Exception {
 
-    if (low.byteSize() > output.remaining()) {
+    if (codec.byteSize(low) > output.remaining()) {
       output.flip();
       outChannel.write(output);
       output.clear();
     }
-    low.to(output);
+    codec.to(low,output);
   }
 
-  private static <A, B extends BComparable<A,B>>void input(ReadableByteChannel[] channels,
-      ByteBuffer[] buffers, int node, Heap heap, B template)
+  private static <A>void input(ReadableByteChannel[] channels,
+      ByteBuffer[] buffers, int node, Heap heap, BCodec<A> codec)
       throws Exception {
     if (!channels[node].isOpen())
       return;
-    int slack = CBUtil.slackOrSize(buffers[node], template);
+    int slack = CodecUtil.slackOrSize(buffers[node], codec);
     if (slack <= 0) {
-      CBUtil.copyToBeginning(buffers[node], Math.abs(slack));
+      CodecUtil.copyToBeginning(buffers[node], Math.abs(slack));
       if (channels[node].read(buffers[node]) == -1) {
         logger.debug("closing merge channel: {}",slack);
         channels[node].close();
@@ -279,17 +276,17 @@ public class Merge{
       buffers[node].flip();
       // slack = template.byteSize(buffers[node]);
     }
-    heap.insert(new Container<>(template.from(buffers[node]), node));
+    heap.insert(new Container<>(codec.from(buffers[node]), node));
   }
 
   private static void input(ReadableByteChannel[] channels,
-      ByteBuffer[] buffers, int offset, BufferHeap heap, BComparable<?,?> template) throws Exception {
+      ByteBuffer[] buffers, int offset, BufferHeap heap, BCodec<?> template) throws Exception {
     //if(!channels[node].isOpen()) return;
     int node = offset / mBlockSize;
-    int slack = CBUtil.slackOrSize(buffers[node], template);
+    int slack = CodecUtil.slackOrSize(buffers[node], template);
     if(!channels[node].isOpen()) return;
     if (slack <= 0) {
-      CBUtil.copyToBeginning(buffers[node], Math.abs(slack));
+      CodecUtil.copyToBeginning(buffers[node], Math.abs(slack));
       if (channels[node].read(buffers[node]) == -1) {
         channels[node].close();
         logger.debug("closing merge channel {} {}",node,slack);

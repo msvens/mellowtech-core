@@ -16,7 +16,11 @@
 
 package org.mellowtech.core.bytestorable;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.reflect.Constructor;
 import java.nio.ByteBuffer;
+import java.nio.channels.ReadableByteChannel;
 
 /**
  * An extension to BStorable that adds ordering to BStorables. Notably implementing
@@ -30,11 +34,79 @@ import java.nio.ByteBuffer;
  * @since 3.0.1
  *
  * @param <A> type of value
- * @param <B> self type
  * @see BStorable
  *
  */
-public interface BComparable <A,B extends BComparable<A,B>> extends BStorable <A,B>, Comparable <B> {
+public interface BComparable <A> extends BStorable <A>, Comparable <BComparable<A>>{
+
+  @Override
+  default BComparable<A> create(A a){
+    try {
+      @SuppressWarnings("unchecked")
+      Constructor c = this.getClass().getConstructor(a.getClass());
+      return (BComparable<A>) c.newInstance(a);
+    }
+    catch(Exception e){
+      throw new ByteStorableException("no such constructor method");
+    }
+  }
+
+  @Override
+  default BStorable<A> from(byte[] b, int offset) {
+    ByteBuffer bb = ByteBuffer.wrap(b);
+    bb.position(offset);
+    return from(bb);
+  }
+
+  @Override
+  default BComparable<A> from(InputStream is) throws IOException {
+    ByteBuffer bb = ByteBuffer.allocate(4);
+    int b;
+    int i;
+    for(i = 0; i < 4; i++){
+      b = is.read();
+      if(b == -1)
+        break;
+      bb.put((byte)b);
+    }
+    bb.flip();
+    int byteSize = this.byteSize(bb);
+    ByteBuffer bb1 = ByteBuffer.allocate(byteSize);
+    bb1.put(bb);
+    for(; i < byteSize; i++){
+      b = is.read();
+      if(b == -1)
+        throw new IOException("Unexpected end of stream: read object");
+      bb1.put((byte)b);
+    }
+    bb1.flip();
+    return this.from(bb1);
+  }
+
+  @Override
+  default BComparable<A> from(ReadableByteChannel rbc) throws IOException {
+    ByteBuffer bb = ByteBuffer.allocate(4);
+    ByteBuffer one = ByteBuffer.allocate(1);
+    //int b;
+    int i;
+    for(i = 0; i < 4; i++){
+      int read = rbc.read(one);
+      if(read == -1)
+        break;
+      bb.put(one.get(0));
+      one.clear();
+    }
+    bb.flip();
+    int byteSize = this.byteSize(bb);
+    ByteBuffer bb1 = ByteBuffer.allocate(byteSize);
+    bb1.put(bb);
+    rbc.read(bb1);
+    bb1.flip();
+    return this.from(bb1);
+  }
+
+  @Override
+  BComparable<A> from(ByteBuffer bb);
 
   /**
    * Default implementation of compareTo casts the value to a Comparable
@@ -49,8 +121,9 @@ public interface BComparable <A,B extends BComparable<A,B>> extends BStorable <A
    * @param other - object to compare to
    * @return see Comparable
    */
+
   @Override
-  default int compareTo(B other){
+  default int compareTo(BComparable<A> other){
     @SuppressWarnings("unchecked")
     Comparable <? super A> cmp = (Comparable <? super A>) this.get();
     return cmp.compareTo(other.get());
@@ -96,9 +169,9 @@ public interface BComparable <A,B extends BComparable<A,B>> extends BStorable <A
   default int byteCompare(int offset1, ByteBuffer bb1, int offset2,
       ByteBuffer bb2){
     bb1.position(offset1);
-    B b1 = this.from(bb1);
+    BComparable<A> b1 = (BComparable<A>) this.from(bb1);
     bb2.position(offset2);
-    B b2 = this.from(bb2);
+    BComparable<A> b2 = (BComparable<A>) this.from(bb2);
     return b1.compareTo(b2);
   }
 

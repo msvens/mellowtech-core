@@ -16,20 +16,21 @@
 
 package org.mellowtech.core.sort;
 
+import org.mellowtech.core.codec.BCodec;
+
 import java.util.Comparator;
 
-import org.mellowtech.core.bytestorable.BComparable;
 
 /**
  * @author msvens
  *
  */
-public class BComparatorArray<A, B extends BComparable <A,B>> implements Comparator<Integer>{
+public class BComparatorArray<A> implements Comparator<Integer>{
 
-  private final B template;
+  private final BCodec<A> template;
   private final byte buffer[];
   
-  public BComparatorArray(B template, byte[] buffer){
+  public BComparatorArray(BCodec<A> template, byte[] buffer){
     this.template = template;
     this.buffer = buffer;
   }

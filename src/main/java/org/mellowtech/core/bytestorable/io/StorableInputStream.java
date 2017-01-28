@@ -23,17 +23,16 @@ import org.mellowtech.core.bytestorable.BStorable;
 
 /**
  * Reads ByteStorables from a given input stream. Internally it uses a
- * StorableReadChannel
+ * CodecReadChannel
  * @param <A> Wrapped BStorable class
- * @param <B> BStorable class
  *
  * @author Martin Svensson {@literal <msvens@gmail.com>}
  * @since 3.0.1
  * @see StorableReadChannel
  */
-public class StorableInputStream <A, B extends BStorable <A,B>> {
+public class StorableInputStream <A> {
 
-  private StorableReadChannel <A,B> mChannel;
+  private StorableReadChannel <A> mChannel;
 
   /**
    * Initialize to read BStorables from a given input stream using the
@@ -46,7 +45,7 @@ public class StorableInputStream <A, B extends BStorable <A,B>> {
    * @exception IOException
    *              if an error occurs
    */
-  public StorableInputStream(InputStream is, B template)
+  public StorableInputStream(InputStream is, BStorable<A> template)
       throws IOException {
     mChannel = new StorableReadChannel <> (Channels.newChannel(is), template);
   }
@@ -58,7 +57,7 @@ public class StorableInputStream <A, B extends BStorable <A,B>> {
    * @exception IOException
    *              if an error occurs
    */
-  public B next() throws IOException {
+  public BStorable<A> next() throws IOException {
     return mChannel.next();
   }
   
@@ -67,7 +66,7 @@ public class StorableInputStream <A, B extends BStorable <A,B>> {
    * according some rules.
    * @param template BStorable template
    */
-  public void setTemplate(B template) {
+  public void setTemplate(BStorable<A> template) {
 	  mChannel.setTemplate(template);
   }
 }

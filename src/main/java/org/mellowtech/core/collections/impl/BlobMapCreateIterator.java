@@ -21,23 +21,23 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.Iterator;
 
-import org.mellowtech.core.bytestorable.BComparable;
-import org.mellowtech.core.bytestorable.BStorable;
+import org.mellowtech.core.codec.BCodec;
 import org.mellowtech.core.collections.KeyValue;
 
 /**
  * @author msvens
  *
  */
-public class BlobMapCreateIterator <K extends BComparable <?,K>,
-  V extends BStorable<?,V>> implements Iterator<KeyValue <K, BlobPointer>> {
+public class BlobMapCreateIterator <A,B> implements Iterator<KeyValue <A, BlobPointer>> {
 
-  private final Iterator <KeyValue<K,V>> iter;
+  private final Iterator <KeyValue<A,B>> iter;
   private final FileChannel fc;
+  private final BCodec<B> valueCodec;
   
-  public BlobMapCreateIterator(Iterator <KeyValue<K,V>> iter, FileChannel fc){
+  public BlobMapCreateIterator(Iterator <KeyValue<A,B>> iter, FileChannel fc, BCodec<B> valueCodec){
     this.iter = iter;
     this.fc = fc;
+    this.valueCodec = valueCodec;
   }
   
   @Override
@@ -46,14 +46,14 @@ public class BlobMapCreateIterator <K extends BComparable <?,K>,
   }
 
   @Override
-  public KeyValue<K, BlobPointer> next() {
-    KeyValue <K,V> n = iter.next();
+  public KeyValue<A, BlobPointer> next() {
+    KeyValue <A,B> n = iter.next();
     if(n == null) return null;
-    int size = n.getValue().byteSize();
+    int size = valueCodec.byteSize(n.getValue());
     try{
       long fpos = fc.size();
       BlobPointer bp = new BlobPointer(fpos, size);
-      ByteBuffer bb = n.getValue().to(); bb.flip();
+      ByteBuffer bb = valueCodec.to(n.getValue()); bb.flip();
       fc.write(bb, fpos);
       return new KeyValue <>(n.getKey(),bp);
     } catch(IOException e){

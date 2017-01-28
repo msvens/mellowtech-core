@@ -25,7 +25,7 @@ import java.nio.ByteBuffer;
  * @since 3.0.1
  */
 @SuppressWarnings("rawtypes")
-public class CBClass extends BStorableImp <Class, CBClass> implements Comparable <CBClass> {
+public class CBClass extends BStorableImp <Class> implements Comparable <CBClass> {
 
   /**
    * Initalize to a value of null

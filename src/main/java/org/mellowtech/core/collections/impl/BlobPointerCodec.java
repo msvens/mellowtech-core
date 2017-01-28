@@ -19,6 +19,7 @@ package org.mellowtech.core.collections.impl;
 import java.nio.ByteBuffer;
 
 import org.mellowtech.core.bytestorable.BStorableImp;
+import org.mellowtech.core.codec.BCodec;
 
 /**
  * Pointer to hold a file position and a number of bytes
@@ -26,39 +27,17 @@ import org.mellowtech.core.bytestorable.BStorableImp;
  * Time: 08:07
  *
  * @author Martin Svensson
+ * @since
  */
-public class BlobPointer extends BStorableImp <BlobPointer.Entry, BlobPointer> {
-
-  static class Entry {
-    long fPointer;
-    int bSize;
-    public Entry(){}
-    public Entry(long pointer, int size){fPointer = pointer; bSize = size;}
-    public String toString(){return fPointer+": "+bSize;};
+public class BlobPointerCodec implements BCodec<BlobPointer> {
+  @Override
+  public int byteSize(BlobPointer blobPointer) {
+    return 12;
   }
 
-  public BlobPointer(){
-    super(new Entry());
-  }
-
-  public BlobPointer(long fPointer, int bSize){
-    super(new Entry(fPointer, bSize));
-  }
-
-  public long getfPointer() {
-    return value.fPointer;
-  }
-
-  public void setfPointer(long fPointer) {
-    value.fPointer = fPointer;
-  }
-
-  public int getbSize() {
-    return value.bSize;
-  }
-
-  public void setbSize(int bSize) {
-    value.bSize = bSize;
+  @Override
+  public int byteSize(ByteBuffer bb) {
+    return 12;
   }
 
   @Override
@@ -67,18 +46,17 @@ public class BlobPointer extends BStorableImp <BlobPointer.Entry, BlobPointer> {
   }
 
   @Override
-  public void to(ByteBuffer bb) {
+  public void to(BlobPointer value, ByteBuffer bb) {
     bb.putLong(value.fPointer);
     bb.putInt(value.bSize);
   }
 
-  @Override
-  public int byteSize() {
-    return 12;
-  }
+}
 
-  @Override
-  public int byteSize(ByteBuffer bb) {
-    return 12;
-  }
+class BlobPointer {
+  public long fPointer;
+  public int bSize;
+  public BlobPointer(){}
+  public BlobPointer(long pointer, int size){fPointer = pointer; bSize = size;}
+  public String toString(){return fPointer+": "+bSize;};
 }

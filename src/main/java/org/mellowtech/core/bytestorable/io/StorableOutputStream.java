@@ -23,7 +23,7 @@ import org.mellowtech.core.bytestorable.BStorable;
 
 /**
  * Writes BStorables to a given output stream. Internally it uses a
- * StorableWriteChannel
+ * CodecWriteChannel
  * 
  * @author Martin Svensson {@literal <msvens@gmail.com>}
  * @since 3.0.1
@@ -53,7 +53,7 @@ public class StorableOutputStream {
    * @exception IOException
    *              if an error occurs
    */
-  public void write(BStorable <?,?> bs) throws IOException {
+  public void write(BStorable <?> bs) throws IOException {
     mChannel.write(bs);
   }
 

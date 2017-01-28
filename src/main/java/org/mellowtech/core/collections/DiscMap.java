@@ -21,13 +21,10 @@ import java.util.Iterator;
 import java.util.Map;
 
 /**
- * Created with IntelliJ IDEA.
- * User: Martin Svensson
- * Date: 2012-10-21
- * Time: 11:04
- * To change this template use File | Settings | File Templates.
+ * @author Martin Svensson {@literal <msvens@gmail.com>}
+ * @since 3.0.0
  */
-public interface DiscMap <K,V> extends Map<K,V> {
+public interface DiscMap <A,B> extends Map<A,B> {
 
   /**
    * persist the disc map
@@ -58,7 +55,7 @@ public interface DiscMap <K,V> extends Map<K,V> {
    * Iterate over the entries of this disc map...
    * @return iterator
    */
-  Iterator <Entry <K,V>> iterator();
+  Iterator <Entry <A,B>> iterator();
 
 
 }

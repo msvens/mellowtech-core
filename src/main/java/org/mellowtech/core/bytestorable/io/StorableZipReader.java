@@ -30,15 +30,14 @@ import org.mellowtech.core.bytestorable.BStorable;
  * is stored in its own zip entry.
  *
  * @param <A> Wrapped BStorable class
- * @param <B> BStorable class
  *
  * @author Rickard Cöster {@literal rickcos@gmail.com}
  * @since 3.0.1
  */
-public class StorableZipReader <A,B extends BStorable <A,B>> {
+public class StorableZipReader <A> {
 
   ZipFile zipFile;
-  B template;
+  BStorable<A> template;
   Enumeration <? extends ZipEntry> en;
 
   /**
@@ -47,7 +46,7 @@ public class StorableZipReader <A,B extends BStorable <A,B>> {
    * @param template BStorable template
    * @throws IOException if an exception occurs
    */
-  public StorableZipReader(String fileName, B template)
+  public StorableZipReader(String fileName, BStorable<A> template)
       throws IOException {
     zipFile = new ZipFile(new File(fileName));
     this.template = template;
@@ -60,21 +59,21 @@ public class StorableZipReader <A,B extends BStorable <A,B>> {
    * @return BStorable object
    * @throws IOException if an exception occurs
    */
-  public B get(String name) throws IOException {
+  public BStorable<A> get(String name) throws IOException {
     ZipEntry ze = zipFile.getEntry(name);
     if (ze == null)
       return null;
     return get(ze);
   }
 
-  protected B get(ZipEntry ze) throws IOException {
+  protected BStorable<A> get(ZipEntry ze) throws IOException {
     InputStream is = zipFile.getInputStream(ze);
     byte[] ba = new byte[(int) ze.getSize()];
     int c, offset = 0;
     while ((c = is.read()) != -1)
       ba[offset++] = (byte) c;
 
-    B bs = null;
+    BStorable<A> bs = null;
     try {
       bs = template.from(ba, 0);
     }
@@ -89,7 +88,7 @@ public class StorableZipReader <A,B extends BStorable <A,B>> {
    * @return BStorable object or null if no more entries are found
    * @throws IOException if an exception occurs
    */
-  public B next() throws IOException {
+  public BStorable<A> next() throws IOException {
     if (!en.hasMoreElements())
       return null;
     ZipEntry ze = (ZipEntry) en.nextElement();

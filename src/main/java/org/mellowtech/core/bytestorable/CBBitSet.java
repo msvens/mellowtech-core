@@ -26,7 +26,7 @@ import java.util.BitSet;
  * @since 3.0.1
  * @see java.util.BitSet
  */
-public class CBBitSet extends BStorableImp <BitSet, CBBitSet> {
+public class CBBitSet extends BStorableImp <BitSet> {
 
   /**
    * Initialize this CBBitSet with an empty BitSet

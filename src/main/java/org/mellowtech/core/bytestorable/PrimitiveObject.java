@@ -24,9 +24,9 @@ import java.nio.ByteBuffer;
  * @author Martin Svensson {@literal <msvens@gmail.com>}
  * @since 3.0.1
  * @see PrimitiveType
- * @param <T> wrapped type
+ * @param <A> wrapped type
  */
-public class PrimitiveObject <T> extends BStorableImp <T, PrimitiveObject<T>> {
+public class PrimitiveObject <A> extends BStorableImp <A> {
 
   private PrimitiveType pt;
 
@@ -39,7 +39,7 @@ public class PrimitiveObject <T> extends BStorableImp <T, PrimitiveObject<T>> {
    * Initialize this primitive object with a specific value
    * @param value value to set
    */
-  public PrimitiveObject(T value){
+  public PrimitiveObject(A value){
     super(value);
     if(value != null) {
       pt = PrimitiveType.type(value);
@@ -47,19 +47,19 @@ public class PrimitiveObject <T> extends BStorableImp <T, PrimitiveObject<T>> {
   }
 
   @Override
-  public PrimitiveObject <T> from(ByteBuffer bb) {
-    PrimitiveObject <T> toRet; // = (doNew ? new PrimitiveObject <T> () : this);
+  public PrimitiveObject <A> from(ByteBuffer bb) {
+    PrimitiveObject <A> toRet; // = (doNew ? new PrimitiveObject <T> () : this);
     //toRet.pt = this.pt;
     //getSize(bb);
     CBUtil.getSize(bb, true);
     
     PrimitiveType prim = PrimitiveType.fromOrdinal(bb.get());
     @SuppressWarnings("unchecked")
-    BStorable <T,?> temp = (BStorable <T,?>) PrimitiveType.fromType(prim);
+    BStorable <A> temp = (BStorable <A>) PrimitiveType.fromType(prim);
     if(bb.get() != 1){
       toRet = new PrimitiveObject <> ();
     } else {
-      T value = temp.from(bb).get();
+      A value = temp.from(bb).get();
       toRet = new PrimitiveObject <> (value);
     }
     toRet.pt = prim;
@@ -95,7 +95,7 @@ public class PrimitiveObject <T> extends BStorableImp <T, PrimitiveObject<T>> {
   }
 
   @SuppressWarnings("unchecked")
-  private BStorable <T,?> asStorable(){
-    return (BStorable<T,?>) PrimitiveType.fromType(pt, value);
+  private BStorable <A> asStorable(){
+    return (BStorable<A>) PrimitiveType.fromType(pt, value);
   }
 }

@@ -318,7 +318,7 @@ public class StorableArrays {
      * @return the size (in bytes) of the array, including the four bytes for the
      *         size indicator
      */
-    public static int getByteStorableArrayByteSize(BStorable <?,?> [] array) {
+    public static int getByteStorableArrayByteSize(BStorable <?> [] array) {
       int size = 4 + 4;
       for (int i = 0; array != null && i < array.length; i++)
         size += array[i].byteSize();
@@ -334,7 +334,7 @@ public class StorableArrays {
      * @param array
      *          the array to store
      */
-    public static void putByteStorableArray(ByteBuffer bb, BStorable <?,?> [] array) {
+    public static void putByteStorableArray(ByteBuffer bb, BStorable <?> [] array) {
       // Increase position.
       int startpos = bb.position();
       bb.position(bb.position() + 4);
@@ -357,19 +357,18 @@ public class StorableArrays {
      * @param arrayTemplate the template for the specific ByteStorable
      * @param template the template for the specific ByteStorable
      * @param <A> wrapped BComparable class
-     * @param <B> BComparabble class
      * @return an array of ByteStorables
      */
-    public static <A,B extends BStorable<A,B>> BStorable <A,B> [] getByteStorableArray(ByteBuffer bb,
-        BStorable <A,B> [] arrayTemplate, BStorable <A,B> template) {
+    public static <A> BStorable <A> [] getByteStorableArray(ByteBuffer bb,
+        BStorable <A> [] arrayTemplate, BStorable <A> template) {
       bb.getInt();
       int size = bb.getInt();
       if (size <= 0)
         return null;
 
-      BStorable <A,B> [] array;
+      BStorable <A> [] array;
       Class <?> arrayClass = arrayTemplate.getClass().getComponentType();
-      array = (BStorable<A,B>[]) java.lang.reflect.Array.newInstance(arrayClass,
+      array = (BStorable<A>[]) java.lang.reflect.Array.newInstance(arrayClass,
           size);
       for (int i = 0; i < size; i++)
         array[i] = template.from(bb);

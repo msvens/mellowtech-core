@@ -16,12 +16,14 @@
 
 package org.mellowtech.core.collections;
 
-import org.mellowtech.core.bytestorable.*;
+import org.mellowtech.core.codec.BCodec;
+import org.mellowtech.core.codec.Codecs;
 import org.mellowtech.core.collections.impl.DiscBasedHashMap;
 import org.mellowtech.core.collections.impl.DiscBasedMap;
 
 import java.util.Date;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Created by msvens on 22/10/15.
@@ -85,238 +87,46 @@ public class DiscMapBuilder {
     return build(keyClass, valueClass, fileName, false);
   }
 
+
   @SuppressWarnings("unchecked")
-  public <K, V> DiscMap<K, V> build(Class<K> keyClass, Class<V> valueClass, String fileName, boolean sorted) {
-    if (keyClass == Boolean.class) {
-      if (valueClass == Boolean.class)
-        return (DiscMap<K, V>) this.create(CBBoolean.class, CBBoolean.class, fileName, sorted);
-      else if (valueClass == Byte.class)
-        return (DiscMap<K, V>) this.create(CBBoolean.class, CBByte.class, fileName, sorted);
-      else if (valueClass == Short.class)
-        return (DiscMap<K, V>) this.create(CBBoolean.class, CBShort.class, fileName, sorted);
-      else if (valueClass == Integer.class)
-        return (DiscMap<K, V>) this.create(CBBoolean.class, CBInt.class, fileName, sorted);
-      else if (valueClass == Long.class)
-        return (DiscMap<K, V>) this.create(CBBoolean.class, CBLong.class, fileName, sorted);
-      else if (valueClass == Float.class)
-        return (DiscMap<K, V>) this.create(CBBoolean.class, CBFloat.class, fileName, sorted);
-      else if (valueClass == Double.class)
-        return (DiscMap<K, V>) this.create(CBBoolean.class, CBDouble.class, fileName, sorted);
-      else if (valueClass == String.class)
-        return (DiscMap<K, V>) this.create(CBBoolean.class, CBString.class, fileName, sorted);
-      else if (valueClass == byte[].class)
-        return (DiscMap<K, V>) this.create(CBBoolean.class, CBByteArray.class, fileName, sorted);
-      else if (valueClass == Date.class)
-        return (DiscMap<K, V>) this.create(CBBoolean.class, CBDate.class, fileName, sorted);
-      else throw new Error("unknown value class");
-    } else if (keyClass == Byte.class) {
-      if (valueClass == Boolean.class)
-        return (DiscMap<K, V>) this.create(CBByte.class, CBBoolean.class, fileName, sorted);
-      else if (valueClass == Byte.class)
-        return (DiscMap<K, V>) this.create(CBByte.class, CBByte.class, fileName, sorted);
-      else if (valueClass == Short.class)
-        return (DiscMap<K, V>) this.create(CBByte.class, CBShort.class, fileName, sorted);
-      else if (valueClass == Integer.class)
-        return (DiscMap<K, V>) this.create(CBByte.class, CBInt.class, fileName, sorted);
-      else if (valueClass == Long.class)
-        return (DiscMap<K, V>) this.create(CBByte.class, CBLong.class, fileName, sorted);
-      else if (valueClass == Float.class)
-        return (DiscMap<K, V>) this.create(CBByte.class, CBFloat.class, fileName, sorted);
-      else if (valueClass == Double.class)
-        return (DiscMap<K, V>) this.create(CBByte.class, CBDouble.class, fileName, sorted);
-      else if (valueClass == String.class)
-        return (DiscMap<K, V>) this.create(CBByte.class, CBString.class, fileName, sorted);
-      else if (valueClass == byte[].class)
-        return (DiscMap<K, V>) this.create(CBByte.class, CBByteArray.class, fileName, sorted);
-      else if (valueClass == Date.class)
-        return (DiscMap<K, V>) this.create(CBByte.class, CBDate.class, fileName, sorted);
-      else throw new Error("unknown value class");
-    } else if (keyClass == Short.class) {
-      if (valueClass == Boolean.class)
-        return (DiscMap<K, V>) this.create(CBShort.class, CBBoolean.class, fileName, sorted);
-      else if (valueClass == Byte.class)
-        return (DiscMap<K, V>) this.create(CBShort.class, CBByte.class, fileName, sorted);
-      else if (valueClass == Short.class)
-        return (DiscMap<K, V>) this.create(CBShort.class, CBShort.class, fileName, sorted);
-      else if (valueClass == Integer.class)
-        return (DiscMap<K, V>) this.create(CBShort.class, CBInt.class, fileName, sorted);
-      else if (valueClass == Long.class)
-        return (DiscMap<K, V>) this.create(CBShort.class, CBLong.class, fileName, sorted);
-      else if (valueClass == Float.class)
-        return (DiscMap<K, V>) this.create(CBShort.class, CBFloat.class, fileName, sorted);
-      else if (valueClass == Double.class)
-        return (DiscMap<K, V>) this.create(CBShort.class, CBDouble.class, fileName, sorted);
-      else if (valueClass == String.class)
-        return (DiscMap<K, V>) this.create(CBShort.class, CBString.class, fileName, sorted);
-      else if (valueClass == byte[].class)
-        return (DiscMap<K, V>) this.create(CBShort.class, CBByteArray.class, fileName, sorted);
-      else if (valueClass == Date.class)
-        return (DiscMap<K, V>) this.create(CBShort.class, CBDate.class, fileName, sorted);
-      else throw new Error("unknown value class");
-    } else if (keyClass == Integer.class) {
-      if (valueClass == Boolean.class)
-        return (DiscMap<K, V>) this.create(CBInt.class, CBBoolean.class, fileName, sorted);
-      else if (valueClass == Byte.class)
-        return (DiscMap<K, V>) this.create(CBInt.class, CBByte.class, fileName, sorted);
-      else if (valueClass == Short.class)
-        return (DiscMap<K, V>) this.create(CBInt.class, CBShort.class, fileName, sorted);
-      else if (valueClass == Integer.class)
-        return (DiscMap<K, V>) this.create(CBInt.class, CBInt.class, fileName, sorted);
-      else if (valueClass == Long.class)
-        return (DiscMap<K, V>) this.create(CBInt.class, CBLong.class, fileName, sorted);
-      else if (valueClass == Float.class)
-        return (DiscMap<K, V>) this.create(CBInt.class, CBFloat.class, fileName, sorted);
-      else if (valueClass == Double.class)
-        return (DiscMap<K, V>) this.create(CBInt.class, CBDouble.class, fileName, sorted);
-      else if (valueClass == String.class)
-        return (DiscMap<K, V>) this.create(CBInt.class, CBString.class, fileName, sorted);
-      else if (valueClass == byte[].class)
-        return (DiscMap<K, V>) this.create(CBInt.class, CBByteArray.class, fileName, sorted);
-      else if (valueClass == Date.class)
-        return (DiscMap<K, V>) this.create(CBInt.class, CBDate.class, fileName, sorted);
-      else throw new Error("unknown value class");
-    } else if (keyClass == Long.class) {
-      if (valueClass == Boolean.class)
-        return (DiscMap<K, V>) this.create(CBLong.class, CBBoolean.class, fileName, sorted);
-      else if (valueClass == Byte.class)
-        return (DiscMap<K, V>) this.create(CBLong.class, CBByte.class, fileName, sorted);
-      else if (valueClass == Short.class)
-        return (DiscMap<K, V>) this.create(CBLong.class, CBShort.class, fileName, sorted);
-      else if (valueClass == Integer.class)
-        return (DiscMap<K, V>) this.create(CBLong.class, CBInt.class, fileName, sorted);
-      else if (valueClass == Long.class)
-        return (DiscMap<K, V>) this.create(CBLong.class, CBLong.class, fileName, sorted);
-      else if (valueClass == Float.class)
-        return (DiscMap<K, V>) this.create(CBLong.class, CBFloat.class, fileName, sorted);
-      else if (valueClass == Double.class)
-        return (DiscMap<K, V>) this.create(CBLong.class, CBDouble.class, fileName, sorted);
-      else if (valueClass == String.class)
-        return (DiscMap<K, V>) this.create(CBLong.class, CBString.class, fileName, sorted);
-      else if (valueClass == byte[].class)
-        return (DiscMap<K, V>) this.create(CBLong.class, CBByteArray.class, fileName, sorted);
-      else if (valueClass == Date.class)
-        return (DiscMap<K, V>) this.create(CBLong.class, CBDate.class, fileName, sorted);
-      else throw new Error("unknown value class");
-    } else if (keyClass == Float.class) {
-      if (valueClass == Boolean.class)
-        return (DiscMap<K, V>) this.create(CBFloat.class, CBBoolean.class, fileName, sorted);
-      else if (valueClass == Byte.class)
-        return (DiscMap<K, V>) this.create(CBFloat.class, CBByte.class, fileName, sorted);
-      else if (valueClass == Short.class)
-        return (DiscMap<K, V>) this.create(CBFloat.class, CBShort.class, fileName, sorted);
-      else if (valueClass == Integer.class)
-        return (DiscMap<K, V>) this.create(CBFloat.class, CBInt.class, fileName, sorted);
-      else if (valueClass == Long.class)
-        return (DiscMap<K, V>) this.create(CBFloat.class, CBLong.class, fileName, sorted);
-      else if (valueClass == Float.class)
-        return (DiscMap<K, V>) this.create(CBFloat.class, CBFloat.class, fileName, sorted);
-      else if (valueClass == Double.class)
-        return (DiscMap<K, V>) this.create(CBFloat.class, CBDouble.class, fileName, sorted);
-      else if (valueClass == String.class)
-        return (DiscMap<K, V>) this.create(CBFloat.class, CBString.class, fileName, sorted);
-      else if (valueClass == byte[].class)
-        return (DiscMap<K, V>) this.create(CBFloat.class, CBByteArray.class, fileName, sorted);
-      else if (valueClass == Date.class)
-        return (DiscMap<K, V>) this.create(CBFloat.class, CBDate.class, fileName, sorted);
-      else throw new Error("unknown value class");
-    } else if (keyClass == Double.class) {
-      if (valueClass == Boolean.class)
-        return (DiscMap<K, V>) this.create(CBDouble.class, CBBoolean.class, fileName, sorted);
-      else if (valueClass == Byte.class)
-        return (DiscMap<K, V>) this.create(CBDouble.class, CBByte.class, fileName, sorted);
-      else if (valueClass == Short.class)
-        return (DiscMap<K, V>) this.create(CBDouble.class, CBShort.class, fileName, sorted);
-      else if (valueClass == Integer.class)
-        return (DiscMap<K, V>) this.create(CBDouble.class, CBInt.class, fileName, sorted);
-      else if (valueClass == Long.class)
-        return (DiscMap<K, V>) this.create(CBDouble.class, CBLong.class, fileName, sorted);
-      else if (valueClass == Float.class)
-        return (DiscMap<K, V>) this.create(CBDouble.class, CBFloat.class, fileName, sorted);
-      else if (valueClass == Double.class)
-        return (DiscMap<K, V>) this.create(CBDouble.class, CBDouble.class, fileName, sorted);
-      else if (valueClass == String.class)
-        return (DiscMap<K, V>) this.create(CBDouble.class, CBString.class, fileName, sorted);
-      else if (valueClass == byte[].class)
-        return (DiscMap<K, V>) this.create(CBDouble.class, CBByteArray.class, fileName, sorted);
-      else if (valueClass == Date.class)
-        return (DiscMap<K, V>) this.create(CBDouble.class, CBDate.class, fileName, sorted);
-      else throw new Error("unknown value class");
-    } else if (keyClass == String.class) {
-      if (valueClass == Boolean.class)
-        return (DiscMap<K, V>) this.create(CBString.class, CBBoolean.class, fileName, sorted);
-      else if (valueClass == Byte.class)
-        return (DiscMap<K, V>) this.create(CBString.class, CBByte.class, fileName, sorted);
-      else if (valueClass == Short.class)
-        return (DiscMap<K, V>) this.create(CBString.class, CBShort.class, fileName, sorted);
-      else if (valueClass == Integer.class)
-        return (DiscMap<K, V>) this.create(CBString.class, CBInt.class, fileName, sorted);
-      else if (valueClass == Long.class)
-        return (DiscMap<K, V>) this.create(CBString.class, CBLong.class, fileName, sorted);
-      else if (valueClass == Float.class)
-        return (DiscMap<K, V>) this.create(CBString.class, CBFloat.class, fileName, sorted);
-      else if (valueClass == Double.class)
-        return (DiscMap<K, V>) this.create(CBString.class, CBDouble.class, fileName, sorted);
-      else if (valueClass == String.class)
-        return (DiscMap<K, V>) this.create(CBString.class, CBString.class, fileName, sorted);
-      else if (valueClass == byte[].class)
-        return (DiscMap<K, V>) this.create(CBString.class, CBByteArray.class, fileName, sorted);
-      else if (valueClass == Date.class)
-        return (DiscMap<K, V>) this.create(CBString.class, CBDate.class, fileName, sorted);
-      else throw new Error("unknown value class");
-    } else if (keyClass == byte[].class) {
-      if (valueClass == Boolean.class)
-        return (DiscMap<K, V>) this.create(CBByteArray.class, CBBoolean.class, fileName, sorted);
-      else if (valueClass == Byte.class)
-        return (DiscMap<K, V>) this.create(CBByteArray.class, CBByte.class, fileName, sorted);
-      else if (valueClass == Short.class)
-        return (DiscMap<K, V>) this.create(CBByteArray.class, CBShort.class, fileName, sorted);
-      else if (valueClass == Integer.class)
-        return (DiscMap<K, V>) this.create(CBByteArray.class, CBInt.class, fileName, sorted);
-      else if (valueClass == Long.class)
-        return (DiscMap<K, V>) this.create(CBByteArray.class, CBLong.class, fileName, sorted);
-      else if (valueClass == Float.class)
-        return (DiscMap<K, V>) this.create(CBByteArray.class, CBFloat.class, fileName, sorted);
-      else if (valueClass == Double.class)
-        return (DiscMap<K, V>) this.create(CBByteArray.class, CBDouble.class, fileName, sorted);
-      else if (valueClass == String.class)
-        return (DiscMap<K, V>) this.create(CBByteArray.class, CBString.class, fileName, sorted);
-      else if (valueClass == byte[].class)
-        return (DiscMap<K, V>) this.create(CBByteArray.class, CBByteArray.class, fileName, sorted);
-      else if (valueClass == Date.class)
-        return (DiscMap<K, V>) this.create(CBByteArray.class, CBDate.class, fileName, sorted);
-      else throw new Error("unknonw value class");
-    } else if (keyClass == Date.class) {
-      if (valueClass == Boolean.class)
-        return (DiscMap<K, V>) this.create(CBDate.class, CBBoolean.class, fileName, sorted);
-      else if (valueClass == Byte.class)
-        return (DiscMap<K, V>) this.create(CBDate.class, CBByte.class, fileName, sorted);
-      else if (valueClass == Short.class)
-        return (DiscMap<K, V>) this.create(CBDate.class, CBShort.class, fileName, sorted);
-      else if (valueClass == Integer.class)
-        return (DiscMap<K, V>) this.create(CBDate.class, CBInt.class, fileName, sorted);
-      else if (valueClass == Long.class)
-        return (DiscMap<K, V>) this.create(CBDate.class, CBLong.class, fileName, sorted);
-      else if (valueClass == Float.class)
-        return (DiscMap<K, V>) this.create(CBDate.class, CBFloat.class, fileName, sorted);
-      else if (valueClass == Double.class)
-        return (DiscMap<K, V>) this.create(CBDate.class, CBDouble.class, fileName, sorted);
-      else if (valueClass == String.class)
-        return (DiscMap<K, V>) this.create(CBDate.class, CBString.class, fileName, sorted);
-      else if (valueClass == byte[].class)
-        return (DiscMap<K, V>) this.create(CBDate.class, CBByteArray.class, fileName, sorted);
-      else if (valueClass == Date.class)
-        return (DiscMap<K, V>) this.create(CBDate.class, CBDate.class, fileName, sorted);
-      else throw new Error("unknonw value class");
-    } else {
-      throw new Error("unknown keyType class");
-    }
+  /*private <A> BComparable<A> getTemplate(Class<A> clazz){
+    if(clazz == Boolean.class)
+      return (BComparable<A>) new CBBoolean();
+    else if(clazz == Byte.class)
+      return (BComparable<A>) new CBByte();
+    else if(clazz == Character.class)
+      return (BComparable<A>) new CBChar();
+    else if(clazz == Short.class)
+      return (BComparable<A>) new CBShort();
+    else if(clazz == Integer.class)
+      return (BComparable<A>) new CBInt();
+    else if(clazz == Long.class)
+      return (BComparable<A>) new CBLong();
+    else if(clazz == Float.class)
+      return (BComparable<A>) new CBFloat();
+    else if(clazz == Double.class)
+      return (BComparable<A>) new CBDouble();
+    else if(clazz == String.class)
+      return (BComparable<A>) new CBString();
+    else if(clazz == byte[].class)
+      return (BComparable<A>) new CBByteArray();
+    else if(clazz == Date.class)
+      return (BComparable<A>) new CBDate();
+    else if(clazz == UUID.class)
+      return (BComparable<A>) new CBUUID();
+    else
+      throw new Error("unknown type");
+  }*/
+  public <A,B> DiscMap<A,B> build(Class<A> keyClass, Class<B> valueClass, String fileName, boolean sorted) {
+    //BComparable<K> keyTemp = getTemplate(keyClass);
+    //BStorable<V> valTemp = getTemplate(valueClass);
+    return this.create(Codecs.fromClass(keyClass),Codecs.fromClass(valueClass), fileName, sorted);
   }
 
 
-  public <K, V, BK extends BComparable<K, BK>, BV extends BStorable<V, BV>> DiscMap<K, V> create(Class<BK> keyClass,
-                                                                                                 Class<BV> valueClass, String fileName, boolean sorted) {
+  public <A,B> DiscMap<A,B> create(BCodec<A> keyClass, BCodec<B> valueClass, String fileName, boolean sorted) {
     try {
-      if (calcSize(keyClass.newInstance(), valueClass.newInstance()) * 10 > valueBlockSize)
+      if (calcSize(keyClass, valueClass) * 10 > valueBlockSize)
         blobValues = true;
       if (sorted) {
         BTreeBuilder builder = new BTreeBuilder();
@@ -330,30 +140,15 @@ public class DiscMapBuilder {
     }
   }
 
-  private int calc(BStorable<?, ?> inst) {
-    return inst.isFixed() ? inst.byteSize() : Integer.MAX_VALUE;
+  private int calc(BCodec<?> inst) {
+    return inst.isFixed() ? inst.fixedSize() : Integer.MAX_VALUE;
   }
 
-  private int calcSize(BStorable<?, ?> key, BStorable<?, ?> value) {
+  private int calcSize(BCodec<?> key, BCodec<?> value) {
     int keySize = maxKeySize.isPresent() && !key.isFixed() ? maxKeySize.get() : calc(key);
     int valSize = maxValueSize.isPresent() && !value.isFixed() ? maxValueSize.get() : calc(value);
     return keySize + valSize;
   }
-
-  /*
-    def calcSize(header: ColumnHeader): ColumnHeader = {
-    def size(b: BStorable[_, _], ms: Option[Int]): Int = b.isFixed match {
-      case true => b.byteSize
-      case false => ms match {
-        case Some(s) => s
-        case None => Int.MaxValue
-      }
-    }
-    val kSize = size(bctype(header.keyType).newInstance(), header.maxKeySize)
-    val vSize = size(bctype(header.valueType).newInstance(), header.maxValueSize)
-    header.copy(maxKeySize = Some(kSize), maxValueSize = Some(vSize))
-  }
-   */
 
 
 }

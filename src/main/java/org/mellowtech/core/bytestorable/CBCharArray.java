@@ -19,6 +19,7 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Locale;
 
+import org.mellowtech.core.codec.UtfUtil;
 import org.mellowtech.core.util.CompiledLocale;
 
 /**
@@ -40,7 +41,7 @@ import org.mellowtech.core.util.CompiledLocale;
  * @see CBString
  * @see UtfUtil
  */
-public class CBCharArray extends BStorableImp <char[], CBCharArray> implements BComparable<char[], CBCharArray>, CharSequence{
+public class CBCharArray extends BStorableImp <char[]> implements BComparable<char[]>, CharSequence{
 
   /**
    * Get the char hmap, creates it if it does not already exist.
@@ -158,8 +159,8 @@ public class CBCharArray extends BStorableImp <char[], CBCharArray> implements B
   }
 
   @Override
-  public int compareTo(CBCharArray other) {
-    char[] obj1 = other.value;
+  public int compareTo(BComparable<char[]> other) {
+    char[] obj1 = other.get();
     int n = Math.min(value.length, obj1.length);
     int i = 0;
     char c1,c2;

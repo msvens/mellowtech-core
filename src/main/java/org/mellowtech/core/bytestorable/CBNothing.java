@@ -26,7 +26,7 @@ import java.nio.ByteBuffer;
  * @author Martin Svensson {@literal <msvens@gmail.com>}
  * @since 3.0.4
  */
-public final class CBNothing implements BStorable<Object, CBNothing> {
+public final class CBNothing implements BStorable<Object> {
 
   @Override
   public Object get() {

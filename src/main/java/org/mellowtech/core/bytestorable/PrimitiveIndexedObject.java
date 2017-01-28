@@ -27,7 +27,7 @@ import java.nio.ByteBuffer;
  * @see PrimitiveType
  *
  */
-public class PrimitiveIndexedObject extends BStorableImp <PrimitiveIndexedObject.Entry, PrimitiveIndexedObject>{
+public class PrimitiveIndexedObject extends BStorableImp <PrimitiveIndexedObject.Entry>{
 
   /**
    * Entry containing index, object and type

@@ -281,19 +281,19 @@ public class CBUtil {
    * @param first first value
    * @param second second value
    * @param <A> BComparable
-   * @param <B> BComparable
    * @return A new value of B
    * @see CBUtil#separate(CBString, CBString)
    * @see CBUtil#separate(CBCharArray, CBCharArray)
    */
-  public static <A,B extends BComparable <A,B>> B separate(B first, B second){
+  public static <A> BComparable<A> separate(BComparable<A> first, BComparable<A> second){
     if(first instanceof CBString){
-      return (B) separate((CBString) first, (CBString) second);
+      return (BComparable<A>) separate((CBString) first, (CBString) second);
     }
     else if(first instanceof CBCharArray){
-      return (B) separate((CBCharArray)first, (CBCharArray) second);
+      return (BComparable<A>) separate((CBCharArray)first, (CBCharArray) second);
     }
-    return first.compareTo(second) > 0 ? first.create(first.get()) : second.create(second.get());
+    return first.compareTo(second) > 0 ? (BComparable<A>) first.create(first.get()) :
+        (BComparable<A>) second.create(second.get());
   }
 
   /**
@@ -391,7 +391,7 @@ public class CBUtil {
    *          a ByteStorable template to be used for calculating the size
    * @return the next ByteStorable's size or -(bytes left in buffer)
    */
-  public final static int slackOrSize(ByteBuffer bb, BStorable <?,?> template) {
+  public final static int slackOrSize(ByteBuffer bb, BStorable <?> template) {
     int left = bb.remaining();
     if (bb.remaining() < 4){
       return -left;

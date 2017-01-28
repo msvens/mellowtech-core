@@ -32,8 +32,8 @@ import java.util.Arrays;
 import java.util.zip.Deflater;
 import java.util.zip.DeflaterOutputStream;
 
-import org.mellowtech.core.bytestorable.BComparable;
-import org.mellowtech.core.bytestorable.CBUtil;
+import org.mellowtech.core.codec.BCodec;
+import org.mellowtech.core.codec.CodecUtil;
 import org.mellowtech.core.util.Platform;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,12 +63,11 @@ import org.slf4j.LoggerFactory;
  * level this sort is highly preferred over ordinary DiscBasedSort
  * 
  * @param <A> wrapped BComparable class
- * @param <B> BComparable class
  * @author Martin Svensson
  * @version 1.0
  * @see org.mellowtech.core.bytestorable.BComparable
  */
-public class EDiscBasedSort <A, B extends BComparable<A,B>> {
+public class EDiscBasedSort <A> {
   static final String SORT_RUN_FILE = "disc_sort_e_run.";
   private static final String SEP = System.getProperties().getProperty(
       "file.separator");
@@ -87,7 +86,7 @@ public class EDiscBasedSort <A, B extends BComparable<A,B>> {
   // ..to handle the large objects.
   private int blockSize = 4096 * 4; // JC 040620, must have a dynamic thing.
 
-  private final B template;
+  private final BCodec<A> codec;
   private final int complevel;
   private final String tempDir;
 
@@ -131,20 +130,20 @@ public class EDiscBasedSort <A, B extends BComparable<A,B>> {
    * Create a new DiscBased sorter that will operate on a specific type of
    * objects with a specific ByteComparable object.
    * 
-   * @param template
+   * @param codec
    *          the type of object to sort
    * @param tempDir
    *          temporary directory for sort runs
    */
-  public EDiscBasedSort(Class<B> template, String tempDir) {
-    this(template, 0, tempDir);
+  public EDiscBasedSort(BCodec<A> codec, String tempDir) {
+    this(codec, 0, tempDir);
   }
 
   /**
    * Create a new DiscBased sorter that will operate on a specific type of
    * objects with a specific ByteComparable object.
    * 
-   * @param template
+   * @param codec
    *          the type of object to sort
    * @param complevel
    *          the level of GZIP compression for runs (1-9, where 1 is fastest)
@@ -152,9 +151,9 @@ public class EDiscBasedSort <A, B extends BComparable<A,B>> {
    * @param tempDir
    *          temporary directory for sort runs
    */
-  public EDiscBasedSort(Class<B> template, int complevel, String tempDir) {
+  public EDiscBasedSort(BCodec<A> codec, int complevel, String tempDir) {
     try {
-      this.template = template.newInstance();
+      this.codec = codec;
     } catch(Exception e){throw new Error("could not create template instance");}
     this.complevel = complevel;
     String tDir;
@@ -282,7 +281,6 @@ public class EDiscBasedSort <A, B extends BComparable<A,B>> {
 
     logger.debug("SORT:sort():Making runs.");
     int numFiles = makeRuns(input, large, ob, tempDir);
-
     if (numFiles <= 0)
       return -1;
 
@@ -293,7 +291,7 @@ public class EDiscBasedSort <A, B extends BComparable<A,B>> {
       logger.debug("SORT:sort():Merging runs");
       // Clock time to complete.
       long timeStart = System.currentTimeMillis();
-      Merge.mergeDirect(fNames, template, large, ob, output, tempDir, complevel > 0);
+      Merge.mergeDirect(fNames, codec, large, ob, output, tempDir, complevel > 0);
 
       logger.debug("Merge took {} secs", (System.currentTimeMillis() - timeStart) / 1000);
     }
@@ -322,7 +320,7 @@ public class EDiscBasedSort <A, B extends BComparable<A,B>> {
   private int makeRuns(ReadableByteChannel input, ByteBuffer large,
       ByteBuffer ob, String tempDir) {
     try {
-      EDBSContainer <A,B> hb = new EDBSContainer <> (large, input, blockSize, template);
+      EDBSContainer <A> hb = new EDBSContainer <> (large, input, blockSize, codec);
       Integer[] offsets = new Integer[10000];
       int i = 0;
       int numSorts = 0;
@@ -330,8 +328,9 @@ public class EDiscBasedSort <A, B extends BComparable<A,B>> {
       while (true) {
         long l = System.currentTimeMillis();
         i++;
-        if (!hb.prepareRun())
+        if (!hb.prepareRun()) {
           break;
+        }
         EDBSProducer p = new EDBSProducer(hb);
 
         EDBSConsumer c = new EDBSConsumer(hb, offsets);
@@ -378,14 +377,14 @@ public class EDiscBasedSort <A, B extends BComparable<A,B>> {
 
     // sort offsets:
     if (bb.hasArray())
-      Arrays.parallelSort(offsets, 0, numOffsets, new BComparatorArray <A,B>(template, bb.array()));
+      Arrays.parallelSort(offsets, 0, numOffsets, new BComparatorArray <A>(codec, bb.array()));
     else
-      Arrays.parallelSort(offsets, 0, numOffsets, new BComparator <A,B> (template, bb));
+      Arrays.parallelSort(offsets, 0, numOffsets, new BComparator <A> (codec, bb));
 
     for (int j = 0; j < numOffsets; j++) {
       bb.limit(bb.capacity());
       bb.position(offsets[j]);
-      size = template.byteSize(bb);
+      size = codec.byteSize(bb);
 
       if (size > output.remaining()) {
         output.flip();
@@ -410,10 +409,10 @@ public class EDiscBasedSort <A, B extends BComparable<A,B>> {
 
  
   private class EDBSProducer extends Thread {
-	  private EDBSContainer<?,?> hb;
+	  private EDBSContainer<?> hb;
 	  private Object monitor = new Object();
 
-	  EDBSProducer(EDBSContainer<?, ?> hb) {
+	  EDBSProducer(EDBSContainer<?> hb) {
 	    this.hb = hb;
 	  }
 
@@ -430,13 +429,13 @@ public class EDiscBasedSort <A, B extends BComparable<A,B>> {
 	} // EDBSProducer
   
   private class EDBSConsumer extends Thread {
-	  private EDBSContainer <?,?> hb;
+	  private EDBSContainer <?> hb;
 	  private int offset;
 	  private Integer[] offsets;
 	  private int numOffsets = 0;
       private Object monitor = new Object();
       
-	  EDBSConsumer(EDBSContainer<?, ?> hb, Integer[] offsets) {
+	  EDBSConsumer(EDBSContainer<?> hb, Integer[] offsets) {
 	    this.offsets = offsets;
 	    this.hb = hb;
 	  }
@@ -481,7 +480,7 @@ public class EDiscBasedSort <A, B extends BComparable<A,B>> {
 
 
 
-class EDBSContainer <A, B extends BComparable<A,B>> {
+class EDBSContainer <A> {
   public boolean verbose = false;
   private ByteBuffer buffer;
   private ByteBuffer consumerBuffer;
@@ -490,13 +489,13 @@ class EDBSContainer <A, B extends BComparable<A,B>> {
 
   private boolean noMore = false, consumedAll = false, endOfStream = false;
   private int slack = -1, totConsumed, totProduced, blockSize, read;
-  private B template;
+  private BCodec<A> codec;
 
   EDBSContainer(ByteBuffer b, ReadableByteChannel c, int blockSize,
-                B template) {
+                BCodec<A> codec) {
 
     this.blockSize = blockSize;
-    this.template = template;
+    this.codec = codec;
     totConsumed = totProduced = 0;
     this.c = c;
     buffer = b;
@@ -513,7 +512,7 @@ class EDBSContainer <A, B extends BComparable<A,B>> {
     buffer.limit(buffer.capacity());
     if (slack > 0) {
       buffer.position(buffer.capacity() - slack);
-      CBUtil.copyToBeginning(buffer, slack);
+      CodecUtil.copyToBeginning(buffer, slack);
       totProduced = slack;
     }
     else {
@@ -562,11 +561,10 @@ class EDBSContainer <A, B extends BComparable<A,B>> {
       if (slack != -1) {
         wait();
       }
-
       consumerBuffer.position(totConsumed);
       consumerBuffer.mark();
       int bSize;
-      bSize = CBUtil.slackOrSize(consumerBuffer, template);
+      bSize = CodecUtil.slackOrSize(consumerBuffer, codec);
       if(bSize < 0 && endOfStream) {
       bSize = Math.abs(bSize);
       }

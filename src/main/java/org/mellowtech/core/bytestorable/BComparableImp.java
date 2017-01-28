@@ -24,9 +24,8 @@ package org.mellowtech.core.bytestorable;
  * @author Martin Svensson {@literal <msvens@gmail.com>}
  * @since 3.0.1
  * @param <A> type of value
- * @param <B> self type
  */
-public abstract class BComparableImp <A,B extends BComparable<A,B>> implements BComparable <A,B>{
+public abstract class BComparableImp <A> implements BComparable <A>{
 
   /**
    * Wrapped value
