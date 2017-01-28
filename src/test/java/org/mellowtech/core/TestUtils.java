@@ -19,8 +19,7 @@ package org.mellowtech.core;
 import java.io.File;
 import java.net.URL;
 import java.util.*;
-
-import org.mellowtech.core.bytestorable.CBString;
+import org.mellowtech.core.codec.StringCodec;
 import org.mellowtech.core.util.DelDir;
 import org.mellowtech.core.util.Platform;
 
@@ -39,11 +38,12 @@ public class TestUtils {
    * @param maxBytes
    * @return
    */
-  public static CBString[] randomWords(String chars, int maxWordLength, int maxBytes){
+  public static String[] randomWords(String chars, int maxWordLength, int maxBytes){
+    StringCodec codec = new StringCodec();
     Random r = new Random();
     StringBuilder sb = new StringBuilder();
-    List<CBString> words = new ArrayList<>();
-    Set<CBString> dups = new TreeSet<CBString>();
+    List<String> words = new ArrayList<>();
+    Set<String> dups = new TreeSet<>();
     int totalBytes = 0;
     while(totalBytes < maxBytes){
       sb.setLength(0);
@@ -53,25 +53,25 @@ public class TestUtils {
       for(int i = 0; i < wlength; i++){
         sb.append(chars.charAt(r.nextInt(chars.length())));
       }
-      CBString tmp = new CBString(sb.toString());
+      String tmp = sb.toString();
       if(!dups.contains(tmp)) {
-        totalBytes += tmp.byteSize();
+        totalBytes += codec.byteSize(tmp);
         words.add(tmp);
         dups.add(tmp);
       }
     }
     //System.out.println(totalBytes);
-    return words.toArray(new CBString[]{});
+    return words.toArray(new String[]{});
   }
 
-  public static String[] randomStrings(String chars, int maxWordLength, int maxBytes){
+  /*public static String[] randomStrings(String chars, int maxWordLength, int maxBytes){
     CBString[] cbstrings = randomWords(chars, maxWordLength, maxBytes);
     String[] toRet = new String[cbstrings.length];
     for(int i = 0; i < cbstrings.length; i++){
       toRet[i] = cbstrings[i].get();
     }
     return toRet;
-  }
+  }*/
 
   public static String getAbsolutDir(String dir){
      return new File(Platform.getTempDir()+"/"+dir).getAbsolutePath();

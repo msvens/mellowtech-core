@@ -16,8 +16,8 @@
 
 package org.mellowtech.core.collections.impl;
 
-import org.mellowtech.core.bytestorable.CBInt;
-import org.mellowtech.core.bytestorable.CBString;
+import org.mellowtech.core.codec.IntCodec;
+import org.mellowtech.core.codec.StringCodec;
 import org.mellowtech.core.collections.DiscMap;
 import org.mellowtech.core.collections.DiscMapTemplate;
 import org.mellowtech.core.collections.impl.DiscBasedHashMap;
@@ -36,13 +36,13 @@ public class DiscBasedHashMapTest extends DiscMapTemplate {
 
   @Override
   public Map<String, Integer> init() throws Exception {
-    return new DiscBasedHashMap(CBString.class, CBInt.class,
+    return new DiscBasedHashMap(new StringCodec(), new IntCodec(),
         absPath(fName), false, false, VAL_BLK_SIZE, VAL_BLKS);
   }
 
   @Override
   public DiscMap<String, Integer> reopen() throws Exception {
-    return new DiscBasedHashMap(CBString.class, CBInt.class, absPath(fName), false, false);
+    return new DiscBasedHashMap(new StringCodec(), new IntCodec(), absPath(fName), false, false);
   }
 
 

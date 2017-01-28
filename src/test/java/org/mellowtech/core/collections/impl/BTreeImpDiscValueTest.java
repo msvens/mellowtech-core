@@ -16,15 +16,14 @@
 
 package org.mellowtech.core.collections.impl;
 
-import org.mellowtech.core.bytestorable.CBInt;
-import org.mellowtech.core.bytestorable.CBString;
+import org.mellowtech.core.codec.IntCodec;
+import org.mellowtech.core.codec.StringCodec;
 import org.mellowtech.core.collections.BTree;
 import org.mellowtech.core.collections.BTreeTemplate;
 import org.mellowtech.core.io.RecordFileBuilder;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Optional;
 
 
 /**
@@ -42,23 +41,23 @@ public class BTreeImpDiscValueTest extends BTreeTemplate {
   }
 
   @Override
-  public BTree<String, CBString, Integer, CBInt> init(String fileName, int valueBlockSize, int indexBlockSize,
+  public BTree<String, Integer> init(String fileName, int valueBlockSize, int indexBlockSize,
                                                int maxValueBlocks, int maxIndexBlocks) throws Exception{
 
     RecordFileBuilder builder = new RecordFileBuilder().disc().
         blockSize(valueBlockSize).maxBlocks(maxValueBlocks);
 
-    return new BTreeImp<>(getDir(fileName), fName(), CBString.class, CBInt.class,
+    return new BTreeImp<>(getDir(fileName), fName(), new StringCodec(), new IntCodec(),
         indexBlockSize,maxIndexBlocks, builder);
   }
   @Override
-  public BTree<String, CBString, Integer, CBInt> reopen(String fileName, int valueBlockSize, int indexBlockSize,
+  public BTree<String, Integer> reopen(String fileName, int valueBlockSize, int indexBlockSize,
                                                         int maxValueBlocks, int maxIndexBlocks) throws Exception{
 
     RecordFileBuilder builder = new RecordFileBuilder().disc().
         blockSize(valueBlockSize).maxBlocks(maxValueBlocks);
 
-    return new BTreeImp<>(getDir(fileName), fName(), CBString.class, CBInt.class,
+    return new BTreeImp<>(getDir(fileName), fName(), new StringCodec(), new IntCodec(),
         indexBlockSize,maxIndexBlocks, builder);
   }
 

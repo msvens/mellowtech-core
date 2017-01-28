@@ -43,7 +43,7 @@ public abstract class MapTemplate {
   public static String[] manyWords;
   public static String[] mwSort, mwDesc;
   static {
-    manyWords = TestUtils.randomStrings(chars, MAX_WORD_LENGTH, MAX_BYTES);
+    manyWords = TestUtils.randomWords(chars, MAX_WORD_LENGTH, MAX_BYTES);
     mwSort = Arrays.copyOf(manyWords, manyWords.length);
     mwDesc = Arrays.copyOf(manyWords, manyWords.length);
     Arrays.sort(mwSort);

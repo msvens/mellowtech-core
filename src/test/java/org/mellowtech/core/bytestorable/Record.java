@@ -17,15 +17,17 @@
 package org.mellowtech.core.bytestorable;
 
 
+import org.mellowtech.core.codec.BRecord;
+
 /**
  * Date: 2013-04-17
  * Time: 19:01
  *
  * @author Martin Svensson
  */
-public class Record extends  CBRecord <Record.ARecord, Record>{
+public class Record extends  CBRecord <Record.ARecord>{
   
-  public class ARecord implements AutoRecord {    
+  public class ARecord implements BRecord {
     @BSField(1) public Integer f1;
 
     @Override

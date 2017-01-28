@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package org.mellowtech.core.bytestorable.io;
+package org.mellowtech.core.codec.io;
 
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.mellowtech.core.bytestorable.BComparable;
-import org.mellowtech.core.bytestorable.CBString;
+import org.mellowtech.core.codec.BBuffer;
+import org.mellowtech.core.codec.StringCodec;
 
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
@@ -29,43 +29,40 @@ import java.util.Iterator;
 /**
  * Created by msvens on 25/11/15.
  */
-public class BCBufferTest {
+public class BBufferTest {
 
-  public static CBString[] words = new CBString[]{new CBString("hotel"), new CBString("delta"),
-      new CBString("alpha"), new CBString("bravo"), new CBString("india"), new CBString("echo"),
-      new CBString("foxtrot"), new CBString("juliet"), new CBString("charlie"), new CBString("golf")};
+  public static String[] words = new String[]{"hotel", "delta", "alpha", "bravo", "india",
+  "echo", "foxtrot", "juliet", "charlie", "golf"};
 
-  public static CBString[] ascend = new CBString[]{new CBString("alpha"), new CBString("bravo"),
-      new CBString("charlie"), new CBString("delta"), new CBString("echo"),
-      new CBString("foxtrot"), new CBString("golf"), new CBString("hotel"), new CBString("india"),
-      new CBString("juliet")};
+  public static String[] ascend = new String[]{"alpha", "bravo", "charlie", "delta", "echo",
+  "foxtrot", "golf", "hotel", "india", "juliet"};
 
-  public static CBString[] descend = new CBString[]{new CBString("juliet"), new CBString("india"),
-      new CBString("hotel"), new CBString("golf"),
-      new CBString("foxtrot"), new CBString("echo"), new CBString("delta"),
-      new CBString("charlie"), new CBString("bravo"), new CBString("alpha")};
+  public static String[] descend = new String[]{"juliet", "india", "hotel", "golf", "foxtrot", "echo",
+  "delta", "charlie", "bravo", "alpha"};
 
   public static int blockSize;
   public static int wordLen;
 
+  public static StringCodec codec = new StringCodec();
+
   static {
     int len = 0;
-    for(CBString str : words){
-      len += str.byteSize();
+    for(String str : words){
+      len += codec.byteSize(str);
     }
     wordLen = len;
-    blockSize = len + BCBuffer.bytesNeeded(10, BCBuffer.PtrType.NORMAL);
+    blockSize = len + BBuffer.bytesNeeded(10, BBuffer.PtrType.NORMAL);
   }
 
-  BCBuffer<String> sb;
+  BBuffer<String> sb;
 
 
-  public BCBuffer<String> newBlock() {
+  public BBuffer<String> newBlock() {
     //Allocate a larger block and set limit...etc
     ByteBuffer bb = ByteBuffer.allocate(blockSize+100);
     bb.position(50);
     bb.limit(bb.position()+blockSize);
-    return new BCBuffer<String>(bb.slice(), new CBString(), BCBuffer.PtrType.NORMAL, (short) 0);
+    return new BBuffer<String>(bb.slice(), new StringCodec(), BBuffer.PtrType.NORMAL, (short) 0);
   }
 
   @Before
@@ -76,7 +73,7 @@ public class BCBufferTest {
   //common tests
   @Test
   public void testPointerType() {
-    Assert.assertEquals(BCBuffer.PtrType.NORMAL, sb.getPointerType());
+    Assert.assertEquals(BBuffer.PtrType.NORMAL, sb.getPointerType());
   }
 
   @Test
@@ -103,19 +100,19 @@ public class BCBufferTest {
 
   @Test
   public void testStorageCapacity(){
-    Assert.assertEquals(sb.storageCapacity(), wordLen + (BCBuffer.PtrType.NORMAL.size() * words.length));
+    Assert.assertEquals(sb.storageCapacity(), wordLen + (BBuffer.PtrType.NORMAL.size() * words.length));
   }
 
   //Tests on empty block:
   @Test
   public void zeroBinarySearchBC() {
-    Assert.assertEquals(-1, sb.searchBC(new CBString("first")));
+    Assert.assertEquals(-1, sb.searchBC("first"));
   }
 
   //Tests on empty block:
   @Test
   public void zeroBinarySearch() {
-    Assert.assertEquals(-1, sb.search(new CBString("first")));
+    Assert.assertEquals(-1, sb.search("first"));
   }
 
   @Test
@@ -125,7 +122,7 @@ public class BCBufferTest {
 
   @Test
   public void zeroCanMergePlusOne(){
-    Assert.assertTrue(sb.fits(newBlock(), new CBString("additional")));
+    Assert.assertTrue(sb.fits(newBlock(), "additional"));
   }
 
   @Test
@@ -224,7 +221,7 @@ public class BCBufferTest {
 
   @Test
   public void zeroMergeBlock(){
-    BCBuffer <String> other = newBlock();
+    BBuffer <String> other = newBlock();
     Assert.assertEquals(0, sb.merge(other).getNumberOfElements());
     other.insert(ascend[0]);
     Assert.assertEquals(ascend[0], sb.merge(other).getFirst());
@@ -233,7 +230,7 @@ public class BCBufferTest {
   @Test
   public void zeroReopen(){
     ByteBuffer bytes = sb.getBlock();
-    BCBuffer <String> other = new BCBuffer<>(bytes, new CBString());
+    BBuffer <String> other = new BBuffer<>(bytes, new StringCodec());
     Assert.assertEquals(0, other.getNumberOfElements());
   }
 
@@ -303,20 +300,20 @@ public class BCBufferTest {
   @Test
   public void oneBytesWritten(){
     putFirst();
-    int bytes = 7 + 2 + ascend[0].byteSize();
+    int bytes = 7 + 2 + codec.byteSize(ascend[0]);
     Assert.assertEquals(bytes, sb.getBytesWritten());
   }
 
   @Test
   public void oneDataAndPointersBytes(){
     putFirst();
-    Assert.assertEquals(2 + ascend[0].byteSize(), sb.getDataAndPointersBytes());
+    Assert.assertEquals(2 + codec.byteSize(ascend[0]), sb.getDataAndPointersBytes());
   }
 
   @Test
   public void oneDataBytes(){
     putFirst();
-    Assert.assertEquals(ascend[0].byteSize(), sb.getDataBytes());
+    Assert.assertEquals(codec.byteSize(ascend[0]), sb.getDataBytes());
   }
 
   @Test
@@ -388,7 +385,7 @@ public class BCBufferTest {
   @Test
   public void oneMergeBlock(){
     putFirst();
-    BCBuffer <String> other = newBlock();
+    BBuffer <String> other = newBlock();
     Assert.assertEquals(1, sb.merge(other).getNumberOfElements());
     other.insert(ascend[1]);
     Assert.assertEquals(ascend[1], sb.merge(other).getLast());
@@ -398,7 +395,7 @@ public class BCBufferTest {
   public void oneReopen(){
     putFirst();
     ByteBuffer bytes = sb.getBlock();
-    BCBuffer <String> other = new BCBuffer<>(bytes, new CBString());
+    BBuffer <String> other = new BBuffer<>(bytes, new StringCodec());
     Assert.assertEquals(1, other.getNumberOfElements());
   }
 
@@ -411,14 +408,14 @@ public class BCBufferTest {
   @Test
   public void oneSplitBlock(){
     putFirst();
-    BCBuffer<String> nb = sb.split();
+    BBuffer<String> nb = sb.split();
     Assert.assertEquals(0, sb.getNumberOfElements());
     Assert.assertEquals(1, nb.getNumberOfElements());
   }
 
   //Tests on block with max entries:
   public void putAll(){
-    for(CBString s : words)
+    for(String s : words)
       sb.insert(s);
   }
 
@@ -443,7 +440,7 @@ public class BCBufferTest {
   @Test
   public void tenCanMergePlusOne(){
     putAll();
-    Assert.assertFalse(sb.fits(newBlock(), new CBString("additional")));
+    Assert.assertFalse(sb.fits(newBlock(), "additional"));
   }
 
   @Test
@@ -523,7 +520,7 @@ public class BCBufferTest {
   public void tenIterator(){
     putAll();
     int i = 0;
-    Iterator<BComparable<String>> iter = sb.iterator();
+    Iterator<String> iter = sb.iterator();
     while(iter.hasNext()){
       Assert.assertEquals(ascend[i], iter.next());
       i++;
@@ -535,7 +532,7 @@ public class BCBufferTest {
   public void tenIteratorRangeInclusive(){
     putAll();
     int i = 1;
-    Iterator<BComparable<String>> iter = sb.iterator(false, ascend[1], true, ascend[8], true);
+    Iterator<String> iter = sb.iterator(false, ascend[1], true, ascend[8], true);
     while(iter.hasNext()){
       Assert.assertEquals(ascend[i], iter.next());
       i++;
@@ -547,7 +544,7 @@ public class BCBufferTest {
   public void tenIteratorRangeExclusive(){
     putAll();
     int i = 2;
-    Iterator<BComparable<String>> iter = sb.iterator(false, ascend[1], false, ascend[8], false);
+    Iterator<String> iter = sb.iterator(false, ascend[1], false, ascend[8], false);
     while(iter.hasNext()){
       Assert.assertEquals(ascend[i], iter.next());
       i++;
@@ -559,7 +556,7 @@ public class BCBufferTest {
   public void tenReverseIterator(){
     putAll();
     int i = 9;
-    Iterator<BComparable<String>> iter = sb.iterator(true);
+    Iterator<String> iter = sb.iterator(true);
     while(iter.hasNext()){
       Assert.assertEquals(ascend[i], iter.next());
       i--;
@@ -571,7 +568,7 @@ public class BCBufferTest {
   public void tenReverseIteratorRangeInclusive(){
     putAll();
     int i = 8;
-    Iterator<BComparable<String>> iter = sb.iterator(true, ascend[8], true, ascend[1], true);
+    Iterator<String> iter = sb.iterator(true, ascend[8], true, ascend[1], true);
     while(iter.hasNext()){
       Assert.assertEquals(ascend[i], iter.next());
       i--;
@@ -583,7 +580,7 @@ public class BCBufferTest {
   public void tenReverseIteratorRangeExclusive(){
     putAll();
     int i = 7;
-    Iterator<BComparable<String>> iter = sb.iterator(true, ascend[8], false, ascend[1], false);
+    Iterator<String> iter = sb.iterator(true, ascend[8], false, ascend[1], false);
     while(iter.hasNext()){
       Assert.assertEquals(ascend[i], iter.next());
       i--;
@@ -594,15 +591,15 @@ public class BCBufferTest {
   @Test
   public void tenMergeEmptyBlock(){
     putAll();
-    BCBuffer <String> other = newBlock();
+    BBuffer <String> other = newBlock();
     Assert.assertEquals(10, sb.merge(other).getNumberOfElements());
   }
 
   @Test(expected = BufferOverflowException.class)
   public void tenMergeNonEmptyBlock(){
     putAll();
-    BCBuffer <String> other = newBlock();
-    other.insert(new CBString("newItem"));
+    BBuffer <String> other = newBlock();
+    other.insert("newItem");
     Assert.assertEquals(10, sb.merge(other).getNumberOfElements());
   }
 
@@ -610,18 +607,18 @@ public class BCBufferTest {
   public void tenReopen(){
     putAll();
     ByteBuffer bytes = sb.getBlock();
-    BCBuffer <String> other = new BCBuffer<>(bytes, new CBString());
+    BBuffer <String> other = new BBuffer<>(bytes, new StringCodec());
     Assert.assertEquals(10, other.getNumberOfElements());
   }
 
   @Test
   public void tenSort(){
     //putAll();
-    for(CBString w : words){
+    for(String w : words){
       sb.insertUnsorted(w);
     }
     sb.sort(false);
-    Iterator<BComparable<String>> iter = sb.iterator();
+    Iterator<String> iter = sb.iterator();
     int i = 0;
     while(iter.hasNext()){
       Assert.assertEquals(ascend[i], iter.next());
@@ -632,7 +629,7 @@ public class BCBufferTest {
   @Test
   public void tenSplitBlock(){
     putAll();
-    BCBuffer<String> nb = sb.split();
+    BBuffer<String> nb = sb.split();
     Assert.assertEquals(5, sb.getNumberOfElements());
     Assert.assertEquals(5, nb.getNumberOfElements());
   }

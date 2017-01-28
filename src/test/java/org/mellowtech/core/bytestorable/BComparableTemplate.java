@@ -26,20 +26,20 @@ import org.junit.Test;
  * @author msvens
  *
  */
-public abstract class BComparableTemplate <A, B extends BComparable<A,B>> 
+public abstract class BComparableTemplate <A, B extends BComparable<A>>
   extends BStorableTemplate <A,B>{
    
   @Test
   public void testEquals() throws Exception {
     B b = newB(0);
-    B b1 = b.deepCopy();
+    B b1 = (B) b.deepCopy();
     Assert.assertEquals(b, b1);
   }
   
   @Test
   public void testCompareToTSame() throws Exception {
     B b = newB(0);
-    B b1 = b.deepCopy();
+    B b1 = (B) b.deepCopy();
     Assert.assertEquals(0, b.compareTo(b1));
   }
   
@@ -137,7 +137,7 @@ public abstract class BComparableTemplate <A, B extends BComparable<A,B>>
   
   
   public B newB(int index) throws Exception{
-    return type.newInstance().create(values[index]);
+    return (B) type.newInstance().create(values[index]);
   }
   
   

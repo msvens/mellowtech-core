@@ -18,12 +18,12 @@ package org.mellowtech.core.collections.impl;
 
 import java.util.*;
 
-import org.mellowtech.core.bytestorable.CBInt;
-import org.mellowtech.core.bytestorable.CBString;
+import org.mellowtech.core.codec.IntCodec;
+import org.mellowtech.core.codec.StringCodec;
 import org.mellowtech.core.collections.BTreeBuilder;
 import org.mellowtech.core.collections.DiscMap;
 import org.mellowtech.core.collections.SortedDiscMapTemplate;
-import org.mellowtech.core.collections.impl.DiscBasedMap;
+
 
 
 /**
@@ -39,7 +39,7 @@ public class DiscBasedMapTest extends SortedDiscMapTemplate {
     BTreeBuilder builder = new BTreeBuilder();
     builder.maxBlocks(VAL_BLKS).maxIndexBlocks(IDX_BLKS).valueBlockSize(VAL_BLK_SIZE).indexBlockSize(IDX_BLK_SIZE);
     builder.blobValues(false).memoryMappedValues(false);
-    return new DiscBasedMap<>(CBString.class, CBInt.class, absPath(fName), builder);
+    return new DiscBasedMap<>(new StringCodec(), new IntCodec(), absPath(fName), builder);
   }
 
   @Override
@@ -47,6 +47,6 @@ public class DiscBasedMapTest extends SortedDiscMapTemplate {
     BTreeBuilder builder = new BTreeBuilder();
     builder.maxBlocks(VAL_BLKS).maxIndexBlocks(IDX_BLKS).valueBlockSize(VAL_BLK_SIZE).indexBlockSize(IDX_BLK_SIZE);
     builder.blobValues(false).memoryMappedValues(false);
-    return new DiscBasedMap<>(CBString.class, CBInt.class, absPath(fName), builder);
+    return new DiscBasedMap<>(new StringCodec(), new IntCodec(), absPath(fName), builder);
   }
 }

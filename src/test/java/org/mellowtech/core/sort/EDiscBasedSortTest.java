@@ -21,7 +21,7 @@ import junit.framework.Assert;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.mellowtech.core.bytestorable.CBString;
+import org.mellowtech.core.codec.StringCodec;
 import org.mellowtech.core.sort.EDiscBasedSort;
 import org.mellowtech.core.util.DelDir;
 import org.mellowtech.core.util.Platform;
@@ -48,7 +48,7 @@ public class EDiscBasedSortTest {
 
     //CBString.setLocale(new Locale("sv"));
     String file = LONG_TEXT ? "longText.txt" : "shortText.txt";
-
+    StringCodec codec = new StringCodec();
     URL url = this.getClass().getResource("/com/mellowtech/core/sort/"+file);
     File f = new File(url.getFile());
     BufferedReader br = new BufferedReader(new FileReader(f));
@@ -58,18 +58,16 @@ public class EDiscBasedSortTest {
     String line;
     stringList = new ArrayList <>();
     int charlen = 0;
-    CBString tmpStr;
+    String tmpStr;
     int i = 0;
     while(s.hasNext() && i++ < 10000){
       String str = s.next();
-      tmpStr = new CBString(str);
-      charlen += tmpStr.byteSize();
+      charlen += codec.byteSize(str);
       stringList.add(str);
     }
     stringBuffer = ByteBuffer.allocate(charlen);
     for(String str : stringList){
-      tmpStr = new CBString(str);
-      tmpStr.to(stringBuffer);
+      codec.to(str, stringBuffer);
     }
     File sortDir = new File(Platform.getTempDir()+"/sort");
     sortDir.mkdirs();
@@ -81,7 +79,8 @@ public class EDiscBasedSortTest {
   }
 
   @Test public void testQuickSort() throws Exception{
-    EDiscBasedSort <String, CBString> edb = new EDiscBasedSort <> (CBString.class,
+    StringCodec codec = new StringCodec();
+    EDiscBasedSort <String> edb = new EDiscBasedSort <> (codec,
     1, Platform.getTempDir()+"/sort");
     //stringBuffer.flip();
     ByteArrayOutputStream bos = new ByteArrayOutputStream();
@@ -90,12 +89,13 @@ public class EDiscBasedSortTest {
     //verify that things are the same
     //Collator col = Collator.getInstance(new Locale("sv"));
     Collections.sort(stringList);
-    CBString tStr = new CBString();
     bos.flush();
     ByteBuffer sorted =  ByteBuffer.wrap(bos.toByteArray());
+    System.out.println("sorted capacity: "+sorted.capacity());
+    String tStr;
     for(String str : stringList){
-      tStr = tStr.from(sorted);
-      Assert.assertEquals(str, tStr.get());
+      tStr = codec.from(sorted);
+      Assert.assertEquals(str, tStr);
     }
   }
 }

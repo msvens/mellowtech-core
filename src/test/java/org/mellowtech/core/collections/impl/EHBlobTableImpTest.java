@@ -16,8 +16,8 @@
 
 package org.mellowtech.core.collections.impl;
 
-import org.mellowtech.core.bytestorable.CBInt;
-import org.mellowtech.core.bytestorable.CBString;
+import org.mellowtech.core.codec.IntCodec;
+import org.mellowtech.core.codec.StringCodec;
 import org.mellowtech.core.collections.BMap;
 import org.mellowtech.core.collections.BMapTemplate;
 
@@ -34,12 +34,12 @@ public class EHBlobTableImpTest extends BMapTemplate {
   }
 
   @Override
-  public BMap<String, CBString, Integer, CBInt> init(String fileName, int bucketSize, int maxBuckets) throws Exception{
-    return new EHBlobTableImp<>(Paths.get(fileName), CBString.class, CBInt.class, false, bucketSize, maxBuckets);
+  public BMap<String, Integer> init(String fileName, int bucketSize, int maxBuckets) throws Exception{
+    return new EHBlobTableImp<>(Paths.get(fileName), new StringCodec(), new IntCodec(), false, bucketSize, maxBuckets);
   }
 
   @Override
-  public BMap<String, CBString, Integer, CBInt> reopen(String fileName) throws Exception{
-    return new EHBlobTableImp<>(Paths.get(fileName), CBString.class, CBInt.class, false);
+  public BMap<String, Integer> reopen(String fileName) throws Exception{
+    return new EHBlobTableImp<>(Paths.get(fileName), new StringCodec(), new IntCodec(), false);
   }
 }

@@ -32,7 +32,7 @@ import org.junit.Test;
  * @author msvens
  *
  */
-public abstract class BStorableTemplate <A, B extends BStorable<A,B>> {
+public abstract class BStorableTemplate <A, B extends BStorable<A>> {
   
   public Class<B> type;
   public A[] values;
@@ -71,7 +71,7 @@ public abstract class BStorableTemplate <A, B extends BStorable<A,B>> {
   @Test
   public void testDeepCopy() throws Exception {
     B b = newB(0);
-    B b1 = b.deepCopy();
+    B b1 = (B) b.deepCopy();
     Assert.assertNotNull(b1.get());
   }
   
@@ -150,7 +150,7 @@ public abstract class BStorableTemplate <A, B extends BStorable<A,B>> {
   }
   
   public B newB(int index) throws Exception{
-    return type.newInstance().create(values[index]);
+    return (B) type.newInstance().create(values[index]);
   }
   
   

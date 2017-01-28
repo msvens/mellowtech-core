@@ -22,6 +22,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mellowtech.core.bytestorable.CBString;
+import org.mellowtech.core.codec.StringCodec;
 import org.mellowtech.core.sort.DiscBasedSort;
 import org.mellowtech.core.util.DelDir;
 import org.mellowtech.core.util.Platform;
@@ -88,7 +89,7 @@ public class DiscBasedSortTest {
   }
 
   @Test public void testQuickSort() throws Exception{
-    DiscBasedSort <String, CBString> edb = new DiscBasedSort <> (CBString.class, 0, Platform.getTempDir()+"sort");
+    DiscBasedSort <String> edb = new DiscBasedSort <> (new StringCodec(), 0, Platform.getTempDir()+"sort");
     //stringBuffer.flip();
     ByteArrayOutputStream bos = new ByteArrayOutputStream();
     ByteArrayInputStream bis = new ByteArrayInputStream(stringBuffer.array());
