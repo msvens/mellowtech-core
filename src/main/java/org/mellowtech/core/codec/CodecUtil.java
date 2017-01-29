@@ -19,12 +19,13 @@ package org.mellowtech.core.codec;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.function.Consumer;
 
 /**
  * Utility methods for working with ByteStorables
  *
  * @author Martin Svensson {@literal <msvens@gmail.com>}
- * @since 3.0.1
+ * @since 4.0.0
  *
  */
 public class CodecUtil {
@@ -238,6 +239,38 @@ public class CodecUtil {
     return 4;
   }
 
+  public static final int putSize2(ByteBuffer bb, Consumer<ByteBuffer> toWrite){
+    int start = bb.position();
+    bb.position(bb.position()+2); //move past position
+    toWrite.accept(bb);
+    int length = (bb.position()-start-2);
+    putUnsignedShort(bb, start, length);
+    return 2;
+  }
+
+  public static final int putSize4(ByteBuffer bb, Consumer<ByteBuffer> toWrite){
+    int start = bb.position();
+    bb.position(bb.position()+4); //move past position
+    toWrite.accept(bb);
+    int length = (bb.position()-start-4);
+    bb.putInt(start, length);
+    return 4;
+  }
+
+  public static int getUnsignedShort(ByteBuffer bb, int position) {
+    return (bb.getShort(position) & 0xffff);
+  }
+
+  public static int getUnsignedShort(ByteBuffer bb){
+    return (bb.getShort() & 0xffff);
+  }
+
+  public static void putUnsignedShort(ByteBuffer bb, int position, int value) {
+    bb.putShort(position, (short) (value & 0xffff));
+  }
+
+
+
   /**
    * Reads a size indicator from a buffer. Effectively calls getInt(bb, encoded)
    * @param bb buffer to read from
@@ -246,6 +279,14 @@ public class CodecUtil {
    */
   public static final int getSize(ByteBuffer bb, boolean encoded) {
     return getInt(bb, encoded);
+  }
+
+  public static final int getSize2(ByteBuffer bb){
+    return getUnsignedShort(bb);
+  }
+
+  public static final int getSize4(ByteBuffer bb){
+    return bb.getInt();
   }
 
   /**
@@ -261,6 +302,18 @@ public class CodecUtil {
     return encoded ? encodeLength(val) + val : 4 + val;
   }
 
+  public static final int byteSize2(int val){
+    if(val < 0 || val >= (Short.MAX_VALUE*2))
+      throw new IllegalArgumentException("size out of range");
+    return 2 + val;
+  }
+
+  public static final int byteSize4(int val){
+    if(val < 0 || val >= Integer.MAX_VALUE - 4)
+      throw new IllegalArgumentException("size out of range");
+    return 4 + val;
+  }
+
   /**
    * Reads the byte size from a buffer without moving the buffer position
    * @param bb buffer to read from
@@ -270,6 +323,14 @@ public class CodecUtil {
   public static final int peekSize(ByteBuffer bb, boolean encoded) {
     int val = peekInt(bb, encoded);
     return encoded ? encodeLength(val) + val : 4 + val;
+  }
+
+  public static final int peekSize2(ByteBuffer bb){
+    return 2 + getUnsignedShort(bb, bb.position());
+  }
+
+  public static final int peekSize4(ByteBuffer bb){
+    return 4 + bb.getInt(bb.position());
   }
 
   //******************* END methods for ByteStorable Sizes ********************

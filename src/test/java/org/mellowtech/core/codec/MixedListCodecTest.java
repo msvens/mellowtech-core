@@ -16,27 +16,34 @@
 
 package org.mellowtech.core.codec;
 
-import java.lang.annotation.Retention;
-
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
- * Annotation used to indicate that a field should be
- * included in automatic serialization for CBAuto and CBRecord.
- *
- * @author Martin Svensson {@literal <msvens@gmail.com>}
- * @since 4.0.0
- * @see RecordCodec
+ * @author msvens
+ * @since 2017-01-29
  */
-@Retention(RUNTIME)
-public @interface BField {
+public class MixedListCodecTest extends CodecTemplate<List<Object>> {
+  @Override
+  public List<Object> val(int idx) {
+    List<Object> l = new ArrayList<Object>(2);
+    if(idx == 0){
+      l.add(1);
+      l.add("one");
+    } else {
+      l.add(2);
+      l.add("two");
+    }
+    return l;
+  }
 
-  /**
-   * Specify the this fields index in the serialized record. This has
-   * to be set so that deserialization knows which field to set
-   * for a specific value
-   *
-   */
-  int value() default -1;
+  @Override
+  public int size(int idx) {
+    return 18;
+  }
 
+  @Override
+  public BCodec<List<Object>> codec() {
+    return new MixedListCodec();
+  }
 }

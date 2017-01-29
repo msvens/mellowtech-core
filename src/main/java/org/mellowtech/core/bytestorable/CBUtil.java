@@ -257,7 +257,7 @@ public class CBUtil {
    */
   public static final int byteSize(int val, boolean encoded) {
     if(val < 0 || val >= Integer.MAX_VALUE - 5) 
-      throw new IllegalArgumentException("valute out of range");
+      throw new IllegalArgumentException("size out of range");
     return encoded ? encodeLength(val) + val : 4 + val;
   }
 

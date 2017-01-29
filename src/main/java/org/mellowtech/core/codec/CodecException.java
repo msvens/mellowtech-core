@@ -20,7 +20,7 @@ package org.mellowtech.core.codec;
  * General runtime exception for BStorables
  *
  * @author Martin Svensson {@literal <msvens@gmail.com>}
- * @since 3.0.1
+ * @since 4.0.0
  * @see RuntimeException
  */
 public class CodecException extends RuntimeException {

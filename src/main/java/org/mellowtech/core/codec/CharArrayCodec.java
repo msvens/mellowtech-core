@@ -23,8 +23,8 @@ import java.nio.ByteBuffer;
 import java.util.Locale;
 
 /**
- * @author msvens
- * @since 2017-01-24
+ * @author Martin Svensson {@literal <msvens@gmail.com>}
+ * @since 4.0.0
  */
 public class CharArrayCodec implements BCodec<char[]> {
 

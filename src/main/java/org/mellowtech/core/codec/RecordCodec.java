@@ -20,8 +20,8 @@ package org.mellowtech.core.codec;
 import java.nio.ByteBuffer;
 
 /**
- * @author msvens
- * @since 2017-01-28
+ * @author Martin Svensson {@literal <msvens@gmail.com>}
+ * @since 4.0.0
  */
 public class RecordCodec<A extends BRecord> implements BCodec<A> {
 

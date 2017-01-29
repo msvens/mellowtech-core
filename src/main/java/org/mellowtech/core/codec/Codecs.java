@@ -23,7 +23,7 @@ import java.util.Date;
 import java.util.UUID;
 
 /**
- * @author msvens
+ * @author Martin Svensson {@literal <msvens@gmail.com>}
  * @since 4.0.0
  */
 public class Codecs {

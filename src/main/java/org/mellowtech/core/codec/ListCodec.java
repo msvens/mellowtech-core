@@ -21,8 +21,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * @author msvens
- * @since 2017-01-28
+ * @author Martin Svensson {@literal <msvens@gmail.com>}
+ * @since 4.0.0
  */
 public class ListCodec<A> implements BCodec<List<A>> {
 

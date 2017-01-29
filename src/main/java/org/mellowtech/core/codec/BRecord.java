@@ -36,7 +36,7 @@ package org.mellowtech.core.codec;
  * </pre>
  *
  * @author Martin Svensson {@literal <msvens@gmail.com>}
- * @since 3.0.1
+ * @since 4.0.0
  * @see RecordCodec
  */
 

@@ -30,7 +30,7 @@ import java.util.TreeMap;
  * and should not be used externally
  *
  * @author Martin Svensson {@literal <msvens@gmail.com>}
- * @since 3.0.1
+ * @since 4.0.0
  */
 class AutoField {
   
