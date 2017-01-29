@@ -16,7 +16,6 @@
 
 package org.mellowtech.core.codec;
 
-import org.mellowtech.core.bytestorable.CBUtil;
 
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
@@ -353,7 +352,7 @@ public class UtfUtil {
         break;
       default:
         /* 10xx xxxx, 1111 xxxx */
-        throw new Error("malformed input around byte " + count+" "+length+" "+to+" "+offset+" "+(c >> 4)+" "+ CBUtil.decodeInt(b, count)+" "+b[count-1]+" "+b[count-2]+" "+b[count-3]);
+        throw new Error("malformed input around byte " + count+" "+length+" "+to+" "+offset+" "+(c >> 4)+" "+ CodecUtil.decodeInt(b, count)+" "+b[count-1]+" "+b[count-2]+" "+b[count-3]);
       }
     }
     // The number of chars produced may be less than length
@@ -583,6 +582,8 @@ public class UtfUtil {
     return Arrays.copyOfRange(arr, 0, c_count);
   }
 
+
+
   /**
    * Compare two utf8 encoded strings. This method assumes that a size indicator
    * is stored first in each array as defined in CBUtil
@@ -591,9 +592,11 @@ public class UtfUtil {
    * @param b2 second array
    * @param o2 second array offset
    * @return a negative integer, zero, or a positive integer as b1 is less than, equal to, or greater than b2.
-   * @see CBUtil#encodeInt(int, byte[], int)
+   * @see CodecUtil#encodeInt(int, byte[], int)
    */
   public static int compare(byte[] b1, int o1, byte[] b2, int o2){
+
+
     int length1, length2, c1,c2, num = 0, i = 0;
     
     // length1
@@ -645,13 +648,13 @@ public class UtfUtil {
       case 5:
       case 6:
       case 7:
-        /* 0xxxxxxx */
+        //0xxxxxxx
         count++; o1++;
         cmp1 = (char) c1;
         break;
       case 12:
       case 13:
-        /* 110x xxxx 10xx xxxx */
+        //110x xxxx 10xx xxxx
         count += 2;
         o1 += 2;
         char2 = (int) b1[o1 - 1];
@@ -661,7 +664,7 @@ public class UtfUtil {
         cmp1 = (char) (((c1 & 0x1F) << 6) | (char2 & 0x3F));
         break;
       case 14:
-        /* 1110 xxxx 10xx xxxx 10xx xxxx */
+        //1110 xxxx 10xx xxxx 10xx xxxx
         count += 3;
         o1 += 3;
         char2 = (int) b1[o1 - 2];
@@ -672,7 +675,7 @@ public class UtfUtil {
         cmp1 = (char) (((c1 & 0x0F) << 12) | ((char2 & 0x3F) << 6) | ((char3 & 0x3F) << 0));
         break;
       default:
-        /* 10xx xxxx, 1111 xxxx */
+        //10xx xxxx, 1111 xxxx
         throw new Error("malformed input around byte " + o1);
       }
       
@@ -687,13 +690,13 @@ public class UtfUtil {
       case 5:
       case 6:
       case 7:
-        /* 0xxxxxxx */
+        //0xxxxxxx
         o2++;
         cmp2 = (char) c1;
         break;
       case 12:
       case 13:
-        /* 110x xxxx 10xx xxxx */
+        //110x xxxx 10xx xxxx
         o2 += 2;
         char2 = (int) b2[o2 - 1];
         if ((char2 & 0xC0) != 0x80)
@@ -702,7 +705,7 @@ public class UtfUtil {
         cmp2 = (char) (((c1 & 0x1F) << 6) | (char2 & 0x3F));
         break;
       case 14:
-        /* 1110 xxxx 10xx xxxx 10xx xxxx */
+        //1110 xxxx 10xx xxxx 10xx xxxx
         o2 += 3;
         char2 = (int) b2[o2 - 2];
         char3 = (int) b2[o2 - 1];
@@ -712,7 +715,7 @@ public class UtfUtil {
         cmp2 = (char) (((c1 & 0x0F) << 12) | ((char2 & 0x3F) << 6) | ((char3 & 0x3F) << 0));
         break;
       default:
-        /* 10xx xxxx, 1111 xxxx */
+        //10xx xxxx, 1111 xxxx
         throw new Error("malformed input around byte " + count);
       }
       if(cmp1 != cmp2)
@@ -730,12 +733,9 @@ public class UtfUtil {
    * @param b2 second buffer
    * @param o2 second buffer offset
    * @return a negative integer, zero, or a positive integer as b1 is less than, equal to, or greater than b2.
-   * @see CBUtil#encodeInt(int, byte[], int)
+   * @see CodecUtil#encodeInt(int, byte[], int)
    */
   public static int compare(ByteBuffer b1, int o1, ByteBuffer b2, int o2){
-    /*if(b1.hasArray() && b2.hasArray()){
-      return compare(b1.array(), o1, b2.array(), o2);
-    }*/
     
     int length1, length2, c1,c2, num = 0, i = 0;
     
@@ -788,13 +788,13 @@ public class UtfUtil {
       case 5:
       case 6:
       case 7:
-        /* 0xxxxxxx */
+        //0xxxxxxx
         count++; o1++;
         cmp1 = (char) c1;
         break;
       case 12:
       case 13:
-        /* 110x xxxx 10xx xxxx */
+        //110x xxxx 10xx xxxx
         count += 2;
         o1 += 2;
         char2 = (int) b1.get(o1 - 1);
@@ -804,7 +804,7 @@ public class UtfUtil {
         cmp1 = (char) (((c1 & 0x1F) << 6) | (char2 & 0x3F));
         break;
       case 14:
-        /* 1110 xxxx 10xx xxxx 10xx xxxx */
+        //1110 xxxx 10xx xxxx 10xx xxxx
         count += 3;
         o1 += 3;
         char2 = (int) b1.get(o1 - 2);
@@ -815,7 +815,7 @@ public class UtfUtil {
         cmp1 = (char) (((c1 & 0x0F) << 12) | ((char2 & 0x3F) << 6) | ((char3 & 0x3F) << 0));
         break;
       default:
-        /* 10xx xxxx, 1111 xxxx */
+        //10xx xxxx, 1111 xxxx
         throw new Error("malformed input around byte " + o1);
       }
       
@@ -874,7 +874,7 @@ public class UtfUtil {
    * @param o2 second array offset
    * @param map char map for localized comapre
    * @return a negative integer, zero, or a positive integer as b1 is less than, equal to, or greater than b2.
-   * @see CBUtil#encodeInt(int, byte[], int)
+   * @see CodecUtil#encodeInt(int, byte[], int)
    * @see org.mellowtech.core.util.CompiledLocale
    */
   public static int compare(byte[] b1, int o1, byte[] b2, int o2, char[] map){
@@ -1015,13 +1015,10 @@ public class UtfUtil {
    * @param o2 second buffer offset
    * @param map char map for localized comapre
    * @return a negative integer, zero, or a positive integer as b1 is less than, equal to, or greater than b2.
-   * @see CBUtil#encodeInt(int, byte[], int)
+   * @see CodecUtil#encodeInt(int, byte[], int)
    * @see org.mellowtech.core.util.CompiledLocale
    */
   public static int compare(ByteBuffer b1, int o1, ByteBuffer b2, int o2, char[] map){
-    /*if(b1.hasArray() && b2.hasArray()){
-      return compare(b1.array(), o1, b2.array(), o2, map);
-    }*/
     
     int length1, length2, c1,c2, num = 0, i = 0;
     
@@ -1174,6 +1171,301 @@ public class UtfUtil {
       }
     }
     return str1.length - str2.length;
+  }
+
+  //Correct ones
+  /**
+   * Compare two utf8 encoded strings. This method assumes that a size indicator
+   * is stored first in each array as defined in CBUtil
+   * @param b1 first buffer
+   * @param o1 first buffer offset
+   * @param b2 second buffer
+   * @param o2 second buffer offset
+   * @param length1 number of bytes to read in first buffer
+   * @param length2 number of bytes to read in the second buffer
+   * @return a negative integer, zero, or a positive integer as b1 is less than, equal to, or greater than b2.
+   * @see CodecUtil#encodeInt(int, byte[], int)
+   */
+  public static int cmp(ByteBuffer b1, int o1, ByteBuffer b2, int o2, int length1, int length2){
+
+    int c1,c2, num = 0, i = 0;
+
+    /*
+    // length1
+    c1 = (b1.get(o1++) & 0xFF);
+    while ((c1 & 0x80) == 0) {
+      num |= (c1 << (7 * i));
+      c1 = (b1.get(o1++) & 0xFF);
+      i++;
+    }
+    length1 = (num |= ((c1 & ~(0x80)) << (7 * i)));
+    // length2
+    num = 0;
+    i = 0;
+    c1 = (b2.get(o2++) & 0xFF);
+    while ((c1 & 0x80) == 0) {
+      num |= (c1 << (7 * i));
+      c1 = (b2.get(o2++) & 0xFF);
+      i++;
+    }
+    length2 = (num |= ((c1 & ~(0x80)) << (7 * i)));
+    */
+
+
+    int min = Math.min(length1, length2);
+    int count = 0;
+    while(count < min){
+      c1 = b1.get(o1) & 0xFF;
+      c2 = b2.get(o2) & 0xFF;
+      if(c1 > 127 || c2 > 127)
+        break;
+      if(c1 != c2)
+        return c1 - c2;
+      o1++;
+      o2++;
+      count++;
+    }
+    //difficult case
+    //you only have to update count for the char from the first string
+    //since it should be exactly the same as long as the chars are the same
+    char cmp1, cmp2;
+    int char2, char3;
+    while(count < min){
+      //first char
+      c1 = (int) b1.get(o1) & 0xff;
+      switch (c1 >> 4) {
+        case 0:
+        case 1:
+        case 2:
+        case 3:
+        case 4:
+        case 5:
+        case 6:
+        case 7:
+          //0xxxxxxx
+          count++; o1++;
+          cmp1 = (char) c1;
+          break;
+        case 12:
+        case 13:
+          //110x xxxx 10xx xxxx
+          count += 2;
+          o1 += 2;
+          char2 = (int) b1.get(o1 - 1);
+          if ((char2 & 0xC0) != 0x80)
+            throw new Error("malformed input around byte "
+                + o1);
+          cmp1 = (char) (((c1 & 0x1F) << 6) | (char2 & 0x3F));
+          break;
+        case 14:
+          //1110 xxxx 10xx xxxx 10xx xxxx
+          count += 3;
+          o1 += 3;
+          char2 = (int) b1.get(o1 - 2);
+          char3 = (int) b1.get(o2 - 1);
+          if (((char2 & 0xC0) != 0x80) || ((char3 & 0xC0) != 0x80))
+            throw new Error("malformed input around byte "
+                + (o1 - 1));
+          cmp1 = (char) (((c1 & 0x0F) << 12) | ((char2 & 0x3F) << 6) | ((char3 & 0x3F) << 0));
+          break;
+        default:
+          //10xx xxxx, 1111 xxxx
+          throw new Error("malformed input around byte " + o1);
+      }
+
+      //second char
+      c1 = (int) b2.get(o2) & 0xff;
+      switch (c1 >> 4) {
+        case 0:
+        case 1:
+        case 2:
+        case 3:
+        case 4:
+        case 5:
+        case 6:
+        case 7:
+        /* 0xxxxxxx */
+          o2++;
+          cmp2 = (char) c1;
+          break;
+        case 12:
+        case 13:
+        /* 110x xxxx 10xx xxxx */
+          o2 += 2;
+          char2 = (int) b2.get(o2 - 1);
+          if ((char2 & 0xC0) != 0x80)
+            throw new Error("malformed input around byte "
+                + o2);
+          cmp2 = (char) (((c1 & 0x1F) << 6) | (char2 & 0x3F));
+          break;
+        case 14:
+        /* 1110 xxxx 10xx xxxx 10xx xxxx */
+          o2 += 3;
+          char2 = (int) b2.get(o2 - 2);
+          char3 = (int) b2.get(o2 - 1);
+          if (((char2 & 0xC0) != 0x80) || ((char3 & 0xC0) != 0x80))
+            throw new Error("malformed input around byte "
+                + (count - 1));
+          cmp2 = (char) (((c1 & 0x0F) << 12) | ((char2 & 0x3F) << 6) | ((char3 & 0x3F) << 0));
+          break;
+        default:
+        /* 10xx xxxx, 1111 xxxx */
+          throw new Error("malformed input around byte " + count);
+      }
+      if(cmp1 != cmp2)
+        return cmp1 - cmp2;
+    }
+    //the string starts the same (or are actually the same)
+    return length1 - length2;
+  }
+
+
+  /**
+   * Compare two utf8 encoded strings. This method assumes that a size indicator
+   * is stored first in each array as defined in CBUtil
+   * @param b1 first buffer
+   * @param o1 first buffer offset
+   * @param b2 second buffer
+   * @param o2 second buffer offset
+   * @param map char map for localized comapre
+   * @param length1 number of bytes to read in the first buffer
+   * @param length2 number of bytes to read in the second buffer
+   * @return a negative integer, zero, or a positive integer as b1 is less than, equal to, or greater than b2.
+   * @see CodecUtil#encodeInt(int, byte[], int)
+   * @see org.mellowtech.core.util.CompiledLocale
+   */
+  public static int cmp(ByteBuffer b1, int o1, ByteBuffer b2, int o2, char[] map, int length1, int length2){
+
+    if(map == null) return cmp(b1, o1, b2, o2, length1, length2);
+
+    int c1,c2, num = 0, i = 0;
+
+    /*
+    // length1
+    c1 = (b1.get(o1++) & 0xFF);
+    while ((c1 & 0x80) == 0) {
+      num |= (c1 << (7 * i));
+      c1 = (b1.get(o1++) & 0xFF);
+      i++;
+    }
+    length1 = (num |= ((c1 & ~(0x80)) << (7 * i)));
+    // length2
+    num = 0;
+    i = 0;
+    c1 = (b2.get(o2++) & 0xFF);
+    while ((c1 & 0x80) == 0) {
+      num |= (c1 << (7 * i));
+      c1 = (b2.get(o2++) & 0xFF);
+      i++;
+    }
+    length2 = (num |= ((c1 & ~(0x80)) << (7 * i)));
+    */
+
+    int min = Math.min(length1, length2);
+    int count = 0;
+    while(count < min){
+      c1 = b1.get(o1) & 0xFF;
+      c2 = b2.get(o2) & 0xFF;
+      if(c1 > 127 || c2 > 127)
+        break;
+      if(c1 != c2)
+        return map[c1] - map[c2];
+      o1++;
+      o2++;
+      count++;
+    }
+    //difficult case
+    //you only have to update count for the char from the first string
+    //since it should be exactly the same as long as the chars are the same
+    char cmp1, cmp2;
+    int char2, char3;
+    while(count < min){
+      //first char
+      c1 = (int) b1.get(o1) & 0xff;
+      switch (c1 >> 4) {
+        case 0:
+        case 1:
+        case 2:
+        case 3:
+        case 4:
+        case 5:
+        case 6:
+        case 7:
+        /* 0xxxxxxx */
+          count++; o1++;
+          cmp1 = (char) c1;
+          break;
+        case 12:
+        case 13:
+        /* 110x xxxx 10xx xxxx */
+          count += 2;
+          o1 += 2;
+          char2 = (int) b1.get(o1 - 1);
+          if ((char2 & 0xC0) != 0x80)
+            throw new Error("malformed input around byte "
+                + o1);
+          cmp1 = (char) (((c1 & 0x1F) << 6) | (char2 & 0x3F));
+          break;
+        case 14:
+        /* 1110 xxxx 10xx xxxx 10xx xxxx */
+          count += 3;
+          o1 += 3;
+          char2 = (int) b1.get(o1 - 2);
+          char3 = (int) b1.get(o2 - 1);
+          if (((char2 & 0xC0) != 0x80) || ((char3 & 0xC0) != 0x80))
+            throw new Error("malformed input around byte "
+                + (o1 - 1));
+          cmp1 = (char) (((c1 & 0x0F) << 12) | ((char2 & 0x3F) << 6) | ((char3 & 0x3F) << 0));
+          break;
+        default:
+        /* 10xx xxxx, 1111 xxxx */
+          throw new Error("malformed input around byte " + o1);
+      }
+
+      //second char
+      c1 = (int) b2.get(o2) & 0xff;
+      switch (c1 >> 4) {
+        case 0:
+        case 1:
+        case 2:
+        case 3:
+        case 4:
+        case 5:
+        case 6:
+        case 7:
+        /* 0xxxxxxx */
+          o2++;
+          cmp2 = (char) c1;
+          break;
+        case 12:
+        case 13:
+        /* 110x xxxx 10xx xxxx */
+          o2 += 2;
+          char2 = (int) b2.get(o2 - 1);
+          if ((char2 & 0xC0) != 0x80)
+            throw new Error("malformed input around byte "
+                + o2);
+          cmp2 = (char) (((c1 & 0x1F) << 6) | (char2 & 0x3F));
+          break;
+        case 14:
+        /* 1110 xxxx 10xx xxxx 10xx xxxx */
+          o2 += 3;
+          char2 = (int) b2.get(o2 - 2);
+          char3 = (int) b2.get(o2 - 1);
+          if (((char2 & 0xC0) != 0x80) || ((char3 & 0xC0) != 0x80))
+            throw new Error("malformed input around byte "
+                + (count - 1));
+          cmp2 = (char) (((c1 & 0x0F) << 12) | ((char2 & 0x3F) << 6) | ((char3 & 0x3F) << 0));
+          break;
+        default:
+        /* 10xx xxxx, 1111 xxxx */
+          throw new Error("malformed input around byte " + count);
+      }
+      if(cmp1 != cmp2)
+        return map[cmp1] - map[cmp2];
+    }
+    //the string starts the same (or are actually the same)
+    return length1 - length2;
   }
 
 }

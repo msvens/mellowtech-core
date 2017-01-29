@@ -16,7 +16,6 @@
 
 package org.mellowtech.core.codec;
 
-import org.mellowtech.core.bytestorable.CBUtil;
 import org.mellowtech.core.util.CompiledLocale;
 
 import java.nio.ByteBuffer;
@@ -28,8 +27,8 @@ import java.util.Locale;
  */
 public class StringCodec implements BCodec<String> {
 
-  private static char[] charMap = null;
-  private static Locale locale = null;
+  protected static char[] charMap = null;
+  protected static Locale locale = null;
 
   @Override
   public int compare(String first, String second) {
@@ -108,26 +107,6 @@ public class StringCodec implements BCodec<String> {
 
   /*
   @Override
-  public int compareTo(BComparable<String> other) {
-    if (charMap == null)
-      return value.compareTo(other.get());
-
-    String str1 = other.get();
-    int n = Math.min(value.length(), str1.length());
-    int i = 0;
-    while (n-- != 0) {
-      char c1 = charMap[(int) value.charAt(i)];
-      char c2 = charMap[(int) str1.charAt(i)];
-      if (c1 != c2)
-        return c1 - c2;
-      i++;
-    }
-    return value.length() - str1.length();
-  }
-  */
-
-
-  @Override
   public int byteCompare(int offset1, int offset2, byte[] b) {
     return charMap == null ? UtfUtil.compare(b, offset1, b, offset2) :
         UtfUtil.compare(b, offset1, b, offset2, charMap);
@@ -138,40 +117,42 @@ public class StringCodec implements BCodec<String> {
   public int byteCompare(int offset1, byte[] b1, int offset2, byte[] b2) {
     return charMap == null ? UtfUtil.compare(b1, offset1, b2, offset2) :
         UtfUtil.compare(b1, offset1, b2, offset2, charMap);
-  }
+  }*/
 
 
   @Override
   public int byteCompare(int offset1, ByteBuffer bb1, int offset2,
                          ByteBuffer bb2) {
+
     return charMap == null ? UtfUtil.compare(bb1, offset1, bb2, offset2) :
         UtfUtil.compare(bb1, offset1, bb2, offset2, charMap);
+
   }
 
 
   @Override
   public String from(ByteBuffer bb) {
-    int length = CBUtil.decodeInt(bb);
-    return UtfUtil.decode(bb, length);
+    //int length = CBUtil.decodeInt(bb);
+    return UtfUtil.decode(bb, CodecUtil.getSize(bb, true));
   }
 
 
   @Override
   public void to(String value, ByteBuffer bb) {
-    CBUtil.putSize(UtfUtil.utfLength(value), bb, true);
+    CodecUtil.putSize(UtfUtil.utfLength(value), bb, true);
     UtfUtil.encode(value, bb);
   }
 
 
   @Override
   public int byteSize(String value) {
-    return CBUtil.byteSize(UtfUtil.utfLength(value), true);
+    return CodecUtil.byteSize(UtfUtil.utfLength(value), true);
   }
 
 
   @Override
   public int byteSize(ByteBuffer bb) {
-    return CBUtil.peekSize(bb, true);
+    return CodecUtil.peekSize(bb, true);
   }
 
 

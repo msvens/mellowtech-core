@@ -14,24 +14,26 @@
  * limitations under the License.
  */
 
-package org.mellowtech.core.bytestorable;
-
-import org.junit.Before;
-import org.mellowtech.core.bytestorable.CBDouble;
-
+package org.mellowtech.core.codec;
 
 /**
- * Date: 2013-04-17
- * Time: 17:59
- *
- * @author Martin Svensson
+ * @author msvens
+ * @since 4.0.0
  */
-public class CBDoubleTest extends BComparableTemplate <Double, CBDouble> {
+public class StingCodec4Test extends CodecCompareTemplate<String> {
 
-  @Before public void init(){
-    type = CBDouble.class;
-    values = new Double[]{0.5,1.0};
-    sizes = new int[]{8,8};
+  @Override
+  public String val(int idx) {
+    return idx == 0 ? "aöc" : "aöd";
   }
-  
+
+  @Override
+  public int size(int idx) {
+    return 8;
+  }
+
+  @Override
+  public BCodec<String> codec() {
+    return new StringCodec4();
+  }
 }

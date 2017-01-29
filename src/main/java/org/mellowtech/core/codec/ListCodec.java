@@ -42,17 +42,17 @@ public class ListCodec<A> implements BCodec<List<A>> {
 
   @Override
   public int byteSize(List<A> value) {
-    return CodecUtil.byteSize(internalSize(value), false);
+    return CodecUtil.byteSize4(internalSize(value));
   }
 
   @Override
   public int byteSize(ByteBuffer bb) {
-    return CodecUtil.peekSize(bb, false);
+    return CodecUtil.peekSize4(bb);
   }
 
   @Override
   public List<A> from(ByteBuffer bb) {
-    CodecUtil.getSize(bb, false); //read past size
+    CodecUtil.getSize4(bb); //read past size
     int elements = bb.getInt();
     List<A> list = new ArrayList<A>(elements);
     for(int i = 0; i < elements; i++)
@@ -62,9 +62,10 @@ public class ListCodec<A> implements BCodec<List<A>> {
 
   @Override
   public void to(List<A> value, ByteBuffer bb) {
-    CodecUtil.putSize(internalSize(value), bb,false);
-    bb.putInt(value.size());
-    for(A a : value)
-      codec.to(a,bb);
+    CodecUtil.putSize4(bb, buff -> {
+      buff.putInt(value.size());
+      for(A a : value)
+        codec.to(a, buff);
+    });
   }
 }

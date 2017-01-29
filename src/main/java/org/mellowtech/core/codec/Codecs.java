@@ -16,7 +16,6 @@
 
 package org.mellowtech.core.codec;
 
-import org.mellowtech.core.bytestorable.PrimitiveType;
 
 import java.util.BitSet;
 import java.util.Date;

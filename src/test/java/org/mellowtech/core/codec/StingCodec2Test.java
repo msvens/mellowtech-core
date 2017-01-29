@@ -1,4 +1,3 @@
-
 /*
  * Copyright 2015 mellowtech.org
  *
@@ -15,31 +14,26 @@
  * limitations under the License.
  */
 
-package org.mellowtech.core.bytestorable;
-
-import junit.framework.Assert;
-import org.junit.Before;
+package org.mellowtech.core.codec;
 
 /**
  * @author msvens
- *
+ * @since 4.0.0
  */
-public class CBByteArrayTest extends BComparableTemplate <byte[], CBByteArray> {
+public class StingCodec2Test extends CodecCompareTemplate<String> {
 
-  @Before public void init(){
-    type = CBByteArray.class;
-    byte[] b1 = new byte[]{1,2};
-    byte[] b2 = new byte[]{1,3};
-    values = new byte[][]{b1,b2};
-    sizes = new int[]{3,3};
+  @Override
+  public String val(int idx) {
+    return idx == 0 ? "aöc" : "aöd";
   }
 
   @Override
-  public void testGet() throws Exception {
-    CBByteArray b = newB(0);
-    byte[] val = b.get();
-    Assert.assertEquals(values[0][0], val[0]);
-    Assert.assertEquals(values[0][1], val[1]);
+  public int size(int idx) {
+    return 6;
   }
 
+  @Override
+  public BCodec<String> codec() {
+    return new StringCodec2();
+  }
 }

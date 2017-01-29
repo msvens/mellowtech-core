@@ -16,10 +16,6 @@
 
 package org.mellowtech.core.codec;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.mellowtech.core.bytestorable.Record;
-
 /**
  * @author msvens
  * @since 2017-01-28

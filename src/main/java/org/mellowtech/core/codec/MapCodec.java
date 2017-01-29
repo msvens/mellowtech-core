@@ -45,17 +45,17 @@ public class MapCodec<A,B> implements BCodec<Map<A,B>> {
 
   @Override
   public int byteSize(Map<A,B> value) {
-    return CodecUtil.byteSize(internalSize(value), false);
+    return CodecUtil.byteSize4(internalSize(value));
   }
 
   @Override
   public int byteSize(ByteBuffer bb) {
-    return CodecUtil.peekSize(bb, false);
+    return CodecUtil.peekSize4(bb);
   }
 
   @Override
   public Map<A,B> from(ByteBuffer bb) {
-    CodecUtil.getSize(bb, false); //read past size
+    CodecUtil.getSize4(bb); //read past size
     int elements = bb.getInt();
     Map<A,B> map = new HashMap<A, B>(elements);
     for(int i = 0; i < elements; i++)
@@ -65,11 +65,13 @@ public class MapCodec<A,B> implements BCodec<Map<A,B>> {
 
   @Override
   public void to(Map<A,B> value, ByteBuffer bb) {
-    CodecUtil.putSize(internalSize(value), bb,false);
-    bb.putInt(value.size());
-    for(Map.Entry<A,B> entry: value.entrySet()) {
-      keyCodec.to(entry.getKey(), bb);
-      valueCodec.to(entry.getValue(),bb);
-    }
+    //CodecUtil.putSize(internalSize(value), bb,false);
+    CodecUtil.putSize4(bb, buff -> {
+      bb.putInt(value.size());
+      for(Map.Entry<A,B> entry: value.entrySet()) {
+        keyCodec.to(entry.getKey(), bb);
+        valueCodec.to(entry.getValue(),bb);
+      }
+    });
   }
 }

@@ -17,9 +17,6 @@
 package org.mellowtech.core.codec;
 
 
-import org.mellowtech.core.bytestorable.CBByteArray;
-import org.mellowtech.core.bytestorable.CBUtil;
-
 import java.nio.ByteBuffer;
 
 /**

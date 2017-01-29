@@ -16,7 +16,6 @@
 
 package org.mellowtech.core.codec;
 
-import org.mellowtech.core.bytestorable.CBUtil;
 import org.mellowtech.core.util.CompiledLocale;
 
 import java.nio.ByteBuffer;
@@ -121,23 +120,23 @@ public class CharArrayCodec implements BCodec<char[]> {
 
   @Override
   public int byteSize(char[] value) {
-    return CBUtil.byteSize(UtfUtil.utfLength(value), true);
+    return CodecUtil.byteSize(UtfUtil.utfLength(value), true);
   }
 
   @Override
   public int byteSize(ByteBuffer bb) {
-    return CBUtil.peekSize(bb, true);
+    return CodecUtil.peekSize(bb, true);
   }
 
   @Override
   public char[] from(ByteBuffer bb) {
-    int length = CBUtil.getSize(bb, true);
+    int length = CodecUtil.getSize(bb, true);
     return UtfUtil.decodeChars(bb, length);
   }
 
   @Override
   public void to(char[] value, ByteBuffer bb) {
-      CBUtil.putSize(UtfUtil.utfLength(value), bb, true);
+      CodecUtil.putSize(UtfUtil.utfLength(value), bb, true);
       UtfUtil.encode(value, bb);
   }
 

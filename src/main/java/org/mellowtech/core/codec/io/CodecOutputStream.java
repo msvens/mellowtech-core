@@ -15,7 +15,6 @@
  */
 package org.mellowtech.core.codec.io;
 
-import org.mellowtech.core.bytestorable.BStorable;
 import org.mellowtech.core.codec.BCodec;
 
 import java.io.IOException;

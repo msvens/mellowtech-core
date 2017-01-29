@@ -18,7 +18,6 @@ package org.mellowtech.core.collections.impl;
 
 import java.nio.ByteBuffer;
 
-import org.mellowtech.core.bytestorable.BStorableImp;
 import org.mellowtech.core.codec.BCodec;
 
 /**

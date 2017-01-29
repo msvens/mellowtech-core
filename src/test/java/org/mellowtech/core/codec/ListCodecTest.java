@@ -16,11 +16,7 @@
 
 package org.mellowtech.core.codec;
 
-import org.mellowtech.core.bytestorable.CBList;
-
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 /**

@@ -285,8 +285,17 @@ public class CodecUtil {
     return getUnsignedShort(bb);
   }
 
+  public static final int getSize2(ByteBuffer bb, int offset){
+    return getUnsignedShort(bb, offset);
+  }
+
   public static final int getSize4(ByteBuffer bb){
     return bb.getInt();
+  }
+
+
+  public static final int getSize4(ByteBuffer bb, int offset){
+    return bb.getInt(offset);
   }
 
   /**

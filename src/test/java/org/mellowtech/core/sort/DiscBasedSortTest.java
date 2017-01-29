@@ -21,7 +21,6 @@ import junit.framework.Assert;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.mellowtech.core.bytestorable.CBString;
 import org.mellowtech.core.codec.StringCodec;
 import org.mellowtech.core.sort.DiscBasedSort;
 import org.mellowtech.core.util.DelDir;
@@ -50,9 +49,9 @@ public class DiscBasedSortTest {
   public static final boolean LONG_TEXT = true;
   public static ByteBuffer stringBuffer;
   public static ArrayList <String> stringList;
+  public static StringCodec codec = new StringCodec();
 
   @Before public void before() throws Exception{
-
     //CBString.setLocale(new Locale("sv"));
     String file = LONG_TEXT ? "longText.txt" : "shortText.txt";
 
@@ -65,18 +64,16 @@ public class DiscBasedSortTest {
     String line;
     stringList = new ArrayList <>();
     int charlen = 0;
-    CBString tmpStr;
+    String tmpStr;
     int i = 0;
     while(s.hasNext() && i++ < 10000){
       String str = s.next();
-      tmpStr = new CBString(str);
-      charlen += tmpStr.byteSize();
+      charlen += codec.byteSize(str);
       stringList.add(str);
     }
     stringBuffer = ByteBuffer.allocate(charlen);
     for(String str : stringList){
-      tmpStr = new CBString(str);
-      tmpStr.to(stringBuffer);
+      codec.to(str, stringBuffer);
     }
     System.out.println(Platform.getTempDir()+"sort");
     File sortDir = new File(Platform.getTempDir()+"sort");
@@ -101,14 +98,14 @@ public class DiscBasedSortTest {
     //verify that things are the same
     //Collator col = Collator.getInstance(new Locale("sv"));
     Collections.sort(stringList);
-    CBString tStr = new CBString();
+    String tStr;
     bos.flush();
     ByteBuffer sorted =  ByteBuffer.wrap(bos.toByteArray());
     System.out.println(num+" "+stringList.size());
     for(String str : stringList){
-      tStr = tStr.from(sorted);
+      tStr = codec.from(sorted);
       //System.out.println(str+" "+tStr);
-      Assert.assertEquals(str, tStr.get());
+      Assert.assertEquals(str, tStr);
     }
   }
 }

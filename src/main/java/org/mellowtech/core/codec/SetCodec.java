@@ -44,17 +44,17 @@ public class SetCodec<A> implements BCodec<Set<A>> {
 
   @Override
   public int byteSize(Set<A> value) {
-    return CodecUtil.byteSize(internalSize(value), false);
+    return CodecUtil.byteSize4(internalSize(value));
   }
 
   @Override
   public int byteSize(ByteBuffer bb) {
-    return CodecUtil.peekSize(bb, false);
+    return CodecUtil.peekSize4(bb);
   }
 
   @Override
   public Set<A> from(ByteBuffer bb) {
-    CodecUtil.getSize(bb, false); //read past size
+    CodecUtil.getSize4(bb); //read past size
     int elements = bb.getInt();
     Set<A> set = new HashSet<A>(elements);
     for(int i = 0; i < elements; i++)
@@ -64,9 +64,12 @@ public class SetCodec<A> implements BCodec<Set<A>> {
 
   @Override
   public void to(Set<A> value, ByteBuffer bb) {
-    CodecUtil.putSize(internalSize(value), bb,false);
-    bb.putInt(value.size());
-    for(A a : value)
-      codec.to(a,bb);
+    //CodecUtil.putSize(internalSize(value), bb,false);
+    CodecUtil.putSize4(bb, buff -> {
+      buff.putInt(value.size());
+      for(A a : value)
+        codec.to(a,buff);
+    });
+
   }
 }

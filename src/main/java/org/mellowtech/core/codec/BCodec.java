@@ -56,6 +56,7 @@ public interface BCodec<A> {
    *         argument is less than, equal to, or greater than the second.
    */
   default int byteCompare(int offset1, int offset2, ByteBuffer bb) {
+
     return byteCompare(offset1, bb, offset2, bb);
   }
 

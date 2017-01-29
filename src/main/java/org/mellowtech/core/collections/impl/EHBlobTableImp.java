@@ -26,8 +26,6 @@ import static java.nio.file.StandardOpenOption.*;
 import java.nio.file.Path;
 import java.util.Iterator;
 
-import org.mellowtech.core.bytestorable.BComparable;
-import org.mellowtech.core.bytestorable.BStorable;
 import org.mellowtech.core.codec.BCodec;
 import org.mellowtech.core.collections.BMap;
 import org.mellowtech.core.collections.KeyValue;

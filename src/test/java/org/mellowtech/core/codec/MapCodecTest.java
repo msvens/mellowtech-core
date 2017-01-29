@@ -16,8 +16,6 @@
 
 package org.mellowtech.core.codec;
 
-import org.mellowtech.core.bytestorable.CBMap;
-
 import java.util.HashMap;
 import java.util.Map;
 

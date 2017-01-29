@@ -16,47 +16,44 @@
 
 package org.mellowtech.core.codec;
 
-
 import java.nio.ByteBuffer;
-import java.util.Locale;
 
 /**
  * @author Martin Svensson {@literal <msvens@gmail.com>}
  * @since 4.0.0
  */
-public class ByteCodec implements BCodec<Byte> {
+public class StringCodec4 extends StringCodec {
 
   @Override
-  public boolean isFixed(){
-    return true;
+  public String from(ByteBuffer bb) {
+    int length = CodecUtil.getSize4(bb);
+    return UtfUtil.decode(bb, length);
   }
 
-  @Override
-  public int fixedSize(){return 1;}
 
   @Override
-  public int byteSize(Byte a) {
-    return 1;
+  public void to(String value, ByteBuffer bb) {
+    CodecUtil.putSize4(bb, buff -> {
+      UtfUtil.encode(value, bb);
+    });
   }
-
-  @Override
-  public int byteSize(ByteBuffer bb) {
-    return 1;
-  }
-
-  @Override
-  public void to(Byte value, ByteBuffer bb) {
-    bb.put(value);
-  }
-
-  @Override
-  public Byte from(ByteBuffer bb) {return bb.get();}
 
   @Override
   public int byteCompare(int offset1, ByteBuffer bb1, int offset2,
                          ByteBuffer bb2) {
-    return Byte.compare(bb1.get(offset1),bb2.get(offset2));
+
+    int length1 = CodecUtil.getSize4(bb1, offset1);
+    int length2 = CodecUtil.getSize4(bb2, offset2);
+    return UtfUtil.cmp(bb1, offset1+4, bb2, offset2+4, null, length1, length2);
   }
 
+  @Override
+  public int byteSize(String value) {
+    return CodecUtil.byteSize4(UtfUtil.utfLength(value));
+  }
 
+  @Override
+  public int byteSize(ByteBuffer bb) {
+    return CodecUtil.peekSize4(bb);
+  }
 }
