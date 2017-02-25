@@ -166,7 +166,7 @@ public class Container1Codec implements BCodec<Container1> {
 
 ```
 
-Later you can simply use Container1 as any of the predefined _ByteStorables_
+Later you can serialize your container using your codec like this
 
 ```java
   public static void testContainer1(){
