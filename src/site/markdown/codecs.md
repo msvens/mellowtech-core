@@ -112,7 +112,7 @@ typically offers better performance. _BCodec_ and _CodecUtil_
 contains methods to assist the developer. At a minimum you are
 required to implement four methods in your custom codec.
 
-###Subclassing BStorable
+###Subclassing BCodec
 
 Lets implement a Codec that serializes a class that contains an integer and string. We start with
 implementing the container
