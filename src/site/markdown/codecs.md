@@ -190,7 +190,7 @@ A couple of important things to note when you define your own codecs
 	not change the position in the ByteBuffer (that is why we used the utility
 	function _CodecUtil.peekSize_
 
-###Using CBAuto
+###Using BRecord
 
 As an alternative to the above pattern where you implement your own codec you can use the _RecordCodec_ to 
 serialize complex types.
