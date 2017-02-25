@@ -118,8 +118,6 @@ public class DiscMapBuilder {
       throw new Error("unknown type");
   }*/
   public <A,B> DiscMap<A,B> build(Class<A> keyClass, Class<B> valueClass, String fileName, boolean sorted) {
-    //BComparable<K> keyTemp = getTemplate(keyClass);
-    //BStorable<V> valTemp = getTemplate(valueClass);
     return this.create(Codecs.fromClass(keyClass),Codecs.fromClass(valueClass), fileName, sorted);
   }
 

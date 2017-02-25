@@ -37,8 +37,10 @@ import java.nio.ByteBuffer;
 public class BTreeKeyCodec<A> implements BCodec<BTreeKey<A>> {
 
   BCodec<A> codec;
+
   /**
    * Creates an empty BTreeKeyCodec, needed for the CBytable methods.
+   * @param codec key codec
    * 
    */
   public BTreeKeyCodec(BCodec<A> codec) {

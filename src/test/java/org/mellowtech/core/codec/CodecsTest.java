@@ -16,27 +16,25 @@
 
 package org.mellowtech.core.codec;
 
-import java.lang.annotation.Retention;
-
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
-
 /**
- * Annotation used to indicate that a field should be
- * included in automatic serialization for CBAuto and CBRecord.
- *
- * @author Martin Svensson {@literal <msvens@gmail.com>}
- * @since 4.0.0
- * @see RecordCodec
+ * @author msvens
+ * @since 2017-01-30
  */
-@Retention(RUNTIME)
-public @interface BField {
 
-  /**
-   * Specify the this fields index in the serialized record. This has
-   * to be set so that deserialization knows which field to set
-   * for a specific value
-   * @return index
-   */
-  int value() default -1;
+import org.junit.Assert;
+import org.junit.Test;
 
+public class CodecsTest {
+
+  @Test public void getStringCodec(){
+    StringCodec codec = new StringCodec();
+    Assert.assertTrue(Codecs.fromClass(String.class) instanceof StringCodec);
+    Assert.assertTrue(Codecs.type(new String()) instanceof StringCodec);
+  }
+
+  @Test public void getChangeStringCodec(){
+    Codecs.addMapping(String.class, new StringCodec2());
+    Assert.assertTrue(Codecs.fromClass(String.class) instanceof StringCodec2);
+    Assert.assertTrue(Codecs.type(new String()) instanceof StringCodec2);
+  }
 }

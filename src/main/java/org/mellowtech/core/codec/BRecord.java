@@ -18,9 +18,12 @@
 package org.mellowtech.core.codec;
 
 /**
- * Subclasses of CBRecord should let their "record" implement
+ * Subclasses of BRecord should let their "record" implement
  * this interface. and annotate whatever fields that should
- * be included int the serialization of the record
+ * be included int the serialization of the record.
+ *
+ * Annotated fields has to be of a type that can be encoded using
+ * ObjectCodec
  *
  * <p>
  * To create a record with two fields you would simply implement
@@ -38,6 +41,7 @@ package org.mellowtech.core.codec;
  * @author Martin Svensson {@literal <msvens@gmail.com>}
  * @since 4.0.0
  * @see RecordCodec
+ * @see ObjectCodec
  */
 
 public interface BRecord {

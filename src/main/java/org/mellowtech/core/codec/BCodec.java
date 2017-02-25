@@ -184,6 +184,7 @@ public interface BCodec<A> {
 
   /**
    * Deep copy of this instance
+   * @param value the value to copy
    * @return new instance
    */
   default A deepCopy(A value){

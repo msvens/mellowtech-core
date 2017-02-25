@@ -17,9 +17,7 @@
 package org.mellowtech.core.codec;
 
 
-import java.util.BitSet;
-import java.util.Date;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * @author Martin Svensson {@literal <msvens@gmail.com>}
@@ -42,40 +40,18 @@ public class Codecs {
   private static ByteArrayCodec byteArrayCodec = new ByteArrayCodec();
   private static BitSetCodec bitSetCodec = new BitSetCodec();
 
+  private static Map<Class,BCodec> classCodecs = new HashMap<>();
+
+
+  public static void addMapping(Class<?> clazz, BCodec<?> codec){
+    classCodecs.put(clazz,codec);
+  }
 
   public static <A> BCodec<A> type(A obj) {
     if (obj instanceof Class)
       return fromClass((Class<A>) obj);
-    else if(obj instanceof Boolean)
-      return (BCodec<A>) booleanCodec;
-    else if(obj instanceof Byte)
-      return (BCodec<A>) byteCodec;
-    else if(obj instanceof Short)
-      return (BCodec<A>) shortCodec;
-    else if(obj instanceof Integer)
-      return (BCodec<A>) intCodec;
-    else if(obj instanceof Long)
-      return (BCodec<A>) longCodec;
-    else if(obj instanceof Float)
-      return (BCodec<A>) floatCodec;
-    else if(obj instanceof Double)
-      return (BCodec<A>) doubleCodec;
-    else if(obj instanceof Character)
-      return (BCodec<A>) charCodec;
-    else if(obj instanceof Date)
-      return (BCodec<A>) dateCodec;
-    else if(obj instanceof UUID)
-      return (BCodec<A>) uuidCodec;
-    else if(obj instanceof String)
-      return (BCodec<A>) stringCodec;
-    else if(obj instanceof char[])
-      return (BCodec<A>) charArrayCodec;
-    else if(obj instanceof byte[])
-      return (BCodec<A>) byteArrayCodec;
-    else if(obj instanceof BitSet)
-      return (BCodec<A>) bitSetCodec;
     else
-      throw new Error("codec not found");
+      return fromClass((Class<A>) obj.getClass());
   }
 
   public static final <A> byte toByte(BCodec<A> codec){
@@ -146,7 +122,10 @@ public class Codecs {
 
 
   public static final <A> BCodec<A> fromClass(Class<A> clazz){
-    if(clazz == Boolean.class)
+    BCodec codec = classCodecs.get(clazz);
+    if(codec != null)
+      return (BCodec<A>) codec;
+    else if(clazz == Boolean.class)
       return (BCodec<A>) booleanCodec;
     else if(clazz == Byte.class)
       return (BCodec<A>) byteCodec;

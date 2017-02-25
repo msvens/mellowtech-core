@@ -350,6 +350,7 @@ public class CodecUtil {
    * will be returned
    * @param first first value
    * @param second second value
+   * @param codec codec to use for copy
    * @param <A> BComparable
    * @return A new value of B
    * @see CodecUtil#separate(String, String, StringCodec)
@@ -370,6 +371,7 @@ public class CodecUtil {
    * "ABCD" and the second string is "ACA" the returned separator will be "AC"
    * @param first first string
    * @param second second string
+   * @param codec codec to use for compare
    * @return a new CBString
    */
   public static String separate(String first, String second, StringCodec codec){
@@ -400,6 +402,7 @@ public class CodecUtil {
    * "ABCD" and the second array is "ACA" the returned separator will be "AC"
    * @param first first string
    * @param second second string
+   * @param codec codec to use for compare
    * @return a new CBCharArray
    */
   public final static char[] separate(char[] first, char[] second, CharArrayCodec codec){

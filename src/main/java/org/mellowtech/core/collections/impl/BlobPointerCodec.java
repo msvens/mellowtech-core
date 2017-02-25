@@ -26,9 +26,10 @@ import org.mellowtech.core.codec.BCodec;
  * Time: 08:07
  *
  * @author Martin Svensson
- * @since
+ * @since 4.0.0
  */
 public class BlobPointerCodec implements BCodec<BlobPointer> {
+
   @Override
   public int byteSize(BlobPointer blobPointer) {
     return 12;

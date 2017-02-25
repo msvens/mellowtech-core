@@ -40,6 +40,7 @@ public class CodecWriteChannel <A> {
    * 
    * @param wbc
    *          channel to write to
+   * @param codec codec to use
    * @see ByteBuffer
    */
   public CodecWriteChannel(WritableByteChannel wbc, BCodec<A> codec) {

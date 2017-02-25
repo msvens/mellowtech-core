@@ -65,7 +65,7 @@ import org.slf4j.LoggerFactory;
  * @param <A> wrapped BComparable class
  * @author Martin Svensson
  * @version 1.0
- * @see org.mellowtech.core.bytestorable.BComparable
+ * @see org.mellowtech.core.codec.BCodec
  */
 public class EDiscBasedSort <A> {
   static final String SORT_RUN_FILE = "disc_sort_e_run.";
