@@ -127,7 +127,7 @@ public class RecordFileBuilder {
 
   public RecordFile build(Path path) throws IOException{
     if(spanned)
-      return new VariableRecordFile(path,maxBlocks,reserve);
+      return new VariableRecordFile(path,maxBlocks == null ? 0 : maxBlocks,reserve);
     else
       return RecordFileBuilder.create(strategy, maxBlocks, path, blockSize, reserve, splitMaxBlocks, splitBlockSize, multiFileSize);
   }
