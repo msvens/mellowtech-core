@@ -23,8 +23,11 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 /**
- * @author msvens
+ * Builder for record based files. Always use this class when creating and opening
+ * your record file
  *
+ * @author Martin Svensson {@literal <msvens@gmail.com>}
+ * @since 3.0.1
  */
 public class RecordFileBuilder {
   
@@ -41,7 +44,7 @@ public class RecordFileBuilder {
   private int multiFileSize = MultiBlockFile.DEFAULT_FILE_SIZE;
   
   /**
-   * 
+   * Create a new RecordFileBuilder
    */
   public RecordFileBuilder() {
   }
