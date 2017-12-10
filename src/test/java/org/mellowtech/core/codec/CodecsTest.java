@@ -36,5 +36,6 @@ public class CodecsTest {
     Codecs.addMapping(String.class, new StringCodec2());
     Assert.assertTrue(Codecs.fromClass(String.class) instanceof StringCodec2);
     Assert.assertTrue(Codecs.type(new String()) instanceof StringCodec2);
+    Codecs.addMapping(String.class, new StringCodec());
   }
 }

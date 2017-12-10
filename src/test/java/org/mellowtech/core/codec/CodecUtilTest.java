@@ -16,7 +16,6 @@
 
 package org.mellowtech.core.codec;
 
-import com.sun.org.apache.bcel.internal.classfile.Code;
 import org.junit.Assert;
 import org.junit.Test;
 
