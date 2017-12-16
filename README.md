@@ -4,7 +4,7 @@
 [![Maven Central](https://img.shields.io/maven-central/v/org.mellowtech/core.svg)](https://maven-badges.herokuapp.com/maven-central/org.mellowtech/core)
 
 
-##Overview
+## Overview
 
 Mellowtech Core is a set of components that we use for working with disc based
 and byte based manipulation of Objects. It is typically useful for any scenario
