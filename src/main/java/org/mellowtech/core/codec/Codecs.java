@@ -23,6 +23,7 @@ import java.util.*;
  * @author Martin Svensson {@literal <msvens@gmail.com>}
  * @since 4.0.0
  */
+@SuppressWarnings("unchecked")
 public class Codecs {
 
   private static BooleanCodec booleanCodec = new BooleanCodec();
@@ -43,10 +44,28 @@ public class Codecs {
   private static Map<Class,BCodec> classCodecs = new HashMap<>();
 
 
-  public static void addMapping(Class<?> clazz, BCodec<?> codec){
+  /**
+   * Add a user defined coded for a class
+   * @param clazz class to add
+   * @param codec codec
+   */
+  public static <A> void addMapping(Class<A> clazz, BCodec<A> codec){
     classCodecs.put(clazz,codec);
   }
 
+  /**
+   * Remove any user defined mappings
+   */
+  public static void clearMappings(){
+    classCodecs.clear();
+  }
+
+  /**
+   * Get codec for an object
+   * @param obj object
+   * @param <A> type
+   * @return codec
+   */
   public static <A> BCodec<A> type(A obj) {
     if (obj instanceof Class)
       return fromClass((Class<A>) obj);
@@ -54,7 +73,14 @@ public class Codecs {
       return fromClass((Class<A>) obj.getClass());
   }
 
-  public static final <A> byte toByte(BCodec<A> codec){
+  /**
+   * Get the byte representation for a specific codec. Will only work
+   * for the built in codeds
+   * @param codec codec
+   * @param <A> type
+   * @return codec number
+   */
+  public static <A> byte toByte(BCodec<A> codec){
     if(codec instanceof BooleanCodec)
       return 1;
     else if(codec instanceof ByteCodec)
@@ -87,7 +113,13 @@ public class Codecs {
       throw new Error("unknown codec");
   }
 
-  public static final <A> BCodec<A> fromByte(byte b){
+  /**
+   * Get the codec represented by this byte
+   * @param b codec
+   * @param <A> type
+   * @return codec
+   */
+  public static <A> BCodec<A> fromByte(byte b){
       if(b == 1)
         return (BCodec<A>) booleanCodec;
       else if(b == 2)
@@ -121,7 +153,13 @@ public class Codecs {
   }
 
 
-  public static final <A> BCodec<A> fromClass(Class<A> clazz){
+  /**
+   * Get the codec for class
+   * @param clazz class
+   * @param <A> type
+   * @return codec
+   */
+  public static <A> BCodec<A> fromClass(Class<A> clazz){
     BCodec codec = classCodecs.get(clazz);
     if(codec != null)
       return (BCodec<A>) codec;
