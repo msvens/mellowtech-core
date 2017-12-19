@@ -76,17 +76,18 @@ public class DiscBasedSortTest {
       codec.to(str, stringBuffer);
     }
     System.out.println(Platform.getTempDir()+"sort");
-    File sortDir = new File(Platform.getTempDir()+"sort");
+    //File sortDir = new File(Platform.getTempDir()+"sort");
+    File sortDir = Platform.getTempDir().resolve("sort").toFile();
     sortDir.mkdirs();
   }
 
   @After
   public void after(){
-    DelDir.d(Platform.getTempDir()+"sort");
+    DelDir.d(Platform.getTempDir().resolve("sort"));
   }
 
   @Test public void testQuickSort() throws Exception{
-    DiscBasedSort <String> edb = new DiscBasedSort <> (new StringCodec(), 0, Platform.getTempDir()+"sort");
+    DiscBasedSort <String> edb = new DiscBasedSort <> (new StringCodec(), 0, Platform.getTempDir().resolve("sort"));
     //stringBuffer.flip();
     ByteArrayOutputStream bos = new ByteArrayOutputStream();
     ByteArrayInputStream bis = new ByteArrayInputStream(stringBuffer.array());

@@ -20,6 +20,8 @@ import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
@@ -98,7 +100,7 @@ public class Merge{
   @SuppressWarnings("unchecked")
   public static <A> void merge(String fNames[], BCodec<A> codec,
       ByteBuffer input, ByteBuffer output, WritableByteChannel outputChannel,
-      String dir, boolean compressed) throws Exception {
+      Path dir, boolean compressed) throws Exception {
 
     ReadableByteChannel[] channels = new ReadableByteChannel[fNames.length];
     // FileChannel[] channels = new FileChannel[fNames.length];
@@ -118,9 +120,9 @@ public class Merge{
       logger.debug("opening {}/{} for merge", dir, fNames[i]);
       if (compressed)
         channels[i] = Channels.newChannel(new InflaterInputStream(
-            new FileInputStream(dir + "/" + fNames[i]), new Inflater()));
+            new FileInputStream(dir.resolve(fNames[i]).toFile()), new Inflater()));
       else
-        channels[i] = (new FileInputStream(dir + "/" + fNames[i])).getChannel();
+        channels[i] = new FileInputStream(dir.resolve(fNames[i]).toFile()).getChannel();
       // slice buffer:
       input.position(i * mBlockSize);
       input.limit((i + 1) * mBlockSize);
@@ -175,8 +177,8 @@ public class Merge{
    *              if an error occurs
    */
   public static <A> void mergeDirect(String fNames[], BCodec<A> codec,
-      ByteBuffer input, ByteBuffer output, WritableByteChannel outputChannel,
-      String dir, boolean compressed) throws Exception {
+                                     ByteBuffer input, ByteBuffer output, WritableByteChannel outputChannel,
+                                     Path dir, boolean compressed) throws Exception {
     // create local containers:
     ReadableByteChannel[] channels = new ReadableByteChannel[fNames.length];
     ByteBuffer[] buffers = new ByteBuffer[fNames.length];
@@ -203,9 +205,12 @@ public class Merge{
 
       if (compressed)
         channels[i] = Channels.newChannel(new InflaterInputStream(
-            new FileInputStream(dir + "/" + fNames[i]), new Inflater()));
+            Files.newInputStream(dir.resolve(fNames[i])), new Inflater()));
+            //new FileInputStream(dir + "/" + fNames[i]), new Inflater()));
       else
-        channels[i] = (new FileInputStream(dir + "/" + fNames[i])).getChannel();
+        channels[i] = new FileInputStream(dir.resolve(fNames[i]).toFile()).getChannel();
+        //channels[i] = (Files.newInputStream(dir.resolve(fNames[i]))).getClass();
+        //channels[i] = (new FileInputStream(dir + "/" + fNames[i])).getChannel();
       // slice buffer:
       input.position(i * mBlockSize);
       input.limit((i + 1) * mBlockSize);

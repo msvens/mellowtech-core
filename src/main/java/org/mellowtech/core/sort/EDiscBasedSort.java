@@ -28,6 +28,8 @@ import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.zip.Deflater;
 import java.util.zip.DeflaterOutputStream;
@@ -88,7 +90,7 @@ public class EDiscBasedSort <A> {
 
   private final BCodec<A> codec;
   private final int complevel;
-  private final String tempDir;
+  private final Path tempDir;
 
   private final Logger logger = LoggerFactory.getLogger(EDiscBasedSort.class);
 
@@ -135,7 +137,7 @@ public class EDiscBasedSort <A> {
    * @param tempDir
    *          temporary directory for sort runs
    */
-  public EDiscBasedSort(BCodec<A> codec, String tempDir) {
+  public EDiscBasedSort(BCodec<A> codec, Path tempDir) {
     this(codec, 0, tempDir);
   }
 
@@ -151,16 +153,15 @@ public class EDiscBasedSort <A> {
    * @param tempDir
    *          temporary directory for sort runs
    */
-  public EDiscBasedSort(BCodec<A> codec, int complevel, String tempDir) {
+  public EDiscBasedSort(BCodec<A> codec, int complevel, Path tempDir) {
     try {
       this.codec = codec;
     } catch(Exception e){throw new Error("could not create template instance");}
     this.complevel = complevel;
-    String tDir;
+    Path tDir;
     try {
-      File file = new File(tempDir);
-      if (!file.isDirectory())
-        throw new Exception("");
+      if(!Files.isDirectory(tempDir))
+        throw new IllegalArgumentException("tempDir is not a directory: "+tempDir.toString());
       tDir = tempDir;
     }
     catch (Exception e) {
@@ -285,7 +286,8 @@ public class EDiscBasedSort <A> {
       return -1;
 
     // now merge:
-    File f = new File(tempDir);
+    //File f = new File(tempDir);
+    File f = tempDir.toFile();
     String[] fNames = f.list(new FFilter());
     try {
       logger.debug("SORT:sort():Merging runs");
@@ -300,7 +302,8 @@ public class EDiscBasedSort <A> {
     }
     try {
       logger.debug("SORT:sort():Removing temp files.");
-      File fileDir = new File(tempDir);
+      //File fileDir = new File(tempDir);
+      File fileDir = tempDir.toFile();
       File[] files = fileDir.listFiles(new FilenameFilter() {
         public boolean accept(File file, String name) {
           return name.contains(SORT_RUN_FILE);
@@ -318,7 +321,7 @@ public class EDiscBasedSort <A> {
   }
 
   private int makeRuns(ReadableByteChannel input, ByteBuffer large,
-      ByteBuffer ob, String tempDir) {
+      ByteBuffer ob, Path tempDir) {
     try {
       EDBSContainer <A> hb = new EDBSContainer <> (large, input, blockSize, codec);
       Integer[] offsets = new Integer[10000];
@@ -361,18 +364,18 @@ public class EDiscBasedSort <A> {
   }
 
   private int sortRun(ByteBuffer bb, ReadableByteChannel c, Integer offsets[],
-      int numOffsets, int i, String dir, ByteBuffer output) throws Exception {
+      int numOffsets, int i, Path dir, ByteBuffer output) throws Exception {
 
     output.clear(); // clear output buffer:
 
     // Create output channel:
     WritableByteChannel fc;
     logger.debug("SORT:sortRun():Sort Run "+i);
+    Path fRun = dir.resolve(SORT_RUN_FILE+i);
     if (complevel > 0)
-      fc = Channels.newChannel(new DeflaterOutputStream(new FileOutputStream(
-          dir + SEP + SORT_RUN_FILE + i), new Deflater(complevel)));
+      fc = Channels.newChannel(new DeflaterOutputStream(new FileOutputStream(fRun.toFile()), new Deflater(complevel)));
     else
-      fc = (new FileOutputStream(dir + SEP + SORT_RUN_FILE + i)).getChannel();
+      fc = new FileOutputStream(fRun.toFile()).getChannel();
     int size = 0, numBytes = 0;
 
     // sort offsets:

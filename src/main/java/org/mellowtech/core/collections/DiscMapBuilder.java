@@ -88,36 +88,6 @@ public class DiscMapBuilder {
     return build(keyClass, valueClass, fileName, false);
   }
 
-
-  @SuppressWarnings("unchecked")
-  /*private <A> BComparable<A> getTemplate(Class<A> clazz){
-    if(clazz == Boolean.class)
-      return (BComparable<A>) new CBBoolean();
-    else if(clazz == Byte.class)
-      return (BComparable<A>) new CBByte();
-    else if(clazz == Character.class)
-      return (BComparable<A>) new CBChar();
-    else if(clazz == Short.class)
-      return (BComparable<A>) new CBShort();
-    else if(clazz == Integer.class)
-      return (BComparable<A>) new CBInt();
-    else if(clazz == Long.class)
-      return (BComparable<A>) new CBLong();
-    else if(clazz == Float.class)
-      return (BComparable<A>) new CBFloat();
-    else if(clazz == Double.class)
-      return (BComparable<A>) new CBDouble();
-    else if(clazz == String.class)
-      return (BComparable<A>) new CBString();
-    else if(clazz == byte[].class)
-      return (BComparable<A>) new CBByteArray();
-    else if(clazz == Date.class)
-      return (BComparable<A>) new CBDate();
-    else if(clazz == UUID.class)
-      return (BComparable<A>) new CBUUID();
-    else
-      throw new Error("unknown type");
-  }*/
   public <A,B> DiscMap<A,B> build(Class<A> keyClass, Class<B> valueClass, Path fileName, boolean sorted) {
     return this.create(Codecs.fromClass(keyClass),Codecs.fromClass(valueClass), fileName, sorted);
   }

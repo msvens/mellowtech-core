@@ -17,8 +17,10 @@
 package org.mellowtech.core;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.URL;
 import java.nio.file.FileSystems;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import org.mellowtech.core.codec.StringCodec;
@@ -79,16 +81,17 @@ public class TestUtils {
      return new File(Platform.getTempDir()+"/"+dir).getAbsolutePath();
   }*/
   public static Path getAbsolutePath(String dir){
-    return FileSystems.getDefault().getPath(Platform.getTempDir(), dir);
+    return Platform.getTempDir().resolve(dir);
+    //return FileSystems.getDefault().getPath(Platform.getTempDir(), dir);
+    //return FileSystems.getDefault().get
     //return new File(Platform.getTempDir()+"/"+dir).
   }
 
   public static File getTempFile(String dir, String fname){
-    String tempDir = Platform.getTempDir();
+    Path tempDir = Platform.getTempDir();
     if(dir != null)
-      return new File(tempDir+"/"+dir+"/"+fname);
-    else
-      return new File(tempDir+"/"+fname);
+      tempDir = tempDir.resolve(dir);
+    return tempDir.resolve(fname).toFile();
   }
 
   public static File getTempFile(String fname){
@@ -96,13 +99,21 @@ public class TestUtils {
   }
 
   public static void deleteTempDir(String dir){
-    String tempDir = Platform.getTempDir();
-    DelDir.d(tempDir+"/"+dir);
+    Path tempDir = Platform.getTempDir().resolve(dir);
+    DelDir.d(tempDir);
   }
 
   public static void createTempDir(String dir){
-    File f = new File(Platform.getTempDir() + "/" + dir);
-    f.mkdir();
+    try {
+      Path toCreate = Platform.getTempDir().resolve(dir);
+      if(!Files.exists(toCreate))
+        Files.createDirectory(Platform.getTempDir().resolve(dir));
+    }catch(IOException e){
+      e.printStackTrace();
+      throw new Error("could not create temp directory: "+Platform.getTempDir().resolve(dir));
+    }
+    //File f = new File(Platform.getTempDir() + "/" + dir);
+    //f.mkdir();
   }
 
   public static File getResourceAsFile(String resource){

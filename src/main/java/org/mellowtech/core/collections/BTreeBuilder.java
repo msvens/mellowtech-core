@@ -198,25 +198,6 @@ public class BTreeBuilder {
    * Create/Open a new disc based tree
    * @param keyCodec Byte codec for keys
    * @param valueCodec Byte codec for values
-   * @param fileName the path to this tree
-   * @param <A> key type
-   * @param <B> value type
-   * @return a new disc based tree
-   * @throws Exception if tree could not be created/opened
-   */
-  @Deprecated
-  public <A,B> BTree <A,B>
-  build(BCodec<A> keyCodec, BCodec<B> valueCodec, String fileName) throws Exception{
-    Path p = Paths.get(fileName);
-    Path dir = p.getParent();
-    return build(keyCodec, valueCodec,dir,p.getFileName().toString());
-
-  }
-
-  /**
-   * Create/Open a new disc based tree
-   * @param keyCodec Byte codec for keys
-   * @param valueCodec Byte codec for values
    * @param dir directory where to store this tree
    * @param name name of the tree
    * @param <A> key type

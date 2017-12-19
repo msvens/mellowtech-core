@@ -115,9 +115,12 @@ public class Platform {
 		return getS("user.language");
 	}
 
-	public static String getTempDir() {
+	/*public static String getTempDir() {
 		return getS("java.io.tmpdir");
-	}
+	}*/
+	public static Path getTempDir() {
+	  return Paths.get(getS("java.io.tmpdir"));
+  }
 
 	public static String convertToDataDir(String name) {
 		if (Platform.isWindows()) {

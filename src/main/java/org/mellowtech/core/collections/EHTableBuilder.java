@@ -63,13 +63,7 @@ public class EHTableBuilder {
     return this;
   }
 
-  public final <A,B> BMap <A,B>
-  build(BCodec<A> keyCodec, BCodec<B> valueCodec, String fileName) throws Exception {
-    return build(keyCodec, valueCodec, Paths.get(fileName));
-  }
-
-  public final <A,B> BMap <A,B>
-  build(BCodec<A> keyCodec, BCodec<B> valueCodec, Path fileName) throws Exception{
+  public final <A,B> BMap <A,B> build(BCodec<A> keyCodec, BCodec<B> valueCodec, Path fileName) throws Exception{
     if(blobValues) return buildBlob(keyCodec, valueCodec, fileName);
     EHTableImp<A,B> toRet = null;
     //first try to open
@@ -85,8 +79,7 @@ public class EHTableBuilder {
     return new EHTableImp <> (fileName, keyCodec, valueCodec, inMemory, bucketSize, maxBuckets);
   }
 
-  private final <A,B> BMap <A,B>
-  buildBlob(BCodec<A> keyCodec, BCodec<B> valueCodec, Path fileName) throws Exception{
+  private final <A,B> BMap <A,B> buildBlob(BCodec<A> keyCodec, BCodec<B> valueCodec, Path fileName) throws Exception{
     BMap <A,B> toRet = null;
     //first try to open
     try {

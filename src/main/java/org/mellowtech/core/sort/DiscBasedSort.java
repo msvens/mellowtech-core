@@ -25,6 +25,8 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 
 import org.mellowtech.core.codec.BCodec;
@@ -58,7 +60,7 @@ public class DiscBasedSort <A extends Comparable<A>> {
   private static int blockSize = 1024;
   private BCodec<A> codec;
   private int complevel = 0;
-  private String tempDir = null;
+  private Path tempDir = null;
 
   /**
    * Set the blocksize. How much data to read/write from disc. This number
@@ -84,7 +86,7 @@ public class DiscBasedSort <A extends Comparable<A>> {
    * @param tempDir
    *          temporary directory for sort runs
    */
-  public DiscBasedSort(BCodec<A> codec, String tempDir) {
+  public DiscBasedSort(BCodec<A> codec, Path tempDir) {
     this(codec, 0, tempDir);
   }
 
@@ -99,17 +101,16 @@ public class DiscBasedSort <A extends Comparable<A>> {
    * @param tempDir
    *          temporary directory for sort runs
    */
-  public DiscBasedSort(BCodec<A> codec, int complevel, String tempDir) {
+  public DiscBasedSort(BCodec<A> codec, int complevel, Path tempDir) {
     try {
       this.codec = codec;
     } catch(Exception e){throw new Error("could not create template instance");}
     this.complevel = complevel;
-    String tDir;
+    Path tDir;
     try {
       tDir = tempDir;
-      File file = new File(tempDir);
-      if (!file.isDirectory())
-        throw new Exception("");
+      if(!Files.isDirectory(tDir))
+        throw new IllegalArgumentException("tempDir is not a directory: "+tempDir);
     }
     catch (Exception e) {
       logger.info("Could not open temp dir: {}. Using default tempDir", tempDir);
@@ -168,7 +169,7 @@ public class DiscBasedSort <A extends Comparable<A>> {
       return -1;
 
     // now merge:
-    File f = new File(tempDir);
+    File f = tempDir.toFile();
     String[] fNames = f.list(new DBFFilter());
     try {
       Merge.merge(fNames, codec, large, ob, output, tempDir, complevel > 0);
@@ -178,7 +179,7 @@ public class DiscBasedSort <A extends Comparable<A>> {
     }
     try {
       logger.debug("Removing temp files");
-      File fileDir = new File(tempDir);
+      File fileDir = tempDir.toFile();
       File[] files = fileDir.listFiles(new FilenameFilter() {
         public boolean accept(File file, String name) {
           return name.contains(SORT_RUN_FILE);
@@ -198,7 +199,7 @@ public class DiscBasedSort <A extends Comparable<A>> {
   }
 
   private int makeRuns(ReadableByteChannel input, int heapSize,
-      ByteBuffer large, ByteBuffer ob, String tmpDir) {
+      ByteBuffer large, ByteBuffer ob, Path tmpDir) {
     try {
       DBSContainer <A> hb = new DBSContainer <> (large, input, blockSize, codec,
           heapSize);
@@ -238,10 +239,11 @@ public class DiscBasedSort <A extends Comparable<A>> {
   }
 
   private int sortRun(ReadableByteChannel c, A[] objs, int numObjs,
-      int i, String dir, ByteBuffer output) throws Exception {
+      int i, Path dir, ByteBuffer output) throws Exception {
 
     output.clear(); // clear output buffer:
-    try(FileOutputStream fos = new FileOutputStream(dir + SEP + SORT_RUN_FILE + i)){
+    Path fRun = dir.resolve(SORT_RUN_FILE+i);
+    try(FileOutputStream fos = new FileOutputStream(fRun.toFile())){
     // Create output channel:
     FileChannel fc = fos.getChannel();
     int size = 0, numBytes = 0;
