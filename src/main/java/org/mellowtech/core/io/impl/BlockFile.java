@@ -19,6 +19,7 @@ package org.mellowtech.core.io.impl;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
@@ -63,6 +64,13 @@ public class BlockFile extends AbstractBlockFile {
     bitSet.set(record, true);
     update(record, bytes, offset, length);
     //saveBitSet();
+  }
+
+  @Override
+  public BlockFile move(Path to) throws IOException {
+    close();
+    Files.move(p, to);
+    return new BlockFile(to);
   }
 
   @Override

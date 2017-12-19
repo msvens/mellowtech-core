@@ -77,7 +77,7 @@ public class BTreeBuilder {
   private int maxIndexBlocks = DEFAULT_MAX_INDEX_BLOCKS;
   private boolean blobValues = false;
   private boolean multiFileValues = false;
-  private int multiFileSize = MultiBlockFile.DEFAULT_FILE_SIZE;
+  private int multiFileSize = 1024*1024*64;
 
   /**
    * Based on usage hints calculates block sizes and maximum blocks as well as

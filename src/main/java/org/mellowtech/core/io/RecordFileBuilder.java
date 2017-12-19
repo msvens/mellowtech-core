@@ -41,7 +41,7 @@ public class RecordFileBuilder {
   private int reserve = 0;
   private int splitBlockSize = 512;
   private Integer splitMaxBlocks = null;
-  private int multiFileSize = MultiBlockFile.DEFAULT_FILE_SIZE;
+  private int multiFileSize = 1024*1024*64;
   
   /**
    * Create a new RecordFileBuilder

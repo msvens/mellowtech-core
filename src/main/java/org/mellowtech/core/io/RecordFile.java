@@ -19,6 +19,7 @@ package org.mellowtech.core.io;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
+import java.nio.file.Path;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -90,6 +91,8 @@ public interface RecordFile {
   Iterator<Record> iterator(int record) throws UnsupportedOperationException;
 
   MappedByteBuffer mapReserve() throws IOException, UnsupportedOperationException;
+
+  RecordFile move(Path to) throws IOException;
 
   /**
    * Removes this record file from disc. After a call to this method

@@ -176,7 +176,6 @@ abstract class AbstractBlockFile implements RecordFile {
 
   @Override
   public void remove() throws IOException {
-    Path pp = p;
     close();
     Files.delete(p);
   }

@@ -19,6 +19,7 @@ package org.mellowtech.core.io.impl;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
+import java.nio.file.Files;
 import java.nio.file.Path;
 
 
@@ -81,7 +82,13 @@ public class MemBlockFile extends AbstractBlockFile {
     //saveBitSet();
     if(bytes != null && length > 0)
       update(record, bytes, offset, length);
+  }
 
+  @Override
+  public MemBlockFile move(Path to) throws IOException{
+    close();
+    Files.move(p, to);
+    return new MemBlockFile(p);
   }
 
   @Override

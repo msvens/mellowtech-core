@@ -19,6 +19,7 @@ package org.mellowtech.core.io.impl;
 import org.mellowtech.core.io.RecordFile;
 import org.mellowtech.core.io.SplitRecordFile;
 
+import java.nio.file.Path;
 import java.nio.file.Paths;
 
 /**
@@ -33,18 +34,21 @@ public class MemSplitBlockFileTest extends SplitRecordFileTemplate{
   public String fname() {return "memSplitBlockFileTest.blf";}
 
   @Override
+  public String fnameMoved() {return "memSplitBlockFileTestMoved.blf";}
+
+  @Override
   public long blocksOffset() {
     return ((MemSplitBlockFile) rf).blocksOffset();
   }
 
   @Override
-  public SplitRecordFile init(int blockSize, int reserve, int maxBlocks, String fname) throws Exception {
-    return new MemSplitBlockFile(Paths.get(fname), blockSize, maxBlocks, reserve, maxBlocks, blockSize);
+  public SplitRecordFile init(int blockSize, int reserve, int maxBlocks, Path fname) throws Exception {
+    return new MemSplitBlockFile(fname, blockSize, maxBlocks, reserve, maxBlocks, blockSize);
   }
 
   @Override
-  public RecordFile reopen(String fname) throws Exception {
-    return new MemSplitBlockFile(Paths.get(fname));
+  public RecordFile reopen(Path fname) throws Exception {
+    return new MemSplitBlockFile(fname);
   }
 
 }

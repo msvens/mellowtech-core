@@ -18,6 +18,7 @@ package org.mellowtech.core.io.impl;
 
 import org.mellowtech.core.io.RecordFile;
 
+import java.nio.file.Path;
 import java.nio.file.Paths;
 
 /**
@@ -33,18 +34,21 @@ public class MemBlockFileTest extends RecordFileTemplate {
   public String fname() {return "memBlockFileTest.blf";}
 
   @Override
+  public String fnameMoved() {return "memBlockFileTestMoved.blf";}
+
+  @Override
   public long blocksOffset() {
     return ((MemBlockFile)rf).blocksOffset();
   }
 
   @Override
-  public RecordFile init(int blockSize, int reserve, int maxBlocks, String fname) throws Exception {
-    return new MemBlockFile(Paths.get(fname), blockSize, maxBlocks, reserve);
+  public RecordFile init(int blockSize, int reserve, int maxBlocks, Path fname) throws Exception {
+    return new MemBlockFile(fname, blockSize, maxBlocks, reserve);
   }
 
   @Override
-  public RecordFile reopen(String fname) throws Exception {
-    return new MemBlockFile(Paths.get(fname));
+  public RecordFile reopen(Path fname) throws Exception {
+    return new MemBlockFile(fname);
   }
 
 

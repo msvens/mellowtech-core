@@ -21,16 +21,23 @@ import org.mellowtech.core.io.RecordFile;
 
 import java.io.IOException;
 import java.nio.MappedByteBuffer;
+import java.nio.file.Path;
 import java.util.Iterator;
 import java.util.Map;
 
 /**
- * @author msvens
+ * @author Martin Svensson
  * @since 23/04/16
  */
+@Deprecated
 public class MappedBlockFile implements RecordFile {
 
 
+
+  @Override
+  public MappedBlockFile move(Path to) throws IOException {
+    return null;
+  }
 
   @Override
   public void clear() throws IOException {

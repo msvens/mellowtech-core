@@ -21,6 +21,7 @@ import org.mellowtech.core.codec.Codecs;
 import org.mellowtech.core.collections.impl.DiscBasedHashMap;
 import org.mellowtech.core.collections.impl.DiscBasedMap;
 
+import java.nio.file.Path;
 import java.util.Date;
 import java.util.Optional;
 import java.util.UUID;
@@ -79,11 +80,11 @@ public class DiscMapBuilder {
     return this;
   }
 
-  public <K,V> SortedDiscMap<K,V> sorted(Class<K> keyClass, Class<V> valueClass, String fileName) {
+  public <K,V> SortedDiscMap<K,V> sorted(Class<K> keyClass, Class<V> valueClass, Path fileName) {
     return (SortedDiscMap<K,V>) build(keyClass, valueClass, fileName, true);
   }
 
-  public <K,V> DiscMap<K,V> hashed(Class<K> keyClass, Class<V> valueClass, String fileName) {
+  public <K,V> DiscMap<K,V> hashed(Class<K> keyClass, Class<V> valueClass, Path fileName) {
     return build(keyClass, valueClass, fileName, false);
   }
 
@@ -117,12 +118,12 @@ public class DiscMapBuilder {
     else
       throw new Error("unknown type");
   }*/
-  public <A,B> DiscMap<A,B> build(Class<A> keyClass, Class<B> valueClass, String fileName, boolean sorted) {
+  public <A,B> DiscMap<A,B> build(Class<A> keyClass, Class<B> valueClass, Path fileName, boolean sorted) {
     return this.create(Codecs.fromClass(keyClass),Codecs.fromClass(valueClass), fileName, sorted);
   }
 
 
-  public <A,B> DiscMap<A,B> create(BCodec<A> keyClass, BCodec<B> valueClass, String fileName, boolean sorted) {
+  public <A,B> DiscMap<A,B> create(BCodec<A> keyClass, BCodec<B> valueClass, Path fileName, boolean sorted) {
     try {
       if (calcSize(keyClass, valueClass) * 10 > valueBlockSize)
         blobValues = true;

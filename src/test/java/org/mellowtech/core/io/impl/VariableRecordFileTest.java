@@ -20,6 +20,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.mellowtech.core.io.RecordFile;
 
+import java.nio.file.Path;
 import java.nio.file.Paths;
 
 /**
@@ -31,19 +32,21 @@ public class VariableRecordFileTest extends RecordFileTemplate {
   public String fname() {return "variableRecordFileTest.blf";}
 
   @Override
+  public String fnameMoved() {return "variableRecordFileTestMoved.blf";}
+
+  @Override
   public long blocksOffset() {
     return ((VariableRecordFile) rf).blocksOffset();
   }
 
   @Override
-  public RecordFile init(int blockSize, int reserve, int maxBlocks, String fname) throws Exception {
-    //return new BlockFile(Paths.get(fname), blockSize, maxBlocks, reserve);
-    return new VariableRecordFile(Paths.get(fname),maxBlocks,reserve);
+  public RecordFile init(int blockSize, int reserve, int maxBlocks, Path fname) throws Exception {
+    return new VariableRecordFile(fname,maxBlocks,reserve);
   }
 
   @Override
-  public RecordFile reopen(String fname) throws Exception {
-    return new VariableRecordFile(Paths.get(fname));
+  public RecordFile reopen(Path fname) throws Exception {
+    return new VariableRecordFile(fname);
   }
 
   /**

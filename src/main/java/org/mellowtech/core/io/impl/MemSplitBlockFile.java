@@ -19,6 +19,7 @@ package org.mellowtech.core.io.impl;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
+import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
@@ -123,6 +124,13 @@ public class MemSplitBlockFile extends AbstractSplitBlockFile {
     //saveBitSet(bitSet, bitBuffer);
     update(record, bytes, offset, length);
 
+  }
+
+  @Override
+  public MemSplitBlockFile move(Path to) throws IOException{
+    close();
+    Files.move(p, to);
+    return new MemSplitBlockFile(p);
   }
 
 

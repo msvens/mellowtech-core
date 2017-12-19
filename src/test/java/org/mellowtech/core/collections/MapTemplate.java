@@ -21,6 +21,7 @@ import org.mellowtech.core.TestUtils;
 import org.mellowtech.core.util.MapEntry;
 
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.Map.Entry;
@@ -33,8 +34,8 @@ public abstract class MapTemplate {
   public Map<String, Integer> map;
 
   public static String dir = "discmaptests";
-  public static String absPath(String fName){
-    return TestUtils.getAbsolutDir(dir+"/"+fName);
+  public static Path absPath(String fName){
+    return TestUtils.getAbsolutePath(dir+"/"+fName);
   }
   public static String chars = "abcdefghijklmn0123456789";
   public static int MAX_WORD_LENGTH = 20;
@@ -79,7 +80,7 @@ public abstract class MapTemplate {
 
   @BeforeClass
   public static void createDir(){
-    if(Files.exists(Paths.get(TestUtils.getAbsolutDir(dir))))
+    if(Files.exists(TestUtils.getAbsolutePath(dir)))
       TestUtils.deleteTempDir(dir);
     TestUtils.createTempDir(dir);
   }

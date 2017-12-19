@@ -21,6 +21,7 @@ import org.mellowtech.core.codec.StringCodec;
 import org.mellowtech.core.collections.BMap;
 import org.mellowtech.core.collections.BMapTemplate;
 
+import java.nio.file.Path;
 import java.nio.file.Paths;
 
 /**
@@ -34,12 +35,12 @@ public class EHBlobTableImpTest extends BMapTemplate {
   }
 
   @Override
-  public BMap<String, Integer> init(String fileName, int bucketSize, int maxBuckets) throws Exception{
-    return new EHBlobTableImp<>(Paths.get(fileName), new StringCodec(), new IntCodec(), false, bucketSize, maxBuckets);
+  public BMap<String, Integer> init(Path fileName, int bucketSize, int maxBuckets) throws Exception{
+    return new EHBlobTableImp<>(fileName, new StringCodec(), new IntCodec(), false, bucketSize, maxBuckets);
   }
 
   @Override
-  public BMap<String, Integer> reopen(String fileName) throws Exception{
-    return new EHBlobTableImp<>(Paths.get(fileName), new StringCodec(), new IntCodec(), false);
+  public BMap<String, Integer> reopen(Path fileName) throws Exception{
+    return new EHBlobTableImp<>(fileName, new StringCodec(), new IntCodec(), false);
   }
 }

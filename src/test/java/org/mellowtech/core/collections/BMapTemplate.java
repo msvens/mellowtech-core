@@ -26,6 +26,7 @@ import org.mellowtech.core.collections.BMap;
 import org.mellowtech.core.collections.KeyValue;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.*;
 
 /**
@@ -66,9 +67,9 @@ public abstract class BMapTemplate {
   public abstract String fName();
 
   public abstract BMap<String, Integer>
-  init(String fileName, int bucketSize, int maxBuckets) throws Exception;
+  init(Path fileName, int bucketSize, int maxBuckets) throws Exception;
 
-  public abstract BMap<String, Integer> reopen(String fileName) throws Exception;
+  public abstract BMap<String, Integer> reopen(Path fileName) throws Exception;
 
   @BeforeClass
   public static void createDir() {
@@ -78,7 +79,7 @@ public abstract class BMapTemplate {
 
   @Before
   public void setup() throws Exception {
-    tree = init(TestUtils.getAbsolutDir(dir + "/" + fName()), 1024, 16);
+    tree = init(TestUtils.getAbsolutePath(dir + "/" + fName()), 1024, 16);
   }
 
   @After
@@ -133,7 +134,7 @@ public abstract class BMapTemplate {
   @Test
   public void emptyReopen() throws Exception {
     tree.close();
-    tree = reopen(TestUtils.getAbsolutDir(dir + "/" + fName()));
+    tree = reopen(TestUtils.getAbsolutePath(dir + "/" + fName()));
     Assert.assertNull(tree.get(firstWord));
   }
 
@@ -188,7 +189,7 @@ public abstract class BMapTemplate {
   public void oneReopen() throws Exception {
     tree.put(firstWord, val(firstWord));
     tree.close();
-    tree = reopen(TestUtils.getAbsolutDir(dir + "/" + fName()));
+    tree = reopen(TestUtils.getAbsolutePath(dir + "/" + fName()));
     Assert.assertEquals(val(firstWord), tree.get(firstWord));
   }
 
@@ -253,7 +254,7 @@ public abstract class BMapTemplate {
   public void tenReopen() throws Exception {
     fillTree();
     tree.close();
-    tree = reopen(TestUtils.getAbsolutDir(dir + "/" + fName()));
+    tree = reopen(TestUtils.getAbsolutePath(dir + "/" + fName()));
     for (String w : words)
       Assert.assertEquals(val(w), tree.get(w));
   }
@@ -337,7 +338,7 @@ public abstract class BMapTemplate {
   public void manyReopen() throws Exception {
     fillManyTree();
     tree.close();
-    tree = reopen(TestUtils.getAbsolutDir(dir + "/" + fName()));
+    tree = reopen(TestUtils.getAbsolutePath(dir + "/" + fName()));
     for (String w : manyWords) {
       Assert.assertEquals(val(w), tree.get(w));
     }

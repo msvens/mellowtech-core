@@ -28,6 +28,7 @@ package org.mellowtech.core.collections.impl;
 
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.*;
 
 import org.mellowtech.core.codec.BCodec;
@@ -51,11 +52,11 @@ public class DiscBasedMap <A,B> implements SortedDiscMap<A,B> {
   private final BCodec<B> valueCodec;
 
 
-  public DiscBasedMap(BCodec<A> keyCodec, BCodec<B> valueCodec, String fileName,
+  public DiscBasedMap(BCodec<A> keyCodec, BCodec<B> valueCodec, Path fileName,
       BTreeBuilder builder) throws Exception {
     this.keyCodec = keyCodec;
     this.valueCodec = valueCodec;
-    this.btree = builder.build(keyCodec, valueCodec, fileName);
+    this.btree = builder.build(keyCodec, valueCodec, fileName.getParent(), fileName.getFileName().toString());
   }
   
   public void save() throws IOException{

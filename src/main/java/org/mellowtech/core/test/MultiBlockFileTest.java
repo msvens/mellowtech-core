@@ -36,10 +36,12 @@ public class MultiBlockFileTest {
   public static void main(String[] args)throws IOException{
       int numRecords = 1024*512;
       int blockSize = 1024*4;
+      int fileSize = 1024*1024*64;;
+      int reserve = 0;
       Path p = Paths.get("/Users/msvens/core-tests/multiBlockFile.mbf");
 
 
-    MultiBlockFile mbf = new MultiBlockFile(blockSize,p);
+    MultiBlockFile mbf = new MultiBlockFile(fileSize, blockSize, 0, p);
 
     Integer records[] = new Integer[numRecords];
     for(int i = 0; i < records.length; i++){

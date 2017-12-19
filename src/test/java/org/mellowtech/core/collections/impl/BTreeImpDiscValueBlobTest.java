@@ -37,12 +37,12 @@ public class BTreeImpDiscValueBlobTest extends BTreeTemplate {
     return "btreeimptwofilediscvalueblob";
   }
 
-  static Path getDir(String fName){
-    return Paths.get(fName).getParent();
+  static Path getDir(Path fName){
+    return fName.getParent();
   }
 
   @Override
-  public BTree<String, Integer> init(String fileName, int valueBlockSize, int indexBlockSize,
+  public BTree<String, Integer> init(Path fileName, int valueBlockSize, int indexBlockSize,
                                       int maxValueBlocks, int maxIndexBlocks) throws Exception{
 
     RecordFileBuilder builder = new RecordFileBuilder().disc().
@@ -53,7 +53,7 @@ public class BTreeImpDiscValueBlobTest extends BTreeTemplate {
 
   }
   @Override
-  public BTree<String, Integer> reopen(String fileName, int valueBlockSize, int indexBlockSize,
+  public BTree<String, Integer> reopen(Path fileName, int valueBlockSize, int indexBlockSize,
                                                         int maxValueBlocks, int maxIndexBlocks) throws Exception{
 
     RecordFileBuilder builder = new RecordFileBuilder().disc().

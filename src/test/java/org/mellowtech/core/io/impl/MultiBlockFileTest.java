@@ -21,6 +21,7 @@ import org.junit.Test;
 import org.mellowtech.core.io.RecordFile;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 
 /**
@@ -36,19 +37,22 @@ public class MultiBlockFileTest extends RecordFileTemplate {
   public String fname() {return "multiBlockFileTest1.mbf";}
 
   @Override
+  public String fnameMoved() {return "multiBlockFileTest1Moved.mbf";}
+
+  @Override
   public long blocksOffset() {
     return 0;
   }
 
   @Override
-  public RecordFile init(int blockSize, int reserve, int maxBlocks, String fname) throws Exception {
-    return new MultiBlockFile(blockSize*2, blockSize, reserve, Paths.get(fname));
+  public RecordFile init(int blockSize, int reserve, int maxBlocks, Path fname) throws Exception {
+    return new MultiBlockFile(blockSize*2, blockSize, reserve, fname);
     //return new MemBlockFile(Paths.get(fname), blockSize, maxBlocks, reserve);
   }
 
   @Override
-  public RecordFile reopen(String fname) throws Exception {
-    return new MultiBlockFile(blockSize*2, blockSize, reserve, Paths.get(fname));
+  public RecordFile reopen(Path fname) throws Exception {
+    return new MultiBlockFile(blockSize*2, blockSize, reserve, fname);
   }
 
   /****overwritten tests****/

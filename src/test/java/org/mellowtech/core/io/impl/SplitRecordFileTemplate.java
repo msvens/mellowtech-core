@@ -22,6 +22,7 @@ import org.mellowtech.core.io.Record;
 import org.mellowtech.core.io.SplitRecordFile;
 
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
 import java.util.Iterator;
 
 /**
@@ -34,18 +35,18 @@ public abstract class SplitRecordFileTemplate extends RecordFileTemplate{
   SplitRecordFile rf1;
 
   @Override
-  public abstract SplitRecordFile init(int blockSize, int reserve, int maxBlocks, String fname) throws Exception;
+  public abstract SplitRecordFile init(int blockSize, int reserve, int maxBlocks, Path fname) throws Exception;
 
 
   @Before
   public void setup() throws Exception{
-    rf = init(blockSize,reserve,maxBlocks, TestUtils.getAbsolutDir(dir+"/"+fname()));
+    rf = init(blockSize,reserve,maxBlocks, TestUtils.getAbsolutePath(dir+"/"+fname()));
     rf1 = (SplitRecordFile) rf;
   }
 
   private void reop() throws Exception{
     rf.close();
-    rf = reopen(TestUtils.getAbsolutDir(dir+"/"+fname()));
+    rf = reopen(TestUtils.getAbsolutePath(dir+"/"+fname()));
     rf1 = (SplitRecordFile) rf;
   }
 

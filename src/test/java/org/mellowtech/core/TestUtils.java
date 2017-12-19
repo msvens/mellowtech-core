@@ -18,6 +18,8 @@ package org.mellowtech.core;
 
 import java.io.File;
 import java.net.URL;
+import java.nio.file.FileSystems;
+import java.nio.file.Path;
 import java.util.*;
 import org.mellowtech.core.codec.StringCodec;
 import org.mellowtech.core.util.DelDir;
@@ -73,8 +75,12 @@ public class TestUtils {
     return toRet;
   }*/
 
-  public static String getAbsolutDir(String dir){
+  /*public static String getAbsolutDir(String dir){
      return new File(Platform.getTempDir()+"/"+dir).getAbsolutePath();
+  }*/
+  public static Path getAbsolutePath(String dir){
+    return FileSystems.getDefault().getPath(Platform.getTempDir(), dir);
+    //return new File(Platform.getTempDir()+"/"+dir).
   }
 
   public static File getTempFile(String dir, String fname){

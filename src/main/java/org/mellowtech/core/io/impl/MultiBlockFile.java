@@ -27,13 +27,16 @@ import java.nio.file.*;
 import java.util.*;
 
 /**
- * @author msvens
+ * Record File that is physically organised as a set of files. The MultiBlockFile dont have any
+ * upper limit on the number of blocks it can handle. This implementation does not use a bitset
+ * to keep track of blocks but instead use a magic marker for deleted blocks. New blocks are always
+ * appended at the end of the file
+ * @author Martin Svensson
+ *
  * @since 3.0.7
  */
 public class MultiBlockFile implements RecordFile {
 
-  public final static int DEFAULT_FILE_SIZE = 1024*1024*64;
-  public final static int DEFAULT_BLOCK_SIZE = 1024*8;
   private static final int DELETED_BLOCK = 687997538;
   final Path dir;
   final String name;
@@ -47,10 +50,6 @@ public class MultiBlockFile implements RecordFile {
   private boolean opened = false;
   private final int reserve;
   private FileChannel fc = null;
-
-  public MultiBlockFile(int blockSize, Path name) throws IOException {
-    this(DEFAULT_FILE_SIZE, blockSize, 0, name);
-  }
 
   public MultiBlockFile(int fileSize, int blockSize, int reserve, Path name) throws IOException{
     files = new TreeMap <> ();
@@ -83,7 +82,10 @@ public class MultiBlockFile implements RecordFile {
 
   @Override
   public Map<Integer, Integer> compact() throws IOException {
-    return null;
+    Iterator<Record> iter = iterator(); {
+
+    }
+    throw new UnsupportedOperationException("compact not supported");
   }
 
   @Override
@@ -212,6 +214,35 @@ public class MultiBlockFile implements RecordFile {
   @Override
   public MappedByteBuffer mapReserve() throws IOException, UnsupportedOperationException {
     return fc.map(FileChannel.MapMode.READ_WRITE, 0, reserve);
+  }
+
+  @Override
+  public MultiBlockFile move(Path to) throws IOException {
+    Path toDir = to.getParent();
+    String toName = to.getFileName().toString();
+
+    if(Files.notExists(toDir)) Files.createDirectory(toDir);
+
+    //First move files
+    for(Map.Entry<Integer, FileRecord> entry : files.entrySet()){
+      Path newPath = toDir.resolve(entry.getKey()+"-"+toName);
+      entry.getValue().close();
+      Files.move(entry.getValue().path, newPath);
+    }
+
+    //Then move any reserved space:
+    if(reserve > 0){
+      fc.close();
+      Files.move(dir.resolve(name),toDir.resolve(name));
+    }
+
+    //some final cleanup
+    files.clear();
+    opened = false;
+
+    return new MultiBlockFile(fileSize, blockSize, reserve, to);
+
+
   }
 
   @Override

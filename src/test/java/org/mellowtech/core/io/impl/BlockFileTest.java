@@ -18,6 +18,7 @@ package org.mellowtech.core.io.impl;
 
 import org.mellowtech.core.io.RecordFile;
 
+import java.nio.file.Path;
 import java.nio.file.Paths;
 
 /**
@@ -34,17 +35,20 @@ public class BlockFileTest extends RecordFileTemplate {
   public String fname() {return "blockFileTest.blf";}
 
   @Override
+  public String fnameMoved() {return "blockFileTestMoved.blf";}
+
+  @Override
   public long blocksOffset() {
     return ((BlockFile) rf).blocksOffset();
   }
 
   @Override
-  public RecordFile reopen(String fname) throws Exception {
-    return new BlockFile(Paths.get(fname));
+  public RecordFile reopen(Path fname) throws Exception {
+    return new BlockFile(fname);
   }
   @Override
-  public RecordFile init(int blockSize, int reserve, int maxBlocks, String fname) throws Exception {
-    return new BlockFile(Paths.get(fname), blockSize, maxBlocks, reserve);
+  public RecordFile init(int blockSize, int reserve, int maxBlocks, Path fname) throws Exception {
+    return new BlockFile(fname, blockSize, maxBlocks, reserve);
   }
 
 

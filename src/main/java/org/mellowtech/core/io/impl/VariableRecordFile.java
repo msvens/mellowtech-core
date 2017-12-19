@@ -95,6 +95,13 @@ public class VariableRecordFile implements RecordFile {
   }
 
   @Override
+  public VariableRecordFile move(Path to) throws IOException {
+    close();
+    Files.move(p, to);
+    return new VariableRecordFile(to);
+  }
+
+  @Override
   public boolean contains(int record) throws IOException {
     return getIdx(record) != null;
   }

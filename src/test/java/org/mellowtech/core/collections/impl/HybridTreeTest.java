@@ -39,12 +39,16 @@ public class HybridTreeTest extends BTreeTemplate {
     return "hybridtree";
   }
 
-  static Path getDir(String fName){
+  /*static Path getDir(String fName){
     return Paths.get(fName).getParent();
+  }*/
+
+  static Path getDir(Path fName){
+    return fName.getParent();
   }
 
   @Override
-  public BTree<String, Integer> init(String fileName, int valueBlockSize,
+  public BTree<String, Integer> init(Path fileName, int valueBlockSize,
                                                       int indexBlockSize, int maxValueBlocks,
                                                       int maxIndexBlocks) throws Exception {
 
@@ -55,7 +59,7 @@ public class HybridTreeTest extends BTreeTemplate {
   }
 
   @Override
-  public BTree<String, Integer> reopen(String fileName,int valueBlockSize,
+  public BTree<String, Integer> reopen(Path fileName,int valueBlockSize,
                                                         int indexBlockSize, int maxValueBlocks,
                                                         int maxIndexBlocks) throws Exception {
 

@@ -22,6 +22,7 @@ import org.mellowtech.core.io.*;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
 import java.util.Iterator;
 
 /**
@@ -31,6 +32,7 @@ public abstract class RecordFileTemplate {
 
   public RecordFile rf;
   public abstract String fname();
+  public abstract String fnameMoved();
   public static String dir = "rftests";
   public static int maxBlocks = 10;
   public static int blockSize = 1024;
@@ -49,9 +51,9 @@ public abstract class RecordFileTemplate {
 
   public abstract long blocksOffset();
 
-  public abstract RecordFile init(int blockSize, int reserve, int maxBlocks, String fname) throws Exception;
+  public abstract RecordFile init(int blockSize, int reserve, int maxBlocks, Path fname) throws Exception;
 
-  public abstract RecordFile reopen(String fname) throws Exception;
+  public abstract RecordFile reopen(Path fname) throws Exception;
 
   @BeforeClass
   public static void createDir(){
@@ -66,7 +68,7 @@ public abstract class RecordFileTemplate {
 
   @Before
   public void setup() throws Exception{
-    rf = init(blockSize,reserve,maxBlocks, TestUtils.getAbsolutDir(dir+"/"+fname()));
+    rf = init(blockSize,reserve,maxBlocks, TestUtils.getAbsolutePath(dir+"/"+fname()));
   }
 
   @After
@@ -85,6 +87,17 @@ public abstract class RecordFileTemplate {
   @Test
   public void reserveSize() throws IOException{
     Assert.assertEquals(reserve, rf.getReserve().length);
+  }
+
+  @Test
+  public void move() throws Exception {
+    fillFile();
+    RecordFile rf1 = rf.move(TestUtils.getAbsolutePath(dir+"/"+fname()));
+    Assert.assertFalse(rf.isOpen());
+    for(int i = 0; i < maxBlocks; i++) {
+      Assert.assertEquals(new String(testBlock), new String(rf1.get(i)));
+    }
+    rf = rf1;
   }
 
   /****TESTS WITH ZERO ELEMENTS*********/
@@ -142,7 +155,7 @@ public abstract class RecordFileTemplate {
   @Test
   public void zeroReopen() throws Exception {
     rf.close();
-    rf = reopen(TestUtils.getAbsolutDir(dir+"/"+fname()));
+    rf = reopen(TestUtils.getAbsolutePath(dir+"/"+fname()));
     Assert.assertEquals(0, rf.size());
     Assert.assertNull(rf.get(0));
   }
@@ -230,7 +243,7 @@ public abstract class RecordFileTemplate {
     rf.insert(testBlock);
     rf.save();
     rf.close();
-    rf = reopen(TestUtils.getAbsolutDir(dir+"/"+fname()));
+    rf = reopen(TestUtils.getAbsolutePath(dir+"/"+fname()));
     Assert.assertEquals(1, rf.size());
     Assert.assertEquals(new String(testBlock), new String(rf.get(0)));
   }
@@ -320,7 +333,7 @@ public abstract class RecordFileTemplate {
   public void lastReopen() throws Exception {
     rf.insert(maxBlocks-1, testBlock);
     rf.close();
-    rf = reopen(TestUtils.getAbsolutDir(dir+"/"+fname()));
+    rf = reopen(TestUtils.getAbsolutePath(dir+"/"+fname()));
     Assert.assertEquals(new String(testBlock), new String(rf.get(maxBlocks-1)));
   }
 
@@ -428,7 +441,7 @@ public abstract class RecordFileTemplate {
   public void allReopen() throws Exception {
     fillFile();
     rf.close();
-    rf = reopen(TestUtils.getAbsolutDir(dir+"/"+fname()));
+    rf = reopen(TestUtils.getAbsolutePath(dir+"/"+fname()));
     for(int i = 0; i < maxBlocks; i++) {
       Assert.assertEquals(new String(testBlock), new String(rf.get(i)));
     }

@@ -18,6 +18,7 @@ package org.mellowtech.core.io.impl;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
@@ -75,6 +76,13 @@ public class SplitBlockFile extends AbstractSplitBlockFile {
     bitSet.set(index, true);
     //saveBitSet(bitSet, bitBuffer);
     return index;
+  }
+
+  @Override
+  public SplitBlockFile move(Path to) throws IOException {
+    close();
+    Files.move(p, to);
+    return new SplitBlockFile(to);
   }
 
   @Override
