@@ -69,19 +69,19 @@ public class EDiscBasedSortTest {
     for(String str : stringList){
       codec.to(str, stringBuffer);
     }
-    File sortDir = new File(Platform.getTempDir()+"/sort");
+    File sortDir = Platform.getTempDir().resolve("sort").toFile();
     sortDir.mkdirs();
   }
 
   @After
   public void after(){
-    DelDir.d(Platform.getTempDir()+"/sort");
+    DelDir.d(Platform.getTempDir().resolve("sort"));
   }
 
   @Test public void testQuickSort() throws Exception{
     StringCodec codec = new StringCodec();
     EDiscBasedSort <String> edb = new EDiscBasedSort <> (codec,
-    1, Platform.getTempDir()+"/sort");
+    1, Platform.getTempDir().resolve("sort"));
     //stringBuffer.flip();
     ByteArrayOutputStream bos = new ByteArrayOutputStream();
     edb.sort(new ByteArrayInputStream(stringBuffer.array()), bos, edb.getBlockSize()*1);
