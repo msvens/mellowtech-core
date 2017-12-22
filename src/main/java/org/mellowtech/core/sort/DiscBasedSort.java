@@ -24,9 +24,11 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
+import java.nio.channels.SeekableByteChannel;
 import java.nio.channels.WritableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 
 import org.mellowtech.core.codec.BCodec;
@@ -123,23 +125,20 @@ public class DiscBasedSort <A extends Comparable<A>> {
    * Sorts an inputfile and prints it to a designated outputfile. If these are
    * the same the inputfile will be overwritten.
    * 
-   * @param fName
+   * @param input
    *          File to sort
-   * @param outputFile
+   * @param output
    *          Ouputfile
    * @param memorySize
    *          The amount of memory that can be used for the in-memory sorting
    *          step
    * @return the number of objects sorted.
    */
-  public int sort(String fName, String outputFile, int memorySize) {
-    try(FileInputStream fis = new FileInputStream(fName);
-        FileOutputStream fos = new FileOutputStream(outputFile)){
-      FileChannel fc = fis.getChannel();
-      FileChannel fo = fos.getChannel();
-      return sort(fc, fo, memorySize);
-    }
-    catch(IOException e){
+  public int sort(Path input, Path output, int memorySize) {
+    try(SeekableByteChannel in = Files.newByteChannel(input, StandardOpenOption.READ);
+        SeekableByteChannel out = Files.newByteChannel(output, StandardOpenOption.WRITE)){
+      return sort(in, out, memorySize);
+    } catch(IOException e){
       logger.error("Could not sort",e);
       return -1;
     }

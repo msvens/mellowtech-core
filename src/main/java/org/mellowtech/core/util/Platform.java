@@ -54,8 +54,8 @@ public class Platform {
 		return getS("java.class.version");
 	}
 
-	public static String getJavaHome() {
-		return getS("java.home");
+	public static Path getJavaHome() {
+		return Paths.get(getS("java.home"));
 	}
 
 	public static String getJavaVendor() {
@@ -90,12 +90,12 @@ public class Platform {
 		return getS("path.separator");
 	}
 
-	public static String getWorkingDirectory() {
-		return getS("user.dir");
+	public static Path getWorkingDirectory() {
+		return Paths.get(getS("user.dir"));
 	}
 
-	public static String getUserHome() {
-		return getS("user.home");
+	public static Path getUserHome() {
+		return Paths.get(getS("user.home"));
 	}
 
 	public static String getUserName() {
@@ -115,30 +115,26 @@ public class Platform {
 		return getS("user.language");
 	}
 
-	/*public static String getTempDir() {
-		return getS("java.io.tmpdir");
-	}*/
 	public static Path getTempDir() {
 	  return Paths.get(getS("java.io.tmpdir"));
   }
 
-	public static String convertToDataDir(String name) {
+	public static Path convertToDataDir(String name) {
 		if (Platform.isWindows()) {
-			return Platform.getE("APPDATA") + "\\" + name;
+			return Paths.get(Platform.getE("APPDATA")).resolve(name);
 		} else if (Platform.isMac()) {
-			return Platform.getUserHome() + "/Library/" + name;
+			return Platform.getUserHome().resolve("Library").resolve(name);
 		} else if (Platform.isNix())
-			return Platform.getUserHome() + "/." + name;
+			return Platform.getUserHome().resolve("." + name);
 		else
-			return Platform.getUserHome() + "/" + name;
+			return Platform.getUserHome().resolve(name);
 	}
 
-	public static String getUserDocumentFolder() {
+	public static Path getUserDocumentFolder() {
 		if (Platform.isWindows()) {
-			return Platform.getUserHome() + Platform.getFileSeparator()
-					+ "My Documents";
+			return Platform.getUserHome().resolve("My Documents");
 		} else if (Platform.isMac()) {
-			return Platform.getUserHome() + "/Documents/";
+			return Platform.getUserHome().resolve("Documents");
 		} else if (Platform.isNix())
 			return Platform.getUserHome();
 		else
@@ -156,25 +152,21 @@ public class Platform {
 
 	// Environment properties:
 	// all environment variable are converted to upper case
-	public static String getPath() {
-		return getE("path");
+	public static Path getPath() {
+		return Paths.get(getE("path"));
 	}
 
-	public static String[] getSplittedPath() {
-		String tmp = Platform.getPath();
-		return tmp.split(Platform.getPathSeparator());
-	}
 
 	// Utility methods:
 	// will search in path...
 	public static String findExec(final String name, final boolean substring,
 			final boolean ignoreCase) throws IOException {
 		// this will search through the path
-		String paths[] = Platform.getSplittedPath();
+		Path path = getPath();
     final String[] toRet = new String[1];
     toRet[0] = null;
-		for (String path : paths) {
-      Path p = Paths.get(path);
+    for(int i = 0; i < path.getNameCount(); i++){
+      Path p = path.getName(i);
       Files.walkFileTree(p, new SimpleFileVisitor<Path>(){
         @Override
         public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {

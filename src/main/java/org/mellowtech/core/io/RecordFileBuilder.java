@@ -124,10 +124,6 @@ public class RecordFileBuilder {
     return this;
   }
 
-  public RecordFile build(String fileName) throws IOException{
-    return build(Paths.get(fileName));
-  }
-
   public RecordFile build(Path path) throws IOException{
     if(spanned)
       return new VariableRecordFile(path,maxBlocks == null ? 0 : maxBlocks,reserve);

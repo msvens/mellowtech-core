@@ -87,13 +87,13 @@ public class DiscBasedSortTest {
   }
 
   @Test public void testQuickSort() throws Exception{
-    DiscBasedSort <String> edb = new DiscBasedSort <> (new StringCodec(), 0, Platform.getTempDir().resolve("sort"));
+    DiscBasedSort <String> discBasedSort = new DiscBasedSort <> (new StringCodec(), 0, Platform.getTempDir().resolve("sort"));
     //stringBuffer.flip();
     ByteArrayOutputStream bos = new ByteArrayOutputStream();
     ByteArrayInputStream bis = new ByteArrayInputStream(stringBuffer.array());
     Channel c = Channels.newChannel(bis);
     Channel co = Channels.newChannel(bos);
-    int num = edb.sort((ReadableByteChannel)c, (WritableByteChannel) co, DiscBasedSort.getBlockSize()*4);
+    int num = discBasedSort.sort((ReadableByteChannel)c, (WritableByteChannel) co, DiscBasedSort.getBlockSize()*4);
     //edb.sort(Channels.newChannel(c, bos, edb.getBlockSize()*1);
 
     //verify that things are the same

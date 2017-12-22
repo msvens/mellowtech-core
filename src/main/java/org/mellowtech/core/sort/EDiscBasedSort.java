@@ -24,12 +24,10 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
-import java.nio.channels.Channels;
-import java.nio.channels.FileChannel;
-import java.nio.channels.ReadableByteChannel;
-import java.nio.channels.WritableByteChannel;
+import java.nio.channels.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 import java.util.zip.Deflater;
 import java.util.zip.DeflaterOutputStream;
@@ -214,22 +212,19 @@ public class EDiscBasedSort <A> {
    * Sorts an inputfile and prints it to a designated outputfile. If these are
    * the same the inputfile will be overwritten.
    * 
-   * @param fName
+   * @param input
    *          File to sort
-   * @param outputFile
+   * @param output
    *          Ouputfile
    * @param memorySize
    *          The amount of memory that can be used for the in-memory
    *          opertaions, must be at least as large as blockSize().
    * @return the number of objects sorted.
    */
-  public int sort(String fName, String outputFile, int memorySize) {
-    try {
-      FileChannel fc = (new FileInputStream(fName)).getChannel();
-      FileChannel fo = (new FileOutputStream(outputFile)).getChannel();
-      int ret = sort(fc, fo, memorySize);
-      fc.close();
-      fo.close();
+  public int sort(Path input, Path output, int memorySize) {
+    try(SeekableByteChannel in = Files.newByteChannel(input, StandardOpenOption.READ);
+        SeekableByteChannel out = Files.newByteChannel(output, StandardOpenOption.WRITE)){
+      int ret = sort(in, out, memorySize);
       return ret;
     }
     catch (IOException e) {
