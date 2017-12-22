@@ -89,11 +89,11 @@ public class DiscMapBuilder {
   }
 
   public <A,B> DiscMap<A,B> build(Class<A> keyClass, Class<B> valueClass, Path fileName, boolean sorted) {
-    return this.create(Codecs.fromClass(keyClass),Codecs.fromClass(valueClass), fileName, sorted);
+    return this.build(Codecs.fromClass(keyClass),Codecs.fromClass(valueClass), fileName, sorted);
   }
 
 
-  public <A,B> DiscMap<A,B> create(BCodec<A> keyClass, BCodec<B> valueClass, Path fileName, boolean sorted) {
+  public <A,B> DiscMap<A,B> build(BCodec<A> keyClass, BCodec<B> valueClass, Path fileName, boolean sorted) {
     try {
       if (calcSize(keyClass, valueClass) * 10 > valueBlockSize)
         blobValues = true;

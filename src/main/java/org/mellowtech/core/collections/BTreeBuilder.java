@@ -206,7 +206,6 @@ public class BTreeBuilder {
    * @throws Exception if tree could not be created/opened
    */
   public <A,B> BTree <A,B> build(BCodec<A> keyCodec, BCodec<B> valueCodec, Path dir, String name) throws Exception{
-
     RecordFileBuilder vfb = new RecordFileBuilder();
     vfb.maxBlocks(maxBlocks).blockSize(valueBlockSize).multiFileSize(multiFileSize);
     if(multiFileValues)
