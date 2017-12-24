@@ -29,80 +29,97 @@ import java.util.UUID;
 /**
  * Created by msvens on 22/10/15.
  */
-public class DiscMapBuilder {
+public class DiscMapBuilder<A,B>  extends CollectionBuilder<A,B, DiscMapBuilder<A,B>>{
 
   public static int DEFAULT_KEY_BLOCK_SIZE = 1024 * 8;
   public static int DEFAULT_VALUE_BLOCK_SIZE = 1024 * 8;
+  public static final int DEFAULT_BUCKET_SIZE = 1024*8;
+  public static final int DEFAULT_MAX_BUCKETS = 1024*1024*2;
 
   private int keyBlockSize = DEFAULT_KEY_BLOCK_SIZE;
   private int valueBlockSize = DEFAULT_VALUE_BLOCK_SIZE;
+  private int bucketSize = DEFAULT_BUCKET_SIZE;
+  private int maxBuckets = DEFAULT_MAX_BUCKETS;
 
   //private boolean memMappedKeyBlocks = true;
   private boolean memMappedValueBlocks = false;
   private boolean blobValues = false;
+  private boolean sorted = false;
 
   private Optional<Integer> maxKeySize = Optional.empty();
   private Optional<Integer> maxValueSize = Optional.empty();
 
 
-  public DiscMapBuilder keyBlockSize(int size) {
+  public DiscMapBuilder<A,B> bucketSize(int size){
+    this.bucketSize = bucketSize;
+    return this;
+  }
+
+  public DiscMapBuilder<A,B> maxBuckets(int max){
+    this.maxBuckets = max;
+    return this;
+  }
+
+  public DiscMapBuilder<A,B> sorted(boolean sorted){
+    this.sorted = sorted;
+    return this;
+  }
+
+  public DiscMapBuilder<A,B> keyBlockSize(int size) {
     this.keyBlockSize = size;
     return this;
   }
 
-  public DiscMapBuilder blobValues(boolean blobs){
+  public DiscMapBuilder<A,B> blobValues(boolean blobs){
     this.blobValues = blobs;
     return this;
   }
 
-  public DiscMapBuilder valueBlockSize(int size) {
+  public DiscMapBuilder<A,B> valueBlockSize(int size) {
     this.valueBlockSize = size;
     return this;
   }
 
-  /*public DiscMapBuilder memMappedKeyBlocks(boolean memMapped) {
-    this.memMappedKeyBlocks = memMapped;
-    return this;
-  }*/
-
-  public DiscMapBuilder memMappedValueBlocks(boolean memMapped) {
+  public DiscMapBuilder<A,B> memMappedValueBlocks(boolean memMapped) {
     this.memMappedValueBlocks = memMapped;
     return this;
   }
 
-  public DiscMapBuilder maxKeySize(int size) {
+  public DiscMapBuilder<A,B> maxKeySize(int size) {
     this.maxKeySize = Optional.of(size);
     return this;
   }
 
-  public DiscMapBuilder maxValueSize(int size) {
+  public DiscMapBuilder<A,B> maxValueSize(int size) {
     this.maxValueSize = Optional.of(size);
     return this;
   }
 
-  public <K,V> SortedDiscMap<K,V> sorted(Class<K> keyClass, Class<V> valueClass, Path fileName) {
-    return (SortedDiscMap<K,V>) build(keyClass, valueClass, fileName, true);
+  public SortedDiscMap<A,B> treeMap() {
+    sorted(true);
+    return (SortedDiscMap<A,B>) build();
   }
 
-  public <K,V> DiscMap<K,V> hashed(Class<K> keyClass, Class<V> valueClass, Path fileName) {
-    return build(keyClass, valueClass, fileName, false);
+  public DiscMap<A,B> hashMap() {
+    sorted(false);
+    return build();
   }
 
-  public <A,B> DiscMap<A,B> build(Class<A> keyClass, Class<B> valueClass, Path fileName, boolean sorted) {
-    return this.build(Codecs.fromClass(keyClass),Codecs.fromClass(valueClass), fileName, sorted);
-  }
-
-
-  public <A,B> DiscMap<A,B> build(BCodec<A> keyClass, BCodec<B> valueClass, Path fileName, boolean sorted) {
+  public DiscMap<A,B> build() {
     try {
-      if (calcSize(keyClass, valueClass) * 10 > valueBlockSize)
+      checkParameters();
+      if (calcSize(keyCodec, valueCodec) * 10 > valueBlockSize)
         blobValues = true;
       if (sorted) {
-        BTreeBuilder builder = new BTreeBuilder();
-        builder.valueBlockSize(valueBlockSize).valueBlockSize(keyBlockSize).blobValues(blobValues).memoryMappedValues(memMappedValueBlocks);
-        return new DiscBasedMap<>(keyClass, valueClass, fileName, builder);
+        BTreeBuilder<A,B> builder = new BTreeBuilder<>();
+        builder.copyBuilder(this);
+        builder.valueBlockSize(valueBlockSize).indexBlockSize(keyBlockSize).blobValues(blobValues).memoryMappedValues(memMappedValueBlocks);
+        return new DiscBasedMap<>(builder);
       } else {
-        return new DiscBasedHashMap<>(keyClass, valueClass, fileName, blobValues, memMappedValueBlocks);
+        EHTableBuilder<A,B> builder = new EHTableBuilder<>();
+        builder.copyBuilder(this);
+        builder.bucketSize(bucketSize).maxBuckets(maxBuckets).blobValues(blobValues).inMemory(memMappedValueBlocks);
+        return new DiscBasedHashMap<>(builder);
       }
     } catch (Exception e) {
       throw new Error(e);

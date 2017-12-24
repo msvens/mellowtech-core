@@ -41,11 +41,9 @@ public class DiscBasedHashMap <A,B> implements DiscMap<A,B> {
   private final BCodec<B> valueCodec;
   private BMap<A,B> eht;
   private final Logger logger = LoggerFactory.getLogger(Class.class);
-  public static final int DEFAULT_BUCKET_SIZE = 1024*8;
-  public static final int MAX_BUCKETS = 1024*1024*2;
 
 
-  public DiscBasedHashMap(BCodec<A> keyCodec, BCodec<B> valueCodec,
+  /*public DiscBasedHashMap(BCodec<A> keyCodec, BCodec<B> valueCodec,
                           Path fileName, boolean blobValues, boolean inMemory) throws Exception{
     this(keyCodec, valueCodec, fileName, blobValues, inMemory, DEFAULT_BUCKET_SIZE, MAX_BUCKETS);
   }
@@ -55,13 +53,12 @@ public class DiscBasedHashMap <A,B> implements DiscMap<A,B> {
                           int maxBuckets) throws Exception{
     
     this(keyCodec, valueCodec, fileName, new EHTableBuilder().inMemory(inMemory).blobValues(blobValues).bucketSize(bucketSize).maxBuckets(maxBuckets));
-  }
+  }*/
   
-  public DiscBasedHashMap(BCodec<A> keyCodec, BCodec<B> valueCodec, Path fileName,
-      EHTableBuilder builder) throws Exception{
-    this.keyCodec = keyCodec;
-    this.valueCodec = valueCodec;
-    this.eht = builder.build(keyCodec, valueCodec, fileName);
+  public DiscBasedHashMap(EHTableBuilder builder) throws Exception{
+    this.keyCodec = builder.keyCodec();
+    this.valueCodec = builder.valueCodec();
+    this.eht = builder.build();
   }
 
   /****************overwritten disc hmap methods******************************/

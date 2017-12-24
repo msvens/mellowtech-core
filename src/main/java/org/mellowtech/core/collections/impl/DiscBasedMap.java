@@ -52,11 +52,11 @@ public class DiscBasedMap <A,B> implements SortedDiscMap<A,B> {
   private final BCodec<B> valueCodec;
 
 
-  public DiscBasedMap(BCodec<A> keyCodec, BCodec<B> valueCodec, Path fileName,
-      BTreeBuilder builder) throws Exception {
-    this.keyCodec = keyCodec;
-    this.valueCodec = valueCodec;
-    this.btree = builder.build(keyCodec, valueCodec, fileName.getParent(), fileName.getFileName().toString());
+  public DiscBasedMap(BTreeBuilder<A,B> builder) throws Exception {
+    this.keyCodec = builder.keyCodec();
+    this.valueCodec = builder.valueCodec();
+    this.btree = builder.build();
+    //this.btree = builder.build(keyCodec, valueCodec, fileName.getParent(), fileName.getFileName().toString());
   }
   
   public void save() throws IOException{

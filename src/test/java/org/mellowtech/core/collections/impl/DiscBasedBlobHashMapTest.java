@@ -20,6 +20,7 @@ import org.mellowtech.core.codec.IntCodec;
 import org.mellowtech.core.codec.StringCodec;
 import org.mellowtech.core.collections.DiscMap;
 import org.mellowtech.core.collections.DiscMapTemplate;
+import org.mellowtech.core.collections.EHTableBuilder;
 
 import java.util.Map;
 
@@ -35,13 +36,18 @@ public class DiscBasedBlobHashMapTest extends DiscMapTemplate {
 
   @Override
   public Map<String, Integer> init() throws Exception {
-    return new DiscBasedHashMap(new StringCodec(), new IntCodec(),
-        absPath(fName), true, false, VAL_BLK_SIZE, VAL_BLKS);
+    EHTableBuilder<String,Integer> builder = new EHTableBuilder<>();
+    builder.keyCodec(new StringCodec()).valueCodec(new IntCodec()).filePath(absPath(fName));
+    builder.bucketSize(VAL_BLK_SIZE).maxBuckets(VAL_BLKS).blobValues(true).inMemory(false);
+    return new DiscBasedHashMap(builder);
   }
 
   @Override
   public DiscMap<String, Integer> reopen() throws Exception {
-    return new DiscBasedHashMap(new StringCodec(), new IntCodec(), absPath(fName), true, false);
+    EHTableBuilder<String,Integer> builder = new EHTableBuilder<>();
+    builder.keyCodec(new StringCodec()).valueCodec(new IntCodec()).filePath(absPath(fName));
+    builder.bucketSize(VAL_BLK_SIZE).maxBuckets(VAL_BLKS).blobValues(true).inMemory(false);
+    return new DiscBasedHashMap(builder);
   }
 
 

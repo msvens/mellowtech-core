@@ -41,6 +41,6 @@ public class EHTableImpTest extends BMapTemplate {
 
   @Override
   public BMap<String, Integer> reopen(Path fileName) throws Exception{
-    return new EHTableImp<>(fileName, new StringCodec(), new IntCodec(), false);
+    return new EHTableImp<>(fileName, new StringCodec(), new IntCodec(), false, -1, -1);
   }
 }
