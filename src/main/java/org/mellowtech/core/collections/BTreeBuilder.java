@@ -203,7 +203,7 @@ public class BTreeBuilder<A,B> extends CollectionBuilder<A,B,BTreeBuilder<A,B>>{
    * @return a new disc based tree
    * @throws Exception if tree could not be created/opened
    */
-  public BTree build() throws Exception{
+  public BTree <A,B> build() throws Exception{
     checkParameters();
 
     RecordFileBuilder vfb = new RecordFileBuilder();

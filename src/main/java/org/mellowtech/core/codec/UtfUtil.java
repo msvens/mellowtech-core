@@ -808,10 +808,11 @@ public class UtfUtil {
         count += 3;
         o1 += 3;
         char2 = (int) b1.get(o1 - 2);
-        char3 = (int) b1.get(o2 - 1);
-        if (((char2 & 0xC0) != 0x80) || ((char3 & 0xC0) != 0x80))
+        char3 = (int) b1.get(o1 - 1);
+        if (((char2 & 0xC0) != 0x80) || ((char3 & 0xC0) != 0x80)) {
           throw new Error("malformed input around byte "
               + (o1 - 1));
+        }
         cmp1 = (char) (((c1 & 0x0F) << 12) | ((char2 & 0x3F) << 6) | ((char3 & 0x3F) << 0));
         break;
       default:

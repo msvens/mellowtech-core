@@ -49,6 +49,18 @@ abstract class CollectionBuilder <A,B,T extends CollectionBuilder<A,B,T>> {
     return (T) this;
   }
 
+  public T codecs(BCodec<A> keyCodec, BCodec<B> valueCodec){
+    this.keyCodec = keyCodec;
+    this.valueCodec = valueCodec;
+    return (T) this;
+  }
+
+  public T codecs(Class<A> keyClass, Class<B> valueClass){
+    this.keyCodec = Codecs.fromClass(keyClass);
+    this.valueCodec = Codecs.fromClass(valueClass);
+    return (T) this;
+  }
+
   public BCodec<B> valueCodec(){
     return valueCodec;
   }
