@@ -46,7 +46,7 @@ public class RecordCodec<A extends BRecord> implements BCodec<A> {
   @Override
   public A from(ByteBuffer bb) {
     try{
-      A toRet = template.newInstance();
+      A toRet = template.getDeclaredConstructor().newInstance();
       CodecUtil.getSize(bb, true);
       short elements = bb.getShort();
       for(int i = 0; i < elements; i++){

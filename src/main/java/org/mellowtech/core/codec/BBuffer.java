@@ -98,7 +98,7 @@ public class BBuffer<A extends Comparable<? super A>> implements RangeIterable<A
    * @param codec codec to read/write objects
    * @param ptrType ptr type
    */
-  public BBuffer(byte[] block, BCodec codec, PtrType ptrType){
+  public BBuffer(byte[] block, BCodec<A> codec, PtrType ptrType){
     this(ByteBuffer.wrap(block), codec, ptrType, (short) 0);
   }
 
@@ -215,8 +215,7 @@ public class BBuffer<A extends Comparable<? super A>> implements RangeIterable<A
     // optimal bytes in each block:
     int totalBytes = 0;
     int optimalBytes = 0;
-    for (int i = 0; i < blocks.length; i++)
-      totalBytes += blocks[i].getDataBytes();
+    for (BBuffer<A> block1 : blocks) totalBytes += block1.getDataBytes();
     optimalBytes = calculateOptimum(totalBytes, blocks.length);
 
     // now loop from the end:
@@ -319,9 +318,7 @@ public class BBuffer<A extends Comparable<? super A>> implements RangeIterable<A
   public boolean fits(BBuffer<A> other) {
     int totDataBytes = other.getDataBytes() + getDataBytes();
     int totElements = other.getNumberOfElements() + getNumberOfElements();
-    if (reservedSpace + headerSize + totDataBytes + (totElements * ptrSize) > capacity)
-      return false;
-    return true;
+    return reservedSpace + headerSize + totDataBytes + (totElements * ptrSize) <= capacity;
   }
 
   /**
@@ -550,6 +547,7 @@ public class BBuffer<A extends Comparable<? super A>> implements RangeIterable<A
   }
 
   @Override
+  @SuppressWarnings("unchecked")
   public Iterator<A> iterator(boolean descend, A from, boolean fromInclusive,
                                            A to, boolean toInclusive) {
     return descend ? new BBufferDescendIter(this, from, fromInclusive, to, toInclusive) :
@@ -659,7 +657,7 @@ public class BBuffer<A extends Comparable<? super A>> implements RangeIterable<A
       Arrays.sort(toSort);
     clear();
     for (int i = 0; i < elems; i++) {
-      insertUnsorted((A)toSort[i]);
+      insertUnsorted(toSort[i]);
     }
     return this;
   }
@@ -717,20 +715,19 @@ public class BBuffer<A extends Comparable<? super A>> implements RangeIterable<A
   @Override
   public String toString() {
 
-    StringBuffer sbuff = new StringBuffer();
+    StringBuilder sbuff = new StringBuilder();
     try {
       int high = readNumberOfElements();
-      sbuff.append("number of items: " + high + "\n");
-      sbuff.append("number of bytes written: " + readBytesWritten() + "\n");
-      sbuff.append("load factor: "
-          + (double) ((double) getBytesWritten() / (double) capacity));
+      sbuff.append("number of items: ").append(high).append("\n");
+      sbuff.append("number of bytes written: ").append(readBytesWritten()).append("\n");
+      sbuff.append("load factor: ").append((double) getBytesWritten() / (double) capacity);
       sbuff.append("\nsort order:\n");
 
       for (int i = 0; i < high; i++) {
         int offset = getPhysicalPos(i);
-        sbuff.append("offset: " + offset);
+        sbuff.append("offset: ").append(offset);
         block.position(offset);
-        sbuff.append(" item: " + codec.from(block) + "\n");
+        sbuff.append(" item: ").append(codec.from(block)).append("\n");
       }
     } catch (Exception e) {/*e.printStackTrace();*/}
     return sbuff.toString();
@@ -751,7 +748,7 @@ public class BBuffer<A extends Comparable<? super A>> implements RangeIterable<A
 
   /**
    * Check if this block is sorted
-   * @return
+   * @return true if sorted
    */
   public boolean isSorted(){
     if(getNumberOfElements() < 2)
@@ -785,14 +782,13 @@ public class BBuffer<A extends Comparable<? super A>> implements RangeIterable<A
   }
 
   private int read(int position) {
-    int aligned = position;
     switch (ptrType) {
       case BIG:
-        return block.getInt(aligned);
+        return block.getInt(position);
       case NORMAL:
-        return block.getShort(aligned);
+        return block.getShort(position);
       case TINY:
-        return block.get(aligned);
+        return block.get(position);
     }
     return -1;
   }

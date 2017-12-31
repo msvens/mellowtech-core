@@ -25,6 +25,7 @@ import java.nio.ByteBuffer;
 public class ObjectCodec implements BCodec<Object> {
 
   @Override
+  @SuppressWarnings("unchecked")
   public int byteSize(Object o) {
     BCodec codec = Codecs.type(o);
     return CodecUtil.byteSize(1 + codec.byteSize(o), true);
@@ -45,6 +46,7 @@ public class ObjectCodec implements BCodec<Object> {
   }
 
   @Override
+  @SuppressWarnings("unchecked")
   public void to(Object o, ByteBuffer bb) {
     BCodec codec = Codecs.type(o);
     CodecUtil.putSize(1 + codec.byteSize(o), bb, true);

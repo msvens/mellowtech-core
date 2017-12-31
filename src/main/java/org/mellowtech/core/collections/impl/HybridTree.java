@@ -123,7 +123,7 @@ public class HybridTree <A,B> implements BTree<A,B> {
   }
 
   @Override
-  public KeyValue<A,B> getKeyValue(A key) throws IOException {
+  public KeyValue<A,B> getKeyValue(A key){
     return getBlock(key).get(new KeyValue<>(key));
   }
 
@@ -345,7 +345,7 @@ public class HybridTree <A,B> implements BTree<A,B> {
     StringBuilder sbuilder = new StringBuilder();
     while(iter.hasNext()){
       Map.Entry<A,Integer> e = iter.next();
-      sbuilder.append(e.getValue()+"::"+e.getKey()+"::");
+      sbuilder.append(e.getValue()).append("::").append(e.getKey()).append("::");
     }
     sbuilder.append(rightPtr);
     System.out.println(sbuilder.toString());
@@ -494,6 +494,7 @@ public class HybridTree <A,B> implements BTree<A,B> {
     return new TreePosition(smaller, elements, smallerInBlock, elementsInBlock, exists);
   }
 
+  @SuppressWarnings("unchecked")
   private boolean isUnderflowed(BBuffer<?> sb) {
     return sb.getDataAndPointersBytes() < (sb.storageCapacity() / 2);
   }
@@ -566,6 +567,7 @@ public class HybridTree <A,B> implements BTree<A,B> {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public int compareTo(HybridTree.FirstLastKey<A> o) {
       return ((Comparable<? super A>)first).compareTo(o.first);
     }
@@ -666,6 +668,7 @@ public class HybridTree <A,B> implements BTree<A,B> {
         nextBlock(from);
     }
 
+    @SuppressWarnings("unchecked")
     private void prevBlock(A from) {
       if (currblock < 0)
         sbIterator = null;

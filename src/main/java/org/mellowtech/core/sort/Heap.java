@@ -27,7 +27,6 @@ public class Heap {
   private int size;
 
   private Heap() {
-    ;
   }
 
   /**
@@ -63,6 +62,7 @@ public class Heap {
    * @param c
    *          the object to insert
    */
+  @SuppressWarnings("unchecked")
   public void insert(Comparable c) {
     if (size == heap.length)
       resize();
@@ -163,9 +163,9 @@ public class Heap {
   }
 
   public String toString() {
-    StringBuffer sb = new StringBuffer();
+    StringBuilder sb = new StringBuilder();
     for (int i = 0; i < size; i++)
-      sb.append(heap[i] + "\t");
+      sb.append(heap[i]).append("\t");
     return sb.toString();
   }
 
@@ -175,6 +175,7 @@ public class Heap {
     heap = o;
   }
 
+  @SuppressWarnings("unchecked")
   private static void bubbleDown(Comparable[] objs, int node, int max) {
     // node = node, objs = objects to bubble, max = max size;
     Comparable T = objs[node - 1];
@@ -196,6 +197,7 @@ public class Heap {
     objs[node - 1] = T;
   }
 
+  @SuppressWarnings("unchecked")
   private static void bubbleDownReverse(Comparable[] objs, int k, int N) {
     // int T = a[k - 1];
     Comparable T = objs[k - 1];

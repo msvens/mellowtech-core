@@ -17,15 +17,11 @@
 package org.mellowtech.core.collections.impl;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.*;
-
-import org.mellowtech.core.codec.BCodec;
 import org.mellowtech.core.collections.BMap;
 import org.mellowtech.core.collections.DiscMap;
 import org.mellowtech.core.collections.EHTableBuilder;
 import org.mellowtech.core.collections.KeyValue;
-import org.mellowtech.core.util.MapEntry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,27 +33,11 @@ import org.slf4j.LoggerFactory;
  */
 public class DiscBasedHashMap <A,B> implements DiscMap<A,B> {
 
-  private final BCodec<A> keyCodec;
-  private final BCodec<B> valueCodec;
   private BMap<A,B> eht;
   private final Logger logger = LoggerFactory.getLogger(Class.class);
 
-
-  /*public DiscBasedHashMap(BCodec<A> keyCodec, BCodec<B> valueCodec,
-                          Path fileName, boolean blobValues, boolean inMemory) throws Exception{
-    this(keyCodec, valueCodec, fileName, blobValues, inMemory, DEFAULT_BUCKET_SIZE, MAX_BUCKETS);
-  }
-
-  public DiscBasedHashMap(BCodec<A> keyCodec, BCodec<B> valueCodec,
-                          Path fileName, boolean blobValues, boolean inMemory, int bucketSize,
-                          int maxBuckets) throws Exception{
-    
-    this(keyCodec, valueCodec, fileName, new EHTableBuilder().inMemory(inMemory).blobValues(blobValues).bucketSize(bucketSize).maxBuckets(maxBuckets));
-  }*/
   
-  public DiscBasedHashMap(EHTableBuilder builder) throws Exception{
-    this.keyCodec = builder.keyCodec();
-    this.valueCodec = builder.valueCodec();
+  public DiscBasedHashMap(EHTableBuilder <A,B> builder) throws Exception{
     this.eht = builder.build();
   }
 
@@ -71,7 +51,7 @@ public class DiscBasedHashMap <A,B> implements DiscMap<A,B> {
   }
 
   @Override
-  public void compact() throws IOException {
+  public void compact(){
     throw new UnsupportedOperationException();
   }
 

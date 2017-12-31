@@ -25,7 +25,7 @@ import java.util.*;
  */
 class DescendingEntrySet <A,B> extends AbstractRangeMap<A,B> implements NavigableSet<Map.Entry<A,B>> {
 
-  public DescendingEntrySet(SortedDiscMap<A, B> shared, A from, boolean fromInclusive, A to, boolean toInclusive) {
+  DescendingEntrySet(SortedDiscMap<A, B> shared, A from, boolean fromInclusive, A to, boolean toInclusive) {
     super(shared, true, from, fromInclusive, to, toInclusive);
   }
 
@@ -73,9 +73,10 @@ class DescendingEntrySet <A,B> extends AbstractRangeMap<A,B> implements Navigabl
     if(noBounds()) return map.size();
     int i = 0;
     Iterator <Map.Entry<A,B>> iter = iterator();
-    while(iter.hasNext())
+    while(iter.hasNext()) {
       iter.next();
-    i++;
+      i++;
+    }
     return i;
   }
 
@@ -85,9 +86,10 @@ class DescendingEntrySet <A,B> extends AbstractRangeMap<A,B> implements Navigabl
   }
 
   @Override
+  @SuppressWarnings("unchecked")
   public boolean contains(Object o) {
     Map.Entry<A,B> e = (Map.Entry<A,B>) o;
-    return check(e.getKey()) ? map.containsKey(e.getKey()) : false;
+    return check(e.getKey()) && map.containsKey(e.getKey());
   }
 
   @Override
@@ -98,8 +100,8 @@ class DescendingEntrySet <A,B> extends AbstractRangeMap<A,B> implements Navigabl
   @Override
   public Object[] toArray() {
     ArrayList <Map.Entry<A,B>> toRet = new ArrayList<>();
-    for(Iterator<Map.Entry<A,B>> iter = iterator(); iter.hasNext();){
-      toRet.add(iter.next());
+    for (Map.Entry<A, B> abEntry : this) {
+      toRet.add(abEntry);
     }
     return toRet.toArray();
   }
@@ -107,8 +109,8 @@ class DescendingEntrySet <A,B> extends AbstractRangeMap<A,B> implements Navigabl
   @Override
   public <T> T[] toArray(T[] a) {
     ArrayList <Map.Entry<A,B>> toRet = new ArrayList<>();
-    for(Iterator<Map.Entry<A,B>> iter = iterator(); iter.hasNext();){
-      toRet.add(iter.next());
+    for (Map.Entry<A, B> abEntry : this) {
+      toRet.add(abEntry);
     }
     return toRet.toArray(a);
   }
@@ -119,9 +121,10 @@ class DescendingEntrySet <A,B> extends AbstractRangeMap<A,B> implements Navigabl
   }
 
   @Override
+  @SuppressWarnings("unchecked")
   public boolean remove(Object o) {
     Map.Entry <A,B> e = (Map.Entry<A,B>) o;
-    return check(e.getKey()) ? map.remove(e.getKey()) != null : false;
+    return check(e.getKey()) && map.remove(e.getKey()) != null;
   }
 
   @Override

@@ -1,37 +1,8 @@
-/*
- * Copyright 2015 mellowtech.org
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
-/**
- * DiscBasedMap.java, org.mellowtech.core.collections
- *
- * This is a first shot of a disc based hmap that is compliant with
- * the java.util.collections package. It is based on the Mellowtech
- * BTree implementation. The BTree implementation should later be
- * updated to offer more efficient key iterators.
- *
- * @author Martin Svensson
- */
 package org.mellowtech.core.collections.impl;
 
 
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.*;
-
-import org.mellowtech.core.codec.BCodec;
 import org.mellowtech.core.collections.*;
 import org.mellowtech.core.util.MapEntry;
 import org.slf4j.Logger;
@@ -48,15 +19,10 @@ public class DiscBasedMap <A,B> implements SortedDiscMap<A,B> {
   protected BTree<A,B> btree;
 
   final private Logger logger = LoggerFactory.getLogger(DiscBasedMap.class);
-  private final BCodec<A> keyCodec;
-  private final BCodec<B> valueCodec;
 
 
   public DiscBasedMap(BTreeBuilder<A,B> builder) throws Exception {
-    this.keyCodec = builder.keyCodec();
-    this.valueCodec = builder.valueCodec();
     this.btree = builder.build();
-    //this.btree = builder.build(keyCodec, valueCodec, fileName.getParent(), fileName.getFileName().toString());
   }
   
   public void save() throws IOException{
@@ -68,7 +34,7 @@ public class DiscBasedMap <A,B> implements SortedDiscMap<A,B> {
   }
 
   @Override
-  public void compact() throws IOException, UnsupportedOperationException {
+  public void compact() throws UnsupportedOperationException {
     throw new UnsupportedOperationException();
   }
 
@@ -86,12 +52,6 @@ public class DiscBasedMap <A,B> implements SortedDiscMap<A,B> {
 
 
   /*************Override NavigableMap Methods**************************/
-  @Override
-  protected void finalize() throws Throwable {
-    super.finalize();
-    this.save();
-  }
-
   @Override
   public java.util.Map.Entry<A,B> ceilingEntry(A key) {
     A k = this.ceilingKey(key);
@@ -335,9 +295,9 @@ public class DiscBasedMap <A,B> implements SortedDiscMap<A,B> {
 
   @Override
   public boolean containsValue(Object value) {
-    for(Iterator <KeyValue<A,B>> iter = this.btree.iterator(); iter.hasNext();){
-      B c = iter.next().getValue();
-      if(c.equals(value))
+    for (KeyValue<A, B> aBtree : this.btree) {
+      B c = aBtree.getValue();
+      if (c.equals(value))
         return true;
     }
     return false;
@@ -424,12 +384,7 @@ public class DiscBasedMap <A,B> implements SortedDiscMap<A,B> {
     public Entry<A,B> next() {
       KeyValue <A,B> next = iter.next();
       if(next == null) return null;
-      return new MapEntry<A, B>(next.getKey(),next.getValue());
-      /*MapEntry <A,B> entry = new MapEntry<>();
-      entry.setKey(next.getKey().get());
-      if(next.getValue() != null)
-        entry.setValue(next.getValue().get());
-      return entry;*/
+      return new MapEntry<>(next.getKey(),next.getValue());
     }
 
   }

@@ -24,20 +24,13 @@ import java.util.Map;
  * @author Martin Svensson {@literal <msvens@gmail.com>}
  * @since 3.0.0
  */
-public interface DiscMap <A,B> extends Map<A,B> {
+public interface DiscMap <A,B> extends Map<A,B>, AutoCloseable {
 
   /**
    * persist the disc map
    * @throws IOException if an error occurs
    */
   void save() throws IOException;
-  
-  /**
-   * close this disc map. After close has to reopen it again
-   * @throws IOException if an error occurs
-   */
-  void close() throws IOException;
-
 
   /**
    * Perform a compaction of this disc map

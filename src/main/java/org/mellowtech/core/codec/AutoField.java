@@ -123,7 +123,8 @@ class AutoField {
       throw new CodecException(e);
     }
   }
-  
+
+  @SuppressWarnings("unchecked")
   private void parseMethod(Class clazz, Method m, Method[] ms, TreeMap <Integer, MultiField> map) throws Exception{
     String sib;
     Method set, get;

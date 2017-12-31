@@ -30,9 +30,7 @@ import java.util.function.Consumer;
  */
 public class CodecUtil {
 
-  //public static Charset Utf8 = Charset.forName("UTF-8");
-
-  /********************* ENCODING/DECODING*******************************/
+  //******************** ENCODING/DECODING*******************************/
   /**
    * Variable encode an int. Value has to be greater or equal to zero.
    * @param val value to encode
@@ -75,7 +73,7 @@ public class CodecUtil {
    * @param bb buffer to store it
    * @return number of bytes
    */
-  public static final int encodeLong(long val, ByteBuffer bb) {
+  public static int encodeLong(long val, ByteBuffer bb) {
     if(val < 0) throw new IllegalArgumentException("negative value");
     long c;
     int count = 1;
@@ -99,7 +97,7 @@ public class CodecUtil {
    * @param offset position in buffer
    * @return number of bytes
    */
-  public static final int encodeLong(long val, byte[] b, int offset) {
+  public static int encodeLong(long val, byte[] b, int offset) {
     if(val < 0) throw new IllegalArgumentException("negative value");
     ByteBuffer bb = ByteBuffer.wrap(b);
     bb.position(offset);
@@ -111,7 +109,7 @@ public class CodecUtil {
    * @param val value to encode
    * @return number of bytes
    */
-  public static final int encodeLength(int val) {
+  public static int encodeLength(int val) {
     if(val < 0) throw new IllegalArgumentException("negative value");
     int count = 1;
     val = (val >> 7);
@@ -127,7 +125,7 @@ public class CodecUtil {
    * @param val value to encode
    * @return number of bytes
    */
-  public static final int encodeLength(long val) {
+  public static int encodeLength(long val) {
     if(val < 0) throw new IllegalArgumentException("negative value");
     int count = 1;
     val = (val >> 7);
@@ -207,7 +205,7 @@ public class CodecUtil {
    * @param encoded true if the int was variable encoded
    * @return the int value
    */
-  public static final int peekInt(ByteBuffer bb, boolean encoded) {
+  public static int peekInt(ByteBuffer bb, boolean encoded) {
     int pos = bb.position();
     int toRet = encoded ? decodeInt(bb) : bb.getInt();
     bb.position(pos);
@@ -220,7 +218,7 @@ public class CodecUtil {
    * @param encoded true if the int was variable encoded
    * @return the int value
    */
-  public static final int getInt(ByteBuffer bb, boolean encoded) {
+  public static int getInt(ByteBuffer bb, boolean encoded) {
     return encoded ? decodeInt(bb) : bb.getInt();
   }
 
@@ -231,7 +229,7 @@ public class CodecUtil {
    * @param encoded true if the value should be variable encoded
    * @return number of bytes written
    */
-  public static final int putSize(int size, ByteBuffer bb, boolean encoded) {
+  public static int putSize(int size, ByteBuffer bb, boolean encoded) {
     if (encoded) {
       return encodeInt(size, bb);
     }
@@ -239,7 +237,7 @@ public class CodecUtil {
     return 4;
   }
 
-  public static final int putSize2(ByteBuffer bb, Consumer<ByteBuffer> toWrite){
+  public static int putSize2(ByteBuffer bb, Consumer<ByteBuffer> toWrite){
     int start = bb.position();
     bb.position(bb.position()+2); //move past position
     toWrite.accept(bb);
@@ -248,7 +246,7 @@ public class CodecUtil {
     return 2;
   }
 
-  public static final int putSize4(ByteBuffer bb, Consumer<ByteBuffer> toWrite){
+  public static int putSize4(ByteBuffer bb, Consumer<ByteBuffer> toWrite){
     int start = bb.position();
     bb.position(bb.position()+4); //move past position
     toWrite.accept(bb);
@@ -277,24 +275,24 @@ public class CodecUtil {
    * @param encoded true if the value is variable encoded
    * @return the value
    */
-  public static final int getSize(ByteBuffer bb, boolean encoded) {
+  public static int getSize(ByteBuffer bb, boolean encoded) {
     return getInt(bb, encoded);
   }
 
-  public static final int getSize2(ByteBuffer bb){
+  public static int getSize2(ByteBuffer bb){
     return getUnsignedShort(bb);
   }
 
-  public static final int getSize2(ByteBuffer bb, int offset){
+  public static int getSize2(ByteBuffer bb, int offset){
     return getUnsignedShort(bb, offset);
   }
 
-  public static final int getSize4(ByteBuffer bb){
+  public static int getSize4(ByteBuffer bb){
     return bb.getInt();
   }
 
 
-  public static final int getSize4(ByteBuffer bb, int offset){
+  public static int getSize4(ByteBuffer bb, int offset){
     return bb.getInt(offset);
   }
 
@@ -305,19 +303,19 @@ public class CodecUtil {
    * @param encoded true if the size indicator should be variable encoded
    * @return byte size with size indicator
    */
-  public static final int byteSize(int val, boolean encoded) {
+  public static int byteSize(int val, boolean encoded) {
     if(val < 0 || val >= Integer.MAX_VALUE - 5)
       throw new IllegalArgumentException("valute out of range");
     return encoded ? encodeLength(val) + val : 4 + val;
   }
 
-  public static final int byteSize2(int val){
+  public static int byteSize2(int val){
     if(val < 0 || val >= (Short.MAX_VALUE*2))
       throw new IllegalArgumentException("size out of range");
     return 2 + val;
   }
 
-  public static final int byteSize4(int val){
+  public static int byteSize4(int val){
     if(val < 0 || val >= Integer.MAX_VALUE - 4)
       throw new IllegalArgumentException("size out of range");
     return 4 + val;
@@ -329,16 +327,16 @@ public class CodecUtil {
    * @param encoded true if the size indicator was variable encoded
    * @return byte size
    */
-  public static final int peekSize(ByteBuffer bb, boolean encoded) {
+  public static int peekSize(ByteBuffer bb, boolean encoded) {
     int val = peekInt(bb, encoded);
     return encoded ? encodeLength(val) + val : 4 + val;
   }
 
-  public static final int peekSize2(ByteBuffer bb){
+  public static int peekSize2(ByteBuffer bb){
     return 2 + getUnsignedShort(bb, bb.position());
   }
 
-  public static final int peekSize4(ByteBuffer bb){
+  public static int peekSize4(ByteBuffer bb){
     return 4 + bb.getInt(bb.position());
   }
 
@@ -356,6 +354,7 @@ public class CodecUtil {
    * @see CodecUtil#separate(String, String, StringCodec)
    * @see CodecUtil#separate(char[], char[], CharArrayCodec)
    */
+  @SuppressWarnings("unchecked")
   public static <A> A separate(A first, A second, BCodec<A> codec){
     if(first instanceof String){
       return (A) separate((String) first, (String) second, (StringCodec) codec);
@@ -394,7 +393,7 @@ public class CodecUtil {
       return new String(large);
     }
 
-    return new String((new String(large.substring(0, i + 1))));
+    return large.substring(0, i + 1);
   }
 
   /**
@@ -405,7 +404,7 @@ public class CodecUtil {
    * @param codec codec to use for compare
    * @return a new CBCharArray
    */
-  public final static char[] separate(char[] first, char[] second, CharArrayCodec codec){
+  public static char[] separate(char[] first, char[] second, CharArrayCodec codec){
       char[] small, large;
 
       if (codec.compare(first,second) < 0) {
@@ -440,7 +439,7 @@ public class CodecUtil {
    * @param numBytes
    *          number of bytes to copy
    */
-  public final static void copyToBeginning(ByteBuffer bb, int numBytes) {
+  public static void copyToBeginning(ByteBuffer bb, int numBytes) {
     if (numBytes == 0) {
       bb.clear();
       return;
@@ -463,7 +462,7 @@ public class CodecUtil {
    *          a BCodec to use for calculating the size
    * @return the next ByteStorable's size or -(bytes left in buffer)
    */
-  public final static int slackOrSize(ByteBuffer bb, BCodec<?> codec) {
+  public static int slackOrSize(ByteBuffer bb, BCodec<?> codec) {
     int left = bb.remaining();
     if (bb.remaining() < 4){
       return -left;

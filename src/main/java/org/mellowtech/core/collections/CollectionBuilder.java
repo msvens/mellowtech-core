@@ -13,12 +13,13 @@ import java.util.Objects;
  * @param <B> value type
  * @param <T> self type
  */
+@SuppressWarnings("unchecked")
 abstract class CollectionBuilder <A,B,T extends CollectionBuilder<A,B,T>> {
 
   static class DirAndName{
     final String name;
     final Path dir;
-    public DirAndName(Path p){
+    DirAndName(Path p){
       dir = p.getParent();
       name = p.getFileName().toString();
     }

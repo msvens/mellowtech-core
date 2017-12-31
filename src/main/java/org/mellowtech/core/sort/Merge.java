@@ -22,7 +22,6 @@ import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Comparator;
 import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
 
@@ -47,12 +46,13 @@ public class Merge{
   private static class Container<A> implements Comparable<Container<A>> {
     A store;
     int node;
-    public Container(A store, int node){
+    Container(A store, int node){
       this.store = store;
       this.node = node;
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public int compareTo(Container<A> o) {
       return ((Comparable<? super A>)store).compareTo(o.store);
     }
@@ -120,10 +120,10 @@ public class Merge{
       logger.debug("opening {}/{} for merge", dir, fNames[i]);
       if (compressed)
         channels[i] = Channels.newChannel(new InflaterInputStream(
-            new FileInputStream(dir.resolve(fNames[i]).toFile()), new Inflater()));
+            Files.newInputStream(dir.resolve(fNames[i])), new Inflater()));
+        //new FileInputStream(dir + "/" + fNames[i]), new Inflater()));
       else
         channels[i] = new FileInputStream(dir.resolve(fNames[i]).toFile()).getChannel();
-      // slice buffer:
       input.position(i * mBlockSize);
       input.limit((i + 1) * mBlockSize);
       buffers[i] = input.slice();

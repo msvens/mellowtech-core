@@ -142,6 +142,7 @@ public class HybridBlobTree<A,B>
   }*/
 
   @Override
+  @SuppressWarnings("unchecked")
   public Iterator<KeyValue<A,B>> iterator(boolean descending, A from, boolean inclusive, A to, boolean toInclusive) {
     return new HybridBlobTree.HybridBlobTreeIterator(descending, from, inclusive, to, toInclusive);
   }
@@ -166,7 +167,7 @@ public class HybridBlobTree<A,B>
       iter = tree.iterator();
     }*/
 
-    public HybridBlobTreeIterator(boolean descending, A from, boolean inclusive,
+    HybridBlobTreeIterator(boolean descending, A from, boolean inclusive,
                                   A to, boolean toInclusive){
 
       iter = tree.iterator(descending, from, inclusive, to, toInclusive);

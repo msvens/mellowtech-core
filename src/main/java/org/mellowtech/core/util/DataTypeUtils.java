@@ -61,6 +61,7 @@ public class DataTypeUtils {
       return DateFormat.getDateInstance().parse(s);
     }
     catch (Exception e) {
+      e.printStackTrace();
     }
     return defaultValue;
   }
@@ -80,6 +81,7 @@ public class DataTypeUtils {
       return Double.parseDouble(s);
     }
     catch (Exception e) {
+      e.printStackTrace();
     }
     return defaultValue;
   }
@@ -99,6 +101,7 @@ public class DataTypeUtils {
       return Integer.parseInt(s);
     }
     catch (Exception e) {
+      e.printStackTrace();
     }
     return defaultValue;
   }
@@ -130,6 +133,7 @@ public class DataTypeUtils {
    *          a string containing integer values separated by space.
    * @return a list of <code>Integer</code> objects, possibly empty.
    */
+  @SuppressWarnings("unchecked")
   public static ArrayList strArrToIntList(String stringArray) {
     ArrayList list = new ArrayList();
     StringTokenizer tk = new StringTokenizer(stringArray);
@@ -137,7 +141,7 @@ public class DataTypeUtils {
     while (tk.hasMoreTokens()) {
       Integer theInt = null;
       try {
-        theInt = new Integer(tk.nextToken());
+        theInt = Integer.valueOf(tk.nextToken());
       }
       catch (NumberFormatException e) {
         theInt = null;
@@ -162,8 +166,8 @@ public class DataTypeUtils {
       return null;
     int[] array = new int[list.size()];
     int i = 0;
-    for (Iterator iter = list.iterator(); iter.hasNext();) {
-      array[i++] = ((Integer) iter.next()).intValue();
+    for (Object aList : list) {
+      array[i++] = (Integer) aList;
     }
     return array;
   }
@@ -183,13 +187,13 @@ public class DataTypeUtils {
     while (tk.hasMoreTokens()) {
       Integer theInt = null;
       try {
-        theInt = new Integer(tk.nextToken());
+        theInt = Integer.valueOf(tk.nextToken());
       }
       catch (NumberFormatException e) {
         theInt = null;
       }
       if (theInt != null)
-        bs.set(theInt.intValue());
+        bs.set(theInt);
     }
     return bs;
   }
@@ -202,6 +206,7 @@ public class DataTypeUtils {
    *          a string containing strings separated by space.
    * @return a <code>String[]</code>, possibly null
    */
+  @SuppressWarnings("unchecked")
   public static String[] splitStrArr(String stringArray) {
     if (stringArray == null || stringArray.length() == 0)
       return null;
@@ -221,6 +226,7 @@ public class DataTypeUtils {
    *          a string containing int separated by space.
    * @return a <code>int[]</code>, possibly null
    */
+  @SuppressWarnings("unchecked")
   public static int[] splitIntArr(String intArray) {
     if (intArray == null || intArray.length() == 0)
       return null;
@@ -232,8 +238,8 @@ public class DataTypeUtils {
 
     int[] arr = new int[list.size()];
     int i = 0;
-    for (Iterator iter = list.iterator(); iter.hasNext();) {
-      arr[i++] = Integer.parseInt((String) iter.next());
+    for (Object aList : list) {
+      arr[i++] = Integer.parseInt((String) aList);
     }
     return arr;
   }
@@ -246,6 +252,7 @@ public class DataTypeUtils {
    *          a string containing doubles separated by space.
    * @return a <code>double[]</code>, possibly null
    */
+  @SuppressWarnings("unchecked")
   public static double[] splitDoubleArr(String doubleArray) {
     if (doubleArray == null || doubleArray.length() == 0)
       return null;
@@ -257,8 +264,8 @@ public class DataTypeUtils {
 
     double[] arr = new double[list.size()];
     int i = 0;
-    for (Iterator iter = list.iterator(); iter.hasNext();) {
-      arr[i++] = Double.parseDouble((String) iter.next());
+    for (Object aList : list) {
+      arr[i++] = Double.parseDouble((String) aList);
     }
     return arr;
   }
@@ -275,8 +282,8 @@ public class DataTypeUtils {
       return null;
 
     BitSet bitSet = new BitSet();
-    for (Iterator iter = integerArray.iterator(); iter.hasNext();) {
-      bitSet.set(((Integer) iter.next()).intValue());
+    for (Object anIntegerArray : integerArray) {
+      bitSet.set((Integer) anIntegerArray);
     }
     return bitSet;
   }
@@ -293,8 +300,7 @@ public class DataTypeUtils {
       return null;
 
     BitSet bitSet = new BitSet();
-    for (int i = 0; i < integerArray.length; i++)
-      bitSet.set(integerArray[i]);
+    for (int anIntegerArray : integerArray) bitSet.set(anIntegerArray);
 
     return bitSet;
   }
@@ -307,6 +313,7 @@ public class DataTypeUtils {
    *          a string containing integer values separated by space.
    * @return a list of <code>Integer</code> objects, possibly empty.
    */
+  @SuppressWarnings("unchecked")
   public static ArrayList stringArrayToIntegerList(String stringArray) {
     ArrayList list = new ArrayList();
     StringTokenizer tk = new StringTokenizer(stringArray);
@@ -314,7 +321,7 @@ public class DataTypeUtils {
     while (tk.hasMoreTokens()) {
       Integer theInt = null;
       try {
-        theInt = new Integer(tk.nextToken());
+        theInt = Integer.valueOf(tk.nextToken());
       }
       catch (NumberFormatException e) {
         theInt = null;
@@ -441,7 +448,7 @@ public class DataTypeUtils {
    * @return a <code>String</code> value
    */
   public static String printBits(long value) {
-    StringBuffer sb = new StringBuffer();
+    StringBuilder sb = new StringBuilder();
     for (int shift = 63; shift >= 0; shift--)
       sb.append((((value >>> shift) & 01) != 0) ? "1" : "0");
     return sb.toString();
@@ -456,7 +463,7 @@ public class DataTypeUtils {
    * @return a <code>String</code> value
    */
   public static String printBits(int value) {
-    StringBuffer sb = new StringBuffer();
+    StringBuilder sb = new StringBuilder();
     for (int shift = 31; shift >= 0; shift--)
       sb.append((((value >>> shift) & 01) != 0) ? "1" : "0");
     return sb.toString();
@@ -471,7 +478,7 @@ public class DataTypeUtils {
    * @return a <code>String</code> value
    */
   public static String printBits(short value) {
-    StringBuffer sb = new StringBuffer();
+    StringBuilder sb = new StringBuilder();
     for (int shift = 15; shift >= 0; shift--)
       sb.append((((value >>> shift) & 01) != 0) ? "1" : "0");
     return sb.toString();
@@ -486,7 +493,7 @@ public class DataTypeUtils {
    * @return a <code>String</code> value
    */
   public static String printBits(byte value) {
-    StringBuffer sb = new StringBuffer();
+    StringBuilder sb = new StringBuilder();
     for (int shift = 7; shift >= 0; shift--)
       sb.append((((value >>> shift) & 01) != 0) ? "1" : "0");
     return sb.toString();
@@ -501,7 +508,7 @@ public class DataTypeUtils {
    * @return a <code>String</code> value
    */
   public static String printBits(byte[] values) {
-    StringBuffer sb = new StringBuffer();
+    StringBuilder sb = new StringBuilder();
     for (int i = 0; i < values.length; i++)
       sb.append(printBits(values[i]) +  " ");
     return sb.toString();

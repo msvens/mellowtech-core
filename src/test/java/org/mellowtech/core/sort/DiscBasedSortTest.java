@@ -16,8 +16,6 @@
 
 package org.mellowtech.core.sort;
 
-import junit.framework.Assert;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -37,6 +35,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Scanner;
 import java.util.regex.Pattern;
+
+import static junit.framework.Assert.*;
 
 /**
  * Date: 2013-01-20
@@ -87,13 +87,13 @@ public class DiscBasedSortTest {
   }
 
   @Test public void testQuickSort() throws Exception{
-    DiscBasedSort <String> discBasedSort = new DiscBasedSort <> (new StringCodec(), 0, Platform.getTempDir().resolve("sort"));
+    DiscBasedSort <String> discBasedSort = new DiscBasedSort <> (codec, 1024,4096,1,Platform.getTempDir().resolve("sort"));
     //stringBuffer.flip();
     ByteArrayOutputStream bos = new ByteArrayOutputStream();
     ByteArrayInputStream bis = new ByteArrayInputStream(stringBuffer.array());
     Channel c = Channels.newChannel(bis);
     Channel co = Channels.newChannel(bos);
-    int num = discBasedSort.sort((ReadableByteChannel)c, (WritableByteChannel) co, DiscBasedSort.getBlockSize()*4);
+    int num = discBasedSort.sort((ReadableByteChannel)c, (WritableByteChannel) co);
     //edb.sort(Channels.newChannel(c, bos, edb.getBlockSize()*1);
 
     //verify that things are the same
@@ -102,11 +102,9 @@ public class DiscBasedSortTest {
     String tStr;
     bos.flush();
     ByteBuffer sorted =  ByteBuffer.wrap(bos.toByteArray());
-    System.out.println(num+" "+stringList.size());
     for(String str : stringList){
       tStr = codec.from(sorted);
-      //System.out.println(str+" "+tStr);
-      Assert.assertEquals(str, tStr);
+      assertEquals(str, tStr);
     }
   }
 }

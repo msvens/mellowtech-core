@@ -36,6 +36,7 @@ import java.nio.channels.WritableByteChannel;
 public interface BCodec<A> {
 
 
+  @SuppressWarnings("unchecked")
   default int compare(A first, A second){
     return ((Comparable <? super A>)first).compareTo(second);
   }

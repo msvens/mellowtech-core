@@ -71,9 +71,10 @@ class RangeEntrySet<A,B> extends AbstractRangeMap<A,B> implements NavigableSet<E
   }
 
   @Override
+  @SuppressWarnings("unchecked")
   public boolean contains(Object o) {
     Entry <A,B> e = (Entry <A,B>) o;
-    return check(e.getKey()) ? map.containsKey(e.getKey()) : false;
+    return check(e.getKey()) && map.containsKey(e.getKey());
   }
 
   @Override
@@ -93,8 +94,8 @@ class RangeEntrySet<A,B> extends AbstractRangeMap<A,B> implements NavigableSet<E
   @Override
   public <T> T[] toArray(T[] a) {
     ArrayList <Entry<A,B> > toRet = new ArrayList<>();
-    for(Iterator<Entry<A,B> > iter = iterator(); iter.hasNext();){
-      toRet.add(iter.next());
+    for (Entry<A, B> abEntry : this) {
+      toRet.add(abEntry);
     }
     return toRet.toArray(a);
   }
@@ -105,9 +106,10 @@ class RangeEntrySet<A,B> extends AbstractRangeMap<A,B> implements NavigableSet<E
   }
 
   @Override
+  @SuppressWarnings("unchecked")
   public boolean remove(Object o) {
     Map.Entry <A,B> e = (Map.Entry<A,B>) o;
-    return check(e.getKey()) ? map.remove(e.getKey()) != null : false;
+    return check(e.getKey()) && map.remove(e.getKey()) != null;
   }
 
   @Override

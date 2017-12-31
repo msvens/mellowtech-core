@@ -43,7 +43,7 @@ public class CodecOutputStream <A> {
    *              if an error occurs
    */
   public CodecOutputStream(OutputStream os, BCodec<A> codec) throws IOException {
-    mChannel = new CodecWriteChannel(Channels.newChannel(os), codec);
+    mChannel = new CodecWriteChannel<>(Channels.newChannel(os), codec);
   }
 
   /**

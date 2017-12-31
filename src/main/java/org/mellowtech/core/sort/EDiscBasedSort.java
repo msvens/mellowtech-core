@@ -67,31 +67,20 @@ import org.slf4j.LoggerFactory;
  * @version 1.0
  * @see org.mellowtech.core.codec.BCodec
  */
-public class EDiscBasedSort <A> {
+public class EDiscBasedSort <A> implements DiscSort<A>{
   static final String SORT_RUN_FILE = "disc_sort_e_run.";
-  private static final String SEP = System.getProperties().getProperty(
-      "file.separator");
 
   /** If set to true some messages will be printed out for informative purposes. */
 
-  // This is the size of "blocks" the output ByteBuffer's capacity. Note that
-  // this value
-  // ..may change if a ByteStorable object is encountered that don't fit into
-  // the buffer
-  // ..(and an exception is thrown).
-  // ..In that case the blockSize is enlarged to the next 1K boundary larger
-  // than before.
-  // ..This value is then used when merge() is called so that also the merge
-  // will be able
-  // ..to handle the large objects.
-  private int blockSize = 4096 * 4; // JC 040620, must have a dynamic thing.
-
+  private final int blockSize;
   private final BCodec<A> codec;
   private final int complevel;
   private final Path tempDir;
+  private final int memorySize;
 
   private final Logger logger = LoggerFactory.getLogger(EDiscBasedSort.class);
 
+  /*
   // Flag to control if execution is to wait occasionally to let other processes
   //..get a go for CPU usage.
   private boolean fGoSlower = false;
@@ -104,40 +93,7 @@ public class EDiscBasedSort <A> {
   
   // Holds the counter for milliseconds used by the slow going execution framework.
   private long fLastTimeStamp = 0;
-  
-  /**
-   * Set the block size. How much data to read/write from disc. This number
-   * should seldom be no more than 4096.
-   * 
-   * @param size
-   *          block size. (a multiple of 1024)
-   */
-  public void setBlockSize(int size) {
-    blockSize = size;
-  }
-
-  /**
-   * Get the block size. How much data to read/write from disc. This number
-   * should seldom be no more than 4096.
-   * 
-   * @return the block size, in bytes (a multiple of 1024)
-   */
-  public int getBlockSize() {
-    return blockSize;
-  }
-
-  /**
-   * Create a new DiscBased sorter that will operate on a specific type of
-   * objects with a specific ByteComparable object.
-   * 
-   * @param codec
-   *          the type of object to sort
-   * @param tempDir
-   *          temporary directory for sort runs
-   */
-  public EDiscBasedSort(BCodec<A> codec, Path tempDir) {
-    this(codec, 0, tempDir);
-  }
+  */
 
   /**
    * Create a new DiscBased sorter that will operate on a specific type of
@@ -146,37 +102,23 @@ public class EDiscBasedSort <A> {
    * @param codec
    *          the type of object to sort
    * @param complevel
-   *          the level of GZIP compression for runs (1-9, where 1 is fastest)
-   *          and 9 is highest compression)
+   *          the level of GZIP compression for runs from 0 (no compression) to 9 (highest compression)
    * @param tempDir
    *          temporary directory for sort runs
    */
-  public EDiscBasedSort(BCodec<A> codec, int complevel, Path tempDir) {
-    try {
-      this.codec = codec;
-    } catch(Exception e){throw new Error("could not create template instance");}
+  public EDiscBasedSort(BCodec<A> codec, int blockSize, int memorySize, int complevel, Path tempDir) {
+    this.codec = codec;
     this.complevel = complevel;
-    Path tDir;
-    try {
-      if(!Files.isDirectory(tempDir))
-        throw new IllegalArgumentException("tempDir is not a directory: "+tempDir.toString());
-      tDir = tempDir;
-    }
-    catch (Exception e) {
-      logger.info("could not open temp dir, using default tempdir");
-      tDir = Platform.getTempDir();
-    }
-    this.tempDir = tDir;
+    if(tempDir == null || !Files.isDirectory(tempDir))
+      throw new IllegalArgumentException("tempdir is null or not a directory");
+    this.tempDir = tempDir;
+    this.blockSize = blockSize;
+    if(memorySize <= blockSize)
+      throw new IllegalArgumentException("memorysize must be greater than blocksize");
+    this.memorySize = memorySize;
   }
-  
-  /**
-   * Makes thread sleep for a while. Uses a caller supplied object that
-   * method is allowed to use as a sleeper.
-   * 
-   * @param pMonitor holds an object to use for wait() call. This is 
-   * necessary since threads cannot wait() on objects that don't belong
-   * to them.
-   */
+
+  /*
   private void allowSleep(Object pMonitor) {
 	  if(!fGoSlower) return;
 	  long currentTime = System.currentTimeMillis();
@@ -189,41 +131,21 @@ public class EDiscBasedSort <A> {
 		  fLastTimeStamp = System.currentTimeMillis();
 	  } // if
   } // allowSleep
-  
-  /**
-   * If this method is called with true in parameter, then execution will
-   * be halted for a number of milliseconds once in a while.
-   * 
-   * @param pGoSlower set to true of slower execution is wanted.
-   * @param pSleepMillis holds the number of milliseconds to sleep.
-   * @param pExeMillis holds the approximate number of milliseconds
-   * that execution is allowed before next sleep.
-   */
-  public void setGoSlower(boolean pGoSlower, long pSleepMillis, long pExeMillis) {
+  */
+
+  /*public void setGoSlower(boolean pGoSlower, long pSleepMillis, long pExeMillis) {
 	  fGoSlower = pGoSlower;
 	  fSleepMillis = pSleepMillis;
 	  fExeMillis = pExeMillis;
 	  if(fGoSlower)
 		  fLastTimeStamp = System.currentTimeMillis();
-  } // setGoSlower
+  }*/ // setGoSlower
   
 
-  /**
-   * Sorts an inputfile and prints it to a designated outputfile. If these are
-   * the same the inputfile will be overwritten.
-   * 
-   * @param input
-   *          File to sort
-   * @param output
-   *          Ouputfile
-   * @param memorySize
-   *          The amount of memory that can be used for the in-memory
-   *          opertaions, must be at least as large as blockSize().
-   * @return the number of objects sorted.
-   */
+  /*
   public int sort(Path input, Path output, int memorySize) {
     try(SeekableByteChannel in = Files.newByteChannel(input, StandardOpenOption.READ);
-        SeekableByteChannel out = Files.newByteChannel(output, StandardOpenOption.WRITE)){
+        SeekableByteChannel out = Files.newByteChannel(output, StandardOpenOption.WRITE, StandardOpenOption.CREATE_NEW)){
       int ret = sort(in, out, memorySize);
       return ret;
     }
@@ -232,46 +154,18 @@ public class EDiscBasedSort <A> {
       return -1;
     }
   }
+  */
 
-  /**
-   * Sorts a input stream and print the result to a designated output stream. If
-   * these are the same the input channel will be overwritten. This method
-   * simply creates appropriate channesl for the input and output and calls sort
-   * on Channels.
-   * 
-   * @param input
-   *          input stream
-   * @param output
-   *          output stream
-   * @param memorySize
-   *          number of bytes used for in-memory sorting, must be at least as
-   *          large as blockSize().
-   * @return number of objects sorted
-   * @see #sort(ReadableByteChannel, WritableByteChannel, int)
-   */
+  /*
   public int sort(InputStream input, OutputStream output, int memorySize) {
     return sort(Channels.newChannel(input), Channels.newChannel(output),
         memorySize);
   }
+  */
 
-  /**
-   * Sorts a byte channel and print the result to a designated byte channel. If
-   * these are the same the input channel will be overwritten.
-   * 
-   * @param input
-   *          input channel
-   * @param output
-   *          output channel
-   * @param memorySize
-   *          the number of bytes that can be used for in-memory sorting, must
-   *          be at least as large as blockSize().
-   * @return the number of objects sorted
-   */
-  public int sort(ReadableByteChannel input, WritableByteChannel output,
-      int memorySize) {
+  @Override
+  public int sort(ReadableByteChannel input, WritableByteChannel output) {
 
-    if (memorySize < blockSize)
-      memorySize = blockSize;
     ByteBuffer ob = ByteBuffer.allocate(blockSize);
     ByteBuffer large = ByteBuffer.allocate(memorySize);
 
@@ -374,8 +268,10 @@ public class EDiscBasedSort <A> {
     int size = 0, numBytes = 0;
 
     // sort offsets:
-    if (bb.hasArray())
-      Arrays.parallelSort(offsets, 0, numOffsets, new BComparatorArray <A>(codec, bb.array()));
+    if (bb.hasArray()) {
+      //Arrays.sort(offsets, 0, numOffsets, new BComparatorArray<A>(codec, bb.array()));
+      Arrays.parallelSort(offsets, 0, numOffsets, new BComparatorArray<A>(codec, bb.array()));
+    }
     else
       Arrays.parallelSort(offsets, 0, numOffsets, new BComparator <A> (codec, bb));
 
@@ -418,7 +314,7 @@ public class EDiscBasedSort <A> {
 	    try {
 	      while (!hb.producedAll())
 	        hb.produce();
-	        allowSleep(monitor);
+	        //allowSleep(monitor);
 	    }
 	    catch (Exception e) {
 	     logger.warn("", e);
@@ -460,7 +356,7 @@ public class EDiscBasedSort <A> {
 	          }
 	          offsets[numOffsets++] = offset;
 	        } // if offset != -1
-	        allowSleep(monitor);
+	        //allowSleep(monitor);
 	      } // while not all consumed
 	    }
 	    catch (Exception e) {
