@@ -70,8 +70,9 @@ class RangeKeySet<A,B> extends AbstractRangeMap<A,B> implements NavigableSet<A>{
   }
 
   @Override
+  @SuppressWarnings("unchecked")
   public boolean contains(Object o) {
-    return check((A) o) ? map.containsKey(o) : false;
+    return check((A) o) && map.containsKey(o);
   }
 
   @Override
@@ -82,8 +83,8 @@ class RangeKeySet<A,B> extends AbstractRangeMap<A,B> implements NavigableSet<A>{
   @Override
   public Object[] toArray() {
     ArrayList <A> toRet = new ArrayList<>();
-    for(Iterator<A> iter = iterator(); iter.hasNext();){
-      toRet.add(iter.next());
+    for (A a : this) {
+      toRet.add(a);
     }
     return toRet.toArray();
   }
@@ -91,8 +92,8 @@ class RangeKeySet<A,B> extends AbstractRangeMap<A,B> implements NavigableSet<A>{
   @Override
   public <T> T[] toArray(T[] a) {
     ArrayList <A> toRet = new ArrayList<>();
-    for(Iterator<A> iter = iterator(); iter.hasNext();){
-      toRet.add(iter.next());
+    for (A a1 : this) {
+      toRet.add(a1);
     }
     return toRet.toArray(a);
   }
@@ -103,8 +104,9 @@ class RangeKeySet<A,B> extends AbstractRangeMap<A,B> implements NavigableSet<A>{
   }
 
   @Override
+  @SuppressWarnings("unchecked")
   public boolean remove(Object o) {
-    return check((A) o) ? map.remove(o) != null : false;
+    return check((A) o) && map.remove(o) != null;
   }
 
   @Override

@@ -17,23 +17,22 @@
 package org.mellowtech.core.sort;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
-import java.nio.channels.SeekableByteChannel;
 import java.nio.channels.WritableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
+import java.util.zip.Deflater;
+import java.util.zip.DeflaterOutputStream;
 
 import org.mellowtech.core.codec.BCodec;
 import org.mellowtech.core.codec.CodecUtil;
-import org.mellowtech.core.util.Platform;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,121 +51,54 @@ import org.slf4j.LoggerFactory;
  * @version 1.0
  * @see org.mellowtech.core.sort.EDiscBasedSort
  */
-public class DiscBasedSort <A extends Comparable<A>> {
+public class DiscBasedSort <A extends Comparable<A>>  implements DiscSort<A>{
   static final String SORT_RUN_FILE = "disc_sort_d_run.";
-  private static final String SEP = System.getProperties().getProperty(
-      "file.separator");
 
   private final Logger logger = LoggerFactory.getLogger(DiscBasedSort.class);
 
-  private static int blockSize = 1024;
-  private BCodec<A> codec;
-  private int complevel = 0;
-  private Path tempDir = null;
-
-  /**
-   * Set the blocksize. How much data to read/write from disc. This number
-   * should seldom be no more than 4096.
-   * 
-   * @param size
-   *          block size. (a multiple of 1024)
-   */
-  public static void setBlockSize(int size) {
-    blockSize = size;
-  }
-
-  public static int getBlockSize(){
-    return blockSize;
-  }
+  private final int blockSize;
+  private final BCodec<A> codec;
+  private final int complevel;
+  private final Path tempDir;
+  private final int memorySize;
 
   /**
    * Create a new DiscBased sorter that will operate on a specific type of
    * objects.
-   * 
+   *
    * @param codec
    *          the type of object to sort
-   * @param tempDir
-   *          temporary directory for sort runs
-   */
-  public DiscBasedSort(BCodec<A> codec, Path tempDir) {
-    this(codec, 0, tempDir);
-  }
-
-  /**
-   * Create a new DiscBased sorter that will operate on a specific type of
-   * objects.
-   * 
-   * @param codec
-   *          the type of object to sort
+   * @param blockSize
+   *          block read/write size
+   * @param memorySize
+   *          amount of memory for the in-memory sorting step;
    * @param complevel
-   *          the level of GZIP compression for runs (1-9, where 1 is fastest)
+   *          the level of GZIP compression for runs from 0 (no compression) to 9 (highest compression)
    * @param tempDir
    *          temporary directory for sort runs
    */
-  public DiscBasedSort(BCodec<A> codec, int complevel, Path tempDir) {
-    try {
-      this.codec = codec;
-    } catch(Exception e){throw new Error("could not create template instance");}
+  public DiscBasedSort(BCodec<A> codec, int blockSize, int memorySize, int complevel, Path tempDir) {
+    this.codec = codec;
+    this.blockSize = blockSize;
     this.complevel = complevel;
-    Path tDir;
-    try {
-      tDir = tempDir;
-      if(!Files.isDirectory(tDir))
-        throw new IllegalArgumentException("tempDir is not a directory: "+tempDir);
-    }
-    catch (Exception e) {
-      logger.info("Could not open temp dir: {}. Using default tempDir", tempDir);
-      tDir = Platform.getTempDir();
-    }
-    this.tempDir = tDir;
+    if(tempDir == null || !Files.isDirectory(tempDir))
+      throw new IllegalArgumentException("tempDir is not a direcory or null");
+    this.tempDir = tempDir;
+    if(memorySize <= blockSize)
+      throw new IllegalArgumentException("memorysize must be greater than blocksize");
+    this.memorySize = memorySize;
   }
 
-  /**
-   * Sorts an inputfile and prints it to a designated outputfile. If these are
-   * the same the inputfile will be overwritten.
-   * 
-   * @param input
-   *          File to sort
-   * @param output
-   *          Ouputfile
-   * @param memorySize
-   *          The amount of memory that can be used for the in-memory sorting
-   *          step
-   * @return the number of objects sorted.
-   */
-  public int sort(Path input, Path output, int memorySize) {
-    try(SeekableByteChannel in = Files.newByteChannel(input, StandardOpenOption.READ);
-        SeekableByteChannel out = Files.newByteChannel(output, StandardOpenOption.WRITE)){
-      return sort(in, out, memorySize);
-    } catch(IOException e){
-      logger.error("Could not sort",e);
-      return -1;
-    }
-  }
+  @Override
+  public int sort(ReadableByteChannel input, WritableByteChannel output) {
 
-  /**
-   * Sorts a byte channel and print the result to a designated byte channel. If
-   * these are the same the input channel will be overwritten.
-   * 
-   * @param input
-   *          input channel
-   * @param output
-   *          output channel
-   * @param memorySize
-   *          the number of bytes that can be used for in-memory sorting
-   * @return the number of objects sorted
-   */
-  public int sort(ReadableByteChannel input, WritableByteChannel output,
-      int memorySize) {
 
     ByteBuffer ob = ByteBuffer.allocate(blockSize);
     int inputSize = blockSize * 100;
     ByteBuffer large = ByteBuffer.allocate(inputSize);
-
     int numFiles = makeRuns(input, memorySize, large, ob, tempDir);
     if (numFiles <= 0)
       return -1;
-
     // now merge:
     File f = tempDir.toFile();
     String[] fNames = f.list(new DBFFilter());
@@ -179,11 +111,7 @@ public class DiscBasedSort <A extends Comparable<A>> {
     try {
       logger.debug("Removing temp files");
       File fileDir = tempDir.toFile();
-      File[] files = fileDir.listFiles(new FilenameFilter() {
-        public boolean accept(File file, String name) {
-          return name.contains(SORT_RUN_FILE);
-        }
-      });
+      File[] files = fileDir.listFiles((file, name) -> name.contains(SORT_RUN_FILE));
       if (files != null)
         for (File file : files) {
         logger.debug("delete sort run: {}", file);
@@ -197,6 +125,7 @@ public class DiscBasedSort <A extends Comparable<A>> {
 
   }
 
+  @SuppressWarnings("unchecked")
   private int makeRuns(ReadableByteChannel input, int heapSize,
       ByteBuffer large, ByteBuffer ob, Path tmpDir) {
     try {
@@ -222,7 +151,7 @@ public class DiscBasedSort <A extends Comparable<A>> {
         objs = c.getObjects();
         numObjs += c.getNumObjs();
         long ll = System.currentTimeMillis();
-        sortRun(input, objs, c.getNumObjs(), i, tmpDir, ob);
+        sortRun(objs, c.getNumObjs(), i, tmpDir, ob);
         ll = System.currentTimeMillis() - ll;
         l = System.currentTimeMillis() - l;
         logger.info("Discbased inmemory sort of {} took {} secs", c.getNumObjs(), ll/1000);
@@ -237,15 +166,20 @@ public class DiscBasedSort <A extends Comparable<A>> {
     }
   }
 
-  private int sortRun(ReadableByteChannel c, A[] objs, int numObjs,
+  private int sortRun(A[] objs, int numObjs,
       int i, Path dir, ByteBuffer output) throws Exception {
 
     output.clear(); // clear output buffer:
+    WritableByteChannel fc;
+    logger.debug("SORT:sortRun():Sort Run "+i);
     Path fRun = dir.resolve(SORT_RUN_FILE+i);
-    try(FileOutputStream fos = new FileOutputStream(fRun.toFile())){
-    // Create output channel:
-    FileChannel fc = fos.getChannel();
-    int size = 0, numBytes = 0;
+
+    if (complevel > 0)
+      fc = Channels.newChannel(new DeflaterOutputStream(new FileOutputStream(fRun.toFile()), new Deflater(complevel)));
+    else
+      fc = new FileOutputStream(fRun.toFile()).getChannel();
+
+    int numBytes = 0;
 
     // sort offsets:
     Arrays.parallelSort(objs, 0, numObjs);
@@ -263,13 +197,10 @@ public class DiscBasedSort <A extends Comparable<A>> {
     // flush outputbuffer:
     output.flip();
     fc.write(output);
+    fc.close();
     return numBytes;
     }
-    catch(IOException e){
-      throw e;
-    }
   }
-}
 
 class DBSProducer <A> extends Thread {
   private DBSContainer <A> hb;
@@ -334,13 +265,13 @@ class DBSContainer <A> {
 
   private ByteBuffer buffer;
   private ByteBuffer consumerBuffer;
-  ReadableByteChannel c;
+  private ReadableByteChannel c;
   private boolean noMore = false, consumedAll = false, endOfStream = false;
   private int slack = -1, totConsumed, totProduced, blockSize, maxRead;
   private BCodec<A> codec;
   private final Logger logger = LoggerFactory.getLogger(DBSContainer.class);
 
-  public DBSContainer(ByteBuffer b, ReadableByteChannel c, int blockSize,
+  DBSContainer(ByteBuffer b, ReadableByteChannel c, int blockSize,
       BCodec<A> codec, int maxRead) {
 
     this.blockSize = blockSize;
@@ -481,9 +412,6 @@ class DBSContainer <A> {
     return -1;
   }
 
-  public ByteBuffer getDBSConsumerBuffer() {
-    return consumerBuffer;
-  }
 }
 
 class DBFFilter implements java.io.FilenameFilter {

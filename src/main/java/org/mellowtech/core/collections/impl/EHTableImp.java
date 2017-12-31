@@ -58,14 +58,14 @@ public class EHTableImp <A,B> implements BMap <A,B>{
   private IntBuffer reserve;
   private Path p;
   
-  public EHTableImp(Path path, BCodec<A> keyCodec, BCodec<B> valueCodec, boolean inMemory) throws Exception{
+  /*public EHTableImp(Path path, BCodec<A> keyCodec, BCodec<B> valueCodec, boolean inMemory) throws Exception{
     this.keyCodec = keyCodec;
     this.valueCodec = valueCodec;
     this.kvCodec = new KeyValueCodec<>(keyCodec,valueCodec);
     this.inMemory = inMemory;
     this.p = path;
     openFile();
-  }
+  }*/
   
   public EHTableImp(Path path, BCodec<A> keyCodec, BCodec<B> valueCodec, boolean inMemory, int bucketSize, int maxBuckets)
     throws Exception{
@@ -75,7 +75,11 @@ public class EHTableImp <A,B> implements BMap <A,B>{
     this.kvCodec = new KeyValueCodec<>(keyCodec,valueCodec);
     this.inMemory = inMemory;
     this.p = path;
-    createFile(bucketSize, maxBuckets);
+    try {
+      openFile();
+    } catch(Exception e){
+      createFile(bucketSize, maxBuckets);
+    }
   }
   
   public boolean containsKey(A key) throws IOException {

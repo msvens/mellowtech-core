@@ -86,7 +86,7 @@ public class ByteBufferHeap <A> implements BufferHeap {
    *              if an error occurs
    */
   public ByteBufferHeap(int initSize, float incrementFactor, ByteBuffer bb,
-      BCodec codec) throws Exception {
+      BCodec <A> codec) throws Exception {
 
     if (bb == null || codec == null)
       throw new Exception("The ByteBuffer and ByteComparable can not be null");
@@ -139,7 +139,7 @@ public class ByteBufferHeap <A> implements BufferHeap {
     return T;
   }
 
-  /** **********************END IMPLEMENTED BUFFERHEAP METHODS*************** */
+  //*********************END IMPLEMENTED BUFFERHEAP METHODS***************
 
   /**
    * Turn an array of offsets into a heap of offsets.
@@ -155,7 +155,7 @@ public class ByteBufferHeap <A> implements BufferHeap {
    * @exception Exception
    *              if an error occurs
    */
-  public static final <A> ByteBufferHeap <A> heapify(int[] objs, ByteBuffer bb,
+  public static <A> ByteBufferHeap <A> heapify(int[] objs, ByteBuffer bb,
       BCodec<A> codec) throws Exception {
 
     ByteBufferHeap <A> h = new ByteBufferHeap <> (bb, codec);
@@ -178,7 +178,7 @@ public class ByteBufferHeap <A> implements BufferHeap {
    * @param codec
    *          a byte comparator
    */
-  public static final void heapSort(int[] objs, ByteBuffer bb, BCodec <?> codec) {
+  public static void heapSort(int[] objs, ByteBuffer bb, BCodec <?> codec) {
     int N = objs.length;
     for (int k = N / 2; k > 0; k--) {
       bubbleDownReverse(objs, k, N, bb, codec);
@@ -194,9 +194,9 @@ public class ByteBufferHeap <A> implements BufferHeap {
   }
 
   public String toString() {
-    StringBuffer sb = new StringBuffer();
+    StringBuilder sb = new StringBuilder();
     for (int i = 0; i < size; i++)
-      sb.append(heap[i] + "\t");
+      sb.append(heap[i]).append("\t");
     return sb.toString();
   }
 
@@ -206,7 +206,7 @@ public class ByteBufferHeap <A> implements BufferHeap {
     heap = o;
   }
 
-  private static final void bubbleDown(int[] objs, int node, int max,
+  private static void bubbleDown(int[] objs, int node, int max,
       ByteBuffer bb, BCodec <?> codec) {
 
     int T = objs[node - 1];
@@ -228,7 +228,7 @@ public class ByteBufferHeap <A> implements BufferHeap {
     objs[node - 1] = T;
   }
 
-  private static final void bubbleDownReverse(int[] objs, int k, int N,
+  private static void bubbleDownReverse(int[] objs, int k, int N,
       ByteBuffer bb, BCodec <?> codec) {
     // int T = a[k - 1];
     int T = objs[k - 1];

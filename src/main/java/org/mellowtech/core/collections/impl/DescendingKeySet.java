@@ -26,7 +26,7 @@ import java.util.*;
 class DescendingKeySet <A,B> extends AbstractRangeMap<A,B> implements NavigableSet<A> {
 
 
-  public DescendingKeySet(SortedDiscMap<A, B> shared, A from, boolean fromInclusive, A to, boolean toInclusive) {
+  DescendingKeySet(SortedDiscMap<A, B> shared, A from, boolean fromInclusive, A to, boolean toInclusive) {
     super(shared, true, from, fromInclusive, to, toInclusive);
   }
 
@@ -72,9 +72,7 @@ class DescendingKeySet <A,B> extends AbstractRangeMap<A,B> implements NavigableS
   public int size() {
     if(noBounds()) return map.size();
     int i = 0;
-    Iterator <A> iter = iterator();
-    while(iter.hasNext()) {
-      iter.next();
+    for (A a : this) {
       i++;
     }
     return i;
@@ -86,8 +84,9 @@ class DescendingKeySet <A,B> extends AbstractRangeMap<A,B> implements NavigableS
   }
 
   @Override
+  @SuppressWarnings("unchecked")
   public boolean contains(Object o) {
-    return check((A) o) ? map.containsKey(o) : false;
+    return check((A) o) && map.containsKey(o);
   }
 
   @Override
@@ -98,8 +97,8 @@ class DescendingKeySet <A,B> extends AbstractRangeMap<A,B> implements NavigableS
   @Override
   public Object[] toArray() {
     ArrayList <A> toRet = new ArrayList<>();
-    for(Iterator<A> iter = iterator(); iter.hasNext();){
-      toRet.add(iter.next());
+    for (A a : this) {
+      toRet.add(a);
     }
     return toRet.toArray();
   }
@@ -107,8 +106,8 @@ class DescendingKeySet <A,B> extends AbstractRangeMap<A,B> implements NavigableS
   @Override
   public <T> T[] toArray(T[] a) {
     ArrayList <A> toRet = new ArrayList<>();
-    for(Iterator<A> iter = iterator(); iter.hasNext();){
-      toRet.add(iter.next());
+    for (A a1 : this) {
+      toRet.add(a1);
     }
     return toRet.toArray(a);
   }
@@ -119,8 +118,9 @@ class DescendingKeySet <A,B> extends AbstractRangeMap<A,B> implements NavigableS
   }
 
   @Override
+  @SuppressWarnings("unchecked")
   public boolean remove(Object o) {
-    return check((A) o) ? map.remove(o) != null : false;
+    return check((A) o) && map.remove(o) != null;
   }
 
   @Override

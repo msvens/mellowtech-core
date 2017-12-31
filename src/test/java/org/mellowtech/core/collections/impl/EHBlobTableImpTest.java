@@ -41,6 +41,8 @@ public class EHBlobTableImpTest extends BMapTemplate {
 
   @Override
   public BMap<String, Integer> reopen(Path fileName) throws Exception{
-    return new EHBlobTableImp<>(fileName, new StringCodec(), new IntCodec(), false);
+    return new EHBlobTableImp<>(fileName, new StringCodec(), new IntCodec(), false, -1, -1);
+
+    //return new EHBlobTableImp<>(fileName, new StringCodec(), new IntCodec(), false);
   }
 }

@@ -24,7 +24,6 @@ import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.mellowtech.core.sort.DiscBasedSort.getBlockSize;
 
 /**
  * Description...

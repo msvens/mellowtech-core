@@ -43,7 +43,7 @@ public class BTreeKeyCodec<A> implements BCodec<BTreeKey<A>> {
    * @param codec key codec
    * 
    */
-  public BTreeKeyCodec(BCodec<A> codec) {
+  BTreeKeyCodec(BCodec<A> codec) {
     this.codec = codec;
   }
 
@@ -62,7 +62,7 @@ public class BTreeKeyCodec<A> implements BCodec<BTreeKey<A>> {
     CodecUtil.getSize(bb, true);
     A a = codec.from(bb);
     int leftNode = bb.getInt();
-    return new BTreeKey<A>(a,leftNode);
+    return new BTreeKey<>(a,leftNode);
   }
 
   @Override
@@ -87,9 +87,10 @@ class BTreeKey<A> implements Comparable<BTreeKey<A>> {
   public int leftNode;
 
 
-  public BTreeKey(A k, int l){key = k; leftNode = l;}
+  BTreeKey(A k, int l){key = k; leftNode = l;}
 
   @Override
+  @SuppressWarnings("unchecked")
   public int compareTo(BTreeKey<A> other) {
     return ((Comparable<? super A>)key).compareTo(other.key);
   }

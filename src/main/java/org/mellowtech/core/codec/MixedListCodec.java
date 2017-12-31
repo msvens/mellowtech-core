@@ -27,6 +27,7 @@ import java.util.List;
  */
 public class MixedListCodec implements BCodec<List<Object>>{
 
+  @SuppressWarnings("unchecked")
   private int internalSize(List<Object> value){
     int size = 4; //num elements
     for(Object o : value){
@@ -48,6 +49,7 @@ public class MixedListCodec implements BCodec<List<Object>>{
   }
 
   @Override
+  @SuppressWarnings("unchecked")
   public List<Object> from(ByteBuffer bb) {
     CodecUtil.getSize4(bb);
     int elems = bb.getInt();
@@ -60,6 +62,7 @@ public class MixedListCodec implements BCodec<List<Object>>{
   }
 
   @Override
+  @SuppressWarnings("unchecked")
   public void to(List<Object> value, ByteBuffer bb) {
     CodecUtil.putSize4(bb, (buff) -> {
       buff.putInt(value.size());

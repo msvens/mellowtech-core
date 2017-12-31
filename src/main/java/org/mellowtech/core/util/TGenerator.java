@@ -28,9 +28,7 @@ public final class TGenerator {
   private static Random rnd = new Random(System.nanoTime());
 
   private static void incrR(char[] arr, int idx, char from, char to) {
-    if (idx == -1)
-      return;
-    else {
+    if (idx != -1) {
       if (arr[idx] < to) {
         arr[idx]++;
         return;
@@ -41,9 +39,7 @@ public final class TGenerator {
   }
 
   private static void incrR(byte[] arr, int idx, byte from, byte to) {
-    if (idx == -1)
-      return;
-    else {
+    if (idx != -1) {
       if (arr[idx] < to) {
         arr[idx]++;
         return;
@@ -57,7 +53,8 @@ public final class TGenerator {
     incrR(arr, arr.length - 1, 'A', 'Z');
   }
 
-  public static final <T> Iterator<T> of(Class<T> clazz, int length, char from, char to, boolean mutable) {
+  @SuppressWarnings("unchecked")
+  public static <T> Iterator<T> of(Class<T> clazz, int length, char from, char to, boolean mutable) {
     if (clazz == String.class) {
       return (Iterator<T>) new StringGen(length, from, to);
     } else if (clazz == char[].class) {
@@ -69,7 +66,8 @@ public final class TGenerator {
     }
   }
 
-  public static final <T> Iterator<T> of(Class<T> clazz, T start, char from, char to, boolean mutable) {
+  @SuppressWarnings("unchecked")
+  public static <T> Iterator<T> of(Class<T> clazz, T start, char from, char to, boolean mutable) {
     if (clazz == String.class) {
       return (Iterator<T>) new StringGen((String) start, from, to);
     } else if (clazz == char[].class) {
@@ -101,7 +99,7 @@ public final class TGenerator {
     private char from, to;
     private boolean mutable;
 
-    public CharGen(int length, char from, char to, boolean mutable) {
+    CharGen(int length, char from, char to, boolean mutable) {
       this.from = from;
       this.to = to;
       this.mutable = mutable;
@@ -109,7 +107,7 @@ public final class TGenerator {
       Arrays.fill(arr, from);
     }
 
-    public CharGen(char[] arr, char from, char to, boolean mutable) {
+    CharGen(char[] arr, char from, char to, boolean mutable) {
       this.from = from;
       this.to = to;
       this.mutable = mutable;
@@ -137,7 +135,7 @@ public final class TGenerator {
     private byte from, to;
     private boolean mutable;
 
-    public ByteGen(int length, byte from, byte to, boolean mutable) {
+    ByteGen(int length, byte from, byte to, boolean mutable) {
       this.from = from;
       this.to = to;
       this.mutable = mutable;
@@ -145,7 +143,7 @@ public final class TGenerator {
       Arrays.fill(arr, from);
     }
 
-    public ByteGen(byte[] arr, byte from, byte to, boolean mutable) {
+    ByteGen(byte[] arr, byte from, byte to, boolean mutable) {
       this.from = from;
       this.to = to;
       this.mutable = mutable;
@@ -173,11 +171,11 @@ public final class TGenerator {
 
     Iterator<char[]> iter;
 
-    public StringGen(String start, char from, char to) {
+    StringGen(String start, char from, char to) {
       iter = new CharGen(start.toCharArray(), from, to, true);
     }
 
-    public StringGen(int length, char from, char to) {
+    StringGen(int length, char from, char to) {
       iter = new CharGen(length, from, to, true);
     }
 

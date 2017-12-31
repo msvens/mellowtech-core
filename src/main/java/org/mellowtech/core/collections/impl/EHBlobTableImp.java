@@ -38,7 +38,7 @@ public class EHBlobTableImp <A,B> implements BMap <A,B>{
   private final BCodec<B> valueCodec;
   private Path fName;
 
-  public EHBlobTableImp(Path fName, BCodec<A> keyCodec,
+  /*public EHBlobTableImp(Path fName, BCodec<A> keyCodec,
                         BCodec<B> valueCodec, boolean inMemory) throws Exception{
     this.fName = fName;
     //@SuppressWarnings("resource")
@@ -46,7 +46,7 @@ public class EHBlobTableImp <A,B> implements BMap <A,B>{
     this.valueCodec = valueCodec;
     File f = new File(fName+".blb");
     blobs = FileChannel.open(f.toPath(), WRITE, READ); 
-  }
+  }*/
   
   public EHBlobTableImp(Path fName, BCodec<A> keyCodec,
                         BCodec<B> valueCodec,
@@ -55,7 +55,10 @@ public class EHBlobTableImp <A,B> implements BMap <A,B>{
     eht = new EHTableImp <> (fName, keyCodec, new BlobPointerCodec(), inMemory, bucketSize, maxBuckets);
     this.valueCodec = valueCodec;
     File f = new File(fName+".blb");
-    blobs = FileChannel.open(f.toPath(), WRITE, READ, TRUNCATE_EXISTING, CREATE); 
+    if(eht.isEmpty())
+      blobs = FileChannel.open(f.toPath(), WRITE, READ, TRUNCATE_EXISTING, CREATE);
+    else
+      blobs = FileChannel.open(f.toPath(), WRITE, READ);
   }
   
   @Override

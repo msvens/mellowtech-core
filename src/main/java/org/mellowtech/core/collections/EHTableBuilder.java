@@ -27,7 +27,7 @@ import java.nio.file.Paths;
  * @author msvens
  *
  */
-public class EHTableBuilder {
+public class EHTableBuilder<A,B> extends CollectionBuilder<A,B,EHTableBuilder<A,B>>{
 
   public static final int DEFAULT_MAX_BUCKETS = 1024 * 1024;
   public static final int DEFAULT_BUCKET_SIZE = 1024 * 8;
@@ -39,59 +39,62 @@ public class EHTableBuilder {
   private boolean forceNew = false;
   private boolean blobValues = false;
 
-  public EHTableBuilder maxBuckets(int max) {
+
+  public EHTableBuilder<A,B> maxBuckets(int max) {
     this.maxBuckets = max;
     return this;
   }
 
-  public EHTableBuilder bucketSize(int size) {
+  public EHTableBuilder<A,B> bucketSize(int size) {
     this.bucketSize = size;
     return this;
   }
 
-  public EHTableBuilder blobValues(boolean blobs) {
+  public EHTableBuilder<A,B> blobValues(boolean blobs) {
     this.blobValues = blobs;
     return this;
   }
 
-  public EHTableBuilder inMemory(boolean inMemory){
+  public EHTableBuilder<A,B> inMemory(boolean inMemory){
     this.inMemory = inMemory;
     return this;
   }
-  public EHTableBuilder forceNew(boolean force){
+  public EHTableBuilder<A,B> forceNew(boolean force){
     this.forceNew = force;
     return this;
   }
 
-  public final <A,B> BMap <A,B> build(BCodec<A> keyCodec, BCodec<B> valueCodec, Path fileName) throws Exception{
-    if(blobValues) return buildBlob(keyCodec, valueCodec, fileName);
+  public final BMap <A,B> build() throws Exception{
+    checkParameters();
+
+    if(blobValues) return buildBlob();
     EHTableImp<A,B> toRet = null;
-    //first try to open
-    try {
-      toRet = new EHTableImp <> (fileName, keyCodec, valueCodec, inMemory);
+    /*try {
+      toRet = new EHTableImp <> (filePath, keyCodec, valueCodec, inMemory);
     } catch (Exception e){
-      return new EHTableImp <> (fileName, keyCodec, valueCodec, inMemory, bucketSize, maxBuckets);
-    }
-    if(!forceNew) return toRet;
+      return new EHTableImp <> (filePath, keyCodec, valueCodec, inMemory, bucketSize, maxBuckets);
+    }*/
+    toRet = new EHTableImp <> (filePath, keyCodec, valueCodec, inMemory, bucketSize, maxBuckets);
+    if(!forceNew || toRet.size() == 0) return toRet;
 
     //delete old and create new:
     toRet.delete();
-    return new EHTableImp <> (fileName, keyCodec, valueCodec, inMemory, bucketSize, maxBuckets);
+    return new EHTableImp <> (filePath, keyCodec, valueCodec, inMemory, bucketSize, maxBuckets);
   }
 
-  private final <A,B> BMap <A,B> buildBlob(BCodec<A> keyCodec, BCodec<B> valueCodec, Path fileName) throws Exception{
-    BMap <A,B> toRet = null;
+  private final BMap <A,B> buildBlob() throws Exception{
+    BMap <A,B> toRet = new EHBlobTableImp <> (filePath, keyCodec, valueCodec, inMemory, bucketSize, maxBuckets);;
     //first try to open
-    try {
-      toRet = new EHBlobTableImp<>(fileName, keyCodec, valueCodec, inMemory);
+    /*try {
+      toRet = new EHBlobTableImp<>(filePath, keyCodec, valueCodec, inMemory);
     } catch (Exception e){
-      return new EHBlobTableImp <> (fileName, keyCodec, valueCodec, inMemory, bucketSize, maxBuckets);
-    }
-    if(!forceNew) return toRet;
+      return new EHBlobTableImp <> (filePath, keyCodec, valueCodec, inMemory, bucketSize, maxBuckets);
+    }*/
+    if(!forceNew || toRet.size() == 0) return toRet;
 
     //delete old and create new:
     toRet.delete();
-    return new EHBlobTableImp <> (fileName, keyCodec, valueCodec, inMemory, bucketSize, maxBuckets);
+    return new EHBlobTableImp <> (filePath, keyCodec, valueCodec, inMemory, bucketSize, maxBuckets);
   }
 
 

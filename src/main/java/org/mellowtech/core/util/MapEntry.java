@@ -42,9 +42,7 @@ public class MapEntry <K,V> implements Map.Entry<K,V> {
    * Creates a new <code>MapEntry</code> instance.
    * 
    */
-  public MapEntry() {
-    ;
-  }
+  public MapEntry() { }
 
   public MapEntry(K key, V value){
     this.k = key;
@@ -58,12 +56,17 @@ public class MapEntry <K,V> implements Map.Entry<K,V> {
    *          an object to compare with
    * @return true if both the key and value are equal
    */
+  @SuppressWarnings("unchecked")
   public boolean equals(Object o) {
-    Map.Entry <K,V> e2 = (Map.Entry <K,V>) o;
-    return (this.getKey() == null ? e2.getKey() == null : this.getKey().equals(
-        e2.getKey()))
-        && (this.getValue() == null ? e2.getValue() == null : this.getValue()
-            .equals(e2.getValue()));
+    if(o instanceof Map.Entry) {
+      Map.Entry<K, V> e2 = (Map.Entry<K, V>) o;
+      return (this.getKey() == null ? e2.getKey() == null : this.getKey().equals(
+          e2.getKey()))
+          && (this.getValue() == null ? e2.getValue() == null : this.getValue()
+          .equals(e2.getValue()));
+    }
+    else
+      return false;
   }
 
   /**

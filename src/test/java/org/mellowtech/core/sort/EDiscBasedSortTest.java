@@ -80,11 +80,9 @@ public class EDiscBasedSortTest {
 
   @Test public void testQuickSort() throws Exception{
     StringCodec codec = new StringCodec();
-    EDiscBasedSort <String> edb = new EDiscBasedSort <> (codec,
-    1, Platform.getTempDir().resolve("sort"));
-    //stringBuffer.flip();
+    EDiscBasedSort <String> edb = new EDiscBasedSort<>(codec,4096,4096*2,1,Platform.getTempDir().resolve("sort"));
     ByteArrayOutputStream bos = new ByteArrayOutputStream();
-    edb.sort(new ByteArrayInputStream(stringBuffer.array()), bos, edb.getBlockSize()*1);
+    edb.sort(new ByteArrayInputStream(stringBuffer.array()), bos);
 
     //verify that things are the same
     //Collator col = Collator.getInstance(new Locale("sv"));

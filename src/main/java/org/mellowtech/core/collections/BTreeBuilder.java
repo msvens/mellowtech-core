@@ -17,6 +17,7 @@
 package org.mellowtech.core.collections;
 
 import org.mellowtech.core.codec.BCodec;
+import org.mellowtech.core.codec.Codecs;
 import org.mellowtech.core.collections.impl.*;
 import org.mellowtech.core.io.RecordFileBuilder;
 import org.mellowtech.core.io.impl.MultiBlockFile;
@@ -60,8 +61,10 @@ import java.nio.file.Paths;
  *
  * @author Martin Svensson {@literal <msvens@gmail.com>}
  * @since 3.0.1
+ * @param <A> key type
+ * @param <B> value type
  */
-public class BTreeBuilder {
+public class BTreeBuilder<A,B> extends CollectionBuilder<A,B,BTreeBuilder<A,B>>{
   
   public static final int DEFAULT_INDEX_BLOCK = 1024 * 8;
   public static final int DEFAULT_VALUE_BLOCK = 1024 * 8;
@@ -79,6 +82,7 @@ public class BTreeBuilder {
   private boolean multiFileValues = false;
   private int multiFileSize = 1024*1024*64;
 
+
   /**
    * Based on usage hints calculates block sizes and maximum blocks as well as
    * if this tree should store blobs
@@ -89,9 +93,8 @@ public class BTreeBuilder {
    * @param avgValueSize average size of a value
    * @return this builder
    */
-  public BTreeBuilder hint(long maxKeyValues, int maxKeySize, int maxValueSize, int avgKeySize, int avgValueSize){
+  public BTreeBuilder<A,B> hint(long maxKeyValues, int maxKeySize, int maxValueSize, int avgKeySize, int avgValueSize){
     long totalBytes = maxKeyValues * avgKeySize * avgValueSize;
-
     return this;
   }
 
@@ -101,7 +104,7 @@ public class BTreeBuilder {
    * @return this
    * @see MultiBlockFile
    */
-  public BTreeBuilder multiFileValues(boolean multiFile){
+  public BTreeBuilder<A,B> multiFileValues(boolean multiFile){
     this.multiFileValues = multiFile;
     return this;
   }
@@ -112,7 +115,7 @@ public class BTreeBuilder {
    * @param size size in bytes
    * @return this
    */
-  public BTreeBuilder multiFileSize(int size){
+  public BTreeBuilder<A,B> multiFileSize(int size){
     this.multiFileSize = size;
     return this;
   }
@@ -124,7 +127,7 @@ public class BTreeBuilder {
    * @param memIndex indicate memoryIndex
    * @return this
    */
-  public BTreeBuilder memoryIndex(boolean memIndex){
+  public BTreeBuilder<A,B> memoryIndex(boolean memIndex){
     this.memoryIndex = memIndex;
     return this;
   }
@@ -134,7 +137,7 @@ public class BTreeBuilder {
    * @param size size in bytes
    * @return this
    */
-  public BTreeBuilder indexBlockSize(int size) {
+  public BTreeBuilder<A,B> indexBlockSize(int size) {
     this.indexBlockSize = size;
     return this;
   }
@@ -144,7 +147,7 @@ public class BTreeBuilder {
    * @param size size in bytes
    * @return this
    */
-  public BTreeBuilder valueBlockSize(int size) {
+  public BTreeBuilder<A,B> valueBlockSize(int size) {
     this.valueBlockSize = size;
     return this;
   }
@@ -154,10 +157,11 @@ public class BTreeBuilder {
    * @param blobs true if large values
    * @return this
    */
-  public BTreeBuilder blobValues(boolean blobs) {
+  public BTreeBuilder<A,B> blobValues(boolean blobs) {
     this.blobValues = blobs;
     return this;
   }
+
 
   /**
    * If this tree will memory map key/value blocks. If the tree is set to use a multiFile valuefile this
@@ -165,7 +169,7 @@ public class BTreeBuilder {
    * @param inMemory true if key/values should be memory mapped
    * @return this
    */
-  public BTreeBuilder memoryMappedValues(boolean inMemory){
+  public BTreeBuilder<A,B> memoryMappedValues(boolean inMemory){
     this.memoryMappedValues = inMemory;
     return this;
   }
@@ -177,7 +181,7 @@ public class BTreeBuilder {
    * @param max max number of key/value blocks
    * @return this
    */
-  public BTreeBuilder maxBlocks(int max) {
+  public BTreeBuilder<A,B> maxBlocks(int max) {
     this.maxBlocks = max;
     return this;
   }
@@ -189,23 +193,19 @@ public class BTreeBuilder {
    * @param max max number of index blocks
    * @return this
    */
-  public BTreeBuilder maxIndexBlocks(int max){
+  public BTreeBuilder<A,B> maxIndexBlocks(int max){
     this.maxIndexBlocks = max;
     return this;
   }
 
   /**
-   * Create/Open a new disc based tree
-   * @param keyCodec Byte codec for keys
-   * @param valueCodec Byte codec for values
-   * @param dir directory where to store this tree
-   * @param name name of the tree
-   * @param <A> key type
-   * @param <B> value type
+   * Build (create or open) a disc based tree
    * @return a new disc based tree
    * @throws Exception if tree could not be created/opened
    */
-  public <A,B> BTree <A,B> build(BCodec<A> keyCodec, BCodec<B> valueCodec, Path dir, String name) throws Exception{
+  public BTree <A,B> build() throws Exception{
+    checkParameters();
+
     RecordFileBuilder vfb = new RecordFileBuilder();
     vfb.maxBlocks(maxBlocks).blockSize(valueBlockSize).multiFileSize(multiFileSize);
     if(multiFileValues)
@@ -215,12 +215,14 @@ public class BTreeBuilder {
     else
       vfb.disc();
 
+    DirAndName dn = filePathSplit();
+
     if(memoryIndex){
-      return blobValues ? new HybridBlobTree<>(dir,name,keyCodec,valueCodec,vfb) :
-          new HybridTree<>(dir,name,keyCodec,valueCodec,vfb);
+      return blobValues ? new HybridBlobTree<>(dn.dir,dn.name,keyCodec,valueCodec,vfb) :
+          new HybridTree<>(dn.dir,dn.name,keyCodec,valueCodec,vfb);
     } else {
-      return blobValues ? new BTreeBlobImp<>(dir,name,keyCodec,valueCodec,indexBlockSize,maxIndexBlocks,vfb) :
-          new BTreeImp<>(dir,name,keyCodec,valueCodec,indexBlockSize,maxIndexBlocks,vfb);
+      return blobValues ? new BTreeBlobImp<>(dn.dir,dn.name,keyCodec,valueCodec,indexBlockSize,maxIndexBlocks,vfb) :
+          new BTreeImp<>(dn.dir,dn.name,keyCodec,valueCodec,indexBlockSize,maxIndexBlocks,vfb);
     }
   }
   
