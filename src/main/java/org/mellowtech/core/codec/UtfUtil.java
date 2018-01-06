@@ -1176,8 +1176,7 @@ public class UtfUtil {
 
   //Correct ones
   /**
-   * Compare two utf8 encoded strings. This method assumes that a size indicator
-   * is stored first in each array as defined in CBUtil
+   * Compare two utf8 encoded strings.
    * @param b1 first buffer
    * @param o1 first buffer offset
    * @param b2 second buffer
@@ -1190,27 +1189,6 @@ public class UtfUtil {
   public static int cmp(ByteBuffer b1, int o1, ByteBuffer b2, int o2, int length1, int length2){
 
     int c1,c2, num = 0, i = 0;
-
-    /*
-    // length1
-    c1 = (b1.get(o1++) & 0xFF);
-    while ((c1 & 0x80) == 0) {
-      num |= (c1 << (7 * i));
-      c1 = (b1.get(o1++) & 0xFF);
-      i++;
-    }
-    length1 = (num |= ((c1 & ~(0x80)) << (7 * i)));
-    // length2
-    num = 0;
-    i = 0;
-    c1 = (b2.get(o2++) & 0xFF);
-    while ((c1 & 0x80) == 0) {
-      num |= (c1 << (7 * i));
-      c1 = (b2.get(o2++) & 0xFF);
-      i++;
-    }
-    length2 = (num |= ((c1 & ~(0x80)) << (7 * i)));
-    */
 
 
     int min = Math.min(length1, length2);
@@ -1263,7 +1241,7 @@ public class UtfUtil {
           count += 3;
           o1 += 3;
           char2 = (int) b1.get(o1 - 2);
-          char3 = (int) b1.get(o2 - 1);
+          char3 = (int) b1.get(o1 - 1);
           if (((char2 & 0xC0) != 0x80) || ((char3 & 0xC0) != 0x80))
             throw new Error("malformed input around byte "
                 + (o1 - 1));
@@ -1322,13 +1300,12 @@ public class UtfUtil {
 
 
   /**
-   * Compare two utf8 encoded strings. This method assumes that a size indicator
-   * is stored first in each array as defined in CBUtil
+   * Compare two utf8 encoded strings.
    * @param b1 first buffer
    * @param o1 first buffer offset
    * @param b2 second buffer
    * @param o2 second buffer offset
-   * @param map char map for localized comapre
+   * @param map char map for localized compare
    * @param length1 number of bytes to read in the first buffer
    * @param length2 number of bytes to read in the second buffer
    * @return a negative integer, zero, or a positive integer as b1 is less than, equal to, or greater than b2.
@@ -1340,27 +1317,6 @@ public class UtfUtil {
     if(map == null) return cmp(b1, o1, b2, o2, length1, length2);
 
     int c1,c2, num = 0, i = 0;
-
-    /*
-    // length1
-    c1 = (b1.get(o1++) & 0xFF);
-    while ((c1 & 0x80) == 0) {
-      num |= (c1 << (7 * i));
-      c1 = (b1.get(o1++) & 0xFF);
-      i++;
-    }
-    length1 = (num |= ((c1 & ~(0x80)) << (7 * i)));
-    // length2
-    num = 0;
-    i = 0;
-    c1 = (b2.get(o2++) & 0xFF);
-    while ((c1 & 0x80) == 0) {
-      num |= (c1 << (7 * i));
-      c1 = (b2.get(o2++) & 0xFF);
-      i++;
-    }
-    length2 = (num |= ((c1 & ~(0x80)) << (7 * i)));
-    */
 
     int min = Math.min(length1, length2);
     int count = 0;
