@@ -28,6 +28,7 @@ import java.nio.channels.WritableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.zip.Deflater;
 import java.util.zip.DeflaterOutputStream;
 
@@ -52,6 +53,14 @@ import org.slf4j.LoggerFactory;
  * @see org.mellowtech.core.sort.EDiscBasedSort
  */
 public class DiscBasedSort <A extends Comparable<A>>  implements DiscSort<A>{
+
+  static final class NaturalOrder<A> implements Comparator<A> {
+    @SuppressWarnings("unchecked")
+    public int compare(A first, A second) {
+      return ((Comparable<A>)first).compareTo(second);
+    }
+  }
+
   static final String SORT_RUN_FILE = "disc_sort_d_run.";
 
   private final Logger logger = LoggerFactory.getLogger(DiscBasedSort.class);
