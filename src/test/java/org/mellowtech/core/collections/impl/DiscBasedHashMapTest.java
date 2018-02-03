@@ -21,7 +21,6 @@ import org.mellowtech.core.codec.StringCodec;
 import org.mellowtech.core.collections.DiscMap;
 import org.mellowtech.core.collections.DiscMapTemplate;
 import org.mellowtech.core.collections.EHTableBuilder;
-import org.mellowtech.core.collections.impl.DiscBasedHashMap;
 
 import java.util.Map;
 

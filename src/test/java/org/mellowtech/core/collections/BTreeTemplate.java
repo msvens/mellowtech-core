@@ -61,6 +61,8 @@ public abstract class BTreeTemplate {
 
   public static String firstWord = "alpha";
   public static String forthWord = "delta";
+  public static String manySmaller = "0";
+  public static String manyLarger = "o";
 
 
 
@@ -678,14 +680,15 @@ public abstract class BTreeTemplate {
     putMany();
     TreeMap <String, Integer> m = getManyTree();
     Assert.assertEquals(0, tree.getPosition(m.firstKey()).getSmaller());
+    Assert.assertEquals(m.size()-1, tree.getPosition(m.lastKey()).getSmaller());
   }
 
-  /*@Test
-  public void tenGetPositionWithMissing() throws IOException{
-    tenPut();
-    Assert.assertEquals(3,tree.getPositionWithMissing(forthWord).smaller);
-  }*/
-
+  @Test
+  public void manyGetPositionWithMissing() throws IOException{
+    putMany();
+    Assert.assertEquals(0, tree.getPositionWithMissing(manySmaller).getSmaller());
+    Assert.assertEquals(tree.size(), tree.getPositionWithMissing(manyLarger).getSmaller());
+  }
 
 
 }

@@ -16,19 +16,22 @@
 
 package org.mellowtech.core.collections;
 
-import org.junit.*;
+import org.junit.jupiter.api.*;
+import static org.junit.jupiter.api.Assertions.*;
+
+
 import org.mellowtech.core.TestUtils;
 import org.mellowtech.core.util.MapEntry;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.Map.Entry;
 
 /**
  * Created by msvens on 09/11/15.
  */
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public abstract class MapTemplate {
 
   public Map<String, Integer> map;
@@ -78,126 +81,78 @@ public abstract class MapTemplate {
 
   //abstract DiscMap<String,Integer> reopen(String fileName) throws Exception;
 
-  @BeforeClass
+  @BeforeAll
   public static void createDir(){
     if(Files.exists(TestUtils.getAbsolutePath(dir)))
       TestUtils.deleteTempDir(dir);
     TestUtils.createTempDir(dir);
   }
 
-  @Before
+  @BeforeEach
   public void setup() throws Exception{
     //map = init(TestUtils.getAbsolutDir(dir+"/"+fName()), 1024, 1024, 15, 5);
     map = init();
   }
 
-  /*@After
-  public void after() throws Exception{
-    map.close();
-    map.delete();
-  }*/
-
-  @AfterClass
+  @AfterAll
   public static void deleteDir(){
     TestUtils.deleteTempDir(dir);
   }
 
 
-  /****************overwritten disc hmap methods******************************/
-  /*public void save() throws IOException {
-    eht.save();
-  }
-
-  public void close() throws IOException{
-    eht.close();
-  }
-
-  @Override
-  public void compact() throws IOException {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public void delete() throws IOException {
-    eht.delete();
-  }*/
-
-
-
-
-  /*****test empty map**************************/
-  /*@Test
-  public void emptyIterator() {
-    Assert.assertFalse(map.iterator().hasNext());
-  }*/
 
   @Test
   public void emptySize() {
-    Assert.assertEquals(0, map.size());
+    assertEquals(0, map.size());
   }
 
   @Test
   public void emptyIsEmpty() {
-    Assert.assertTrue(map.isEmpty());
+    assertTrue(map.isEmpty());
   }
 
   @Test
   public void emptyContainsKey() {
-    Assert.assertFalse(map.containsKey(swords[0]));
+    assertFalse(map.containsKey(swords[0]));
   }
 
   @Test
   public void emptyContainsValue() {
-    Assert.assertFalse(map.containsValue(swords[0].length()));
+    assertFalse(map.containsValue(swords[0].length()));
   }
 
   @Test
   public void emptyGet() {
-    Assert.assertNull(map.get(swords[0]));
+    assertNull(map.get(swords[0]));
   }
-
-  /*@Test
-  public void emptyReopen() throws Exception{
-    map.close();
-    map = reopen(TestUtils.getAbsolutDir(dir+"/"+fName()));
-    Assert.assertNull(map.get(firstWord));
-  }*/
 
   @Test
   public void emptyRemove(){
-    Assert.assertNull(map.remove(swords[0]));
+    assertNull(map.remove(swords[0]));
   }
 
-  /*
-  @Override
-  public void putAll(Map<? extends A,? extends C> m) {
-    for (Map.Entry<? extends A, ? extends C> e : m.entrySet()) {
-      this.put(e.getKey(), e.getValue());
-    }
-  }
-  */
   @Test
   public void emptyClear(){
     map.clear();
-    Assert.assertTrue(map.isEmpty());
+    assertTrue(map.isEmpty());
   }
 
   @Test
   public void emptyKeySet(){
     Set <String> keySet = map.keySet();
-    Assert.assertEquals(0, keySet.size());
+    assertEquals(0, keySet.size());
   }
 
   @Test
   public void emptyValues(){
     Collection<Integer> values = map.values();
-    Assert.assertEquals(0, values.size());
+    assertEquals(0, values.size());
   }
 
   @Test
   public void emptyEntrySet(){
     Set <Entry<String,Integer>> entrySet = map.entrySet();
-    Assert.assertEquals(0, entrySet.size());
+    assertEquals(0, entrySet.size());
   }
 
   /*****test 1 item map**************************/
@@ -205,67 +160,62 @@ public abstract class MapTemplate {
     map.put(swords[0], swords[0].length());
   }
 
-  /*@Test
-  public void oneIterator() {
-    onePut();
-    Assert.assertTrue(map.iterator().hasNext());
-  }*/
 
   @Test
   public void oneSize() {
     onePut();
-    Assert.assertEquals(1, map.size());
+    assertEquals(1, map.size());
   }
 
   @Test
   public void oneIsEmpty() {
     onePut();
-    Assert.assertFalse(map.isEmpty());
+    assertFalse(map.isEmpty());
   }
 
   @Test
   public void oneContainsKey() {
     onePut();
-    Assert.assertTrue(map.containsKey(swords[0]));
+    assertTrue(map.containsKey(swords[0]));
   }
 
   @Test
   public void oneContainsValue() {
     onePut();
-    Assert.assertTrue(map.containsValue(swords[0].length()));
+    assertTrue(map.containsValue(swords[0].length()));
   }
 
   @Test
   public void oneGet() {
     onePut();
-    Assert.assertEquals((Integer) swords[0].length(), map.get(swords[0]));
+    assertEquals((Integer) swords[0].length(), map.get(swords[0]));
   }
 
   @Test
   public void oneRemove(){
     onePut();
-    Assert.assertEquals((Integer)swords[0].length(), map.remove(swords[0]));
+    assertEquals((Integer)swords[0].length(), map.remove(swords[0]));
   }
 
   @Test
   public void oneClear(){
     onePut();
     map.clear();
-    Assert.assertTrue(map.isEmpty());
+    assertTrue(map.isEmpty());
   }
 
   @Test
   public void oneKeySet(){
     onePut();
     Set <String> keySet = map.keySet();
-    Assert.assertTrue(keySet.contains(swords[0]));
+    assertTrue(keySet.contains(swords[0]));
   }
 
   @Test
   public void oneValues(){
     onePut();
     Collection<Integer> values = map.values();
-    Assert.assertTrue(values.contains(swords[0].length()));
+    assertTrue(values.contains(swords[0].length()));
   }
 
   @Test
@@ -274,8 +224,8 @@ public abstract class MapTemplate {
     Set <Entry<String,Integer>> entrySet = map.entrySet();
     List <Entry<String,Integer>> list = new ArrayList<>();
     list.addAll(entrySet);
-    Assert.assertEquals(swords[0], list.get(0).getKey());
-    Assert.assertEquals((Integer)swords[0].length(), list.get(0).getValue());
+    assertEquals(swords[0], list.get(0).getKey());
+    assertEquals((Integer)swords[0].length(), list.get(0).getValue());
   }
 
   /*****test 10 item map**************************/
@@ -285,35 +235,23 @@ public abstract class MapTemplate {
     }
   }
 
-  /*@Test
-  public void tenIterator() {
-    tenPut();
-    int tot = 0;
-    Iterator<Entry<String,Integer>>  iter = map.iterator();
-    while(iter.hasNext()){
-      tot++;
-      iter.next();
-    }
-    Assert.assertEquals(10, tot);
-  }*/
-
   @Test
   public void tenSize() {
     tenPut();
-    Assert.assertEquals(10, map.size());
+    assertEquals(10, map.size());
   }
 
   @Test
   public void tenIsEmpty() {
     tenPut();
-    Assert.assertFalse(map.isEmpty());
+    assertFalse(map.isEmpty());
   }
 
   @Test
   public void tenContainsKey() {
     tenPut();
     for(String w : words) {
-      Assert.assertTrue(map.containsKey(w));
+      assertTrue(map.containsKey(w));
     }
   }
 
@@ -321,7 +259,7 @@ public abstract class MapTemplate {
   public void tenContainsValue() {
     tenPut();
     for(String w : words) {
-      Assert.assertTrue(map.containsValue(w.length()));
+      assertTrue(map.containsValue(w.length()));
     }
 
   }
@@ -330,7 +268,7 @@ public abstract class MapTemplate {
   public void tenGet() {
     tenPut();
     for(String w : words){
-      Assert.assertEquals((Integer)w.length(), map.get(w));
+      assertEquals((Integer)w.length(), map.get(w));
     }
   }
 
@@ -338,16 +276,16 @@ public abstract class MapTemplate {
   public void tenRemove(){
     tenPut();
     for(String w : words){
-      Assert.assertEquals((Integer)w.length(), map.remove(w));
+      assertEquals((Integer)w.length(), map.remove(w));
     }
-    Assert.assertTrue(map.isEmpty());
+    assertTrue(map.isEmpty());
   }
 
   @Test
   public void tenClear(){
     tenPut();
     map.clear();
-    Assert.assertTrue(map.isEmpty());
+    assertTrue(map.isEmpty());
   }
 
   @Test
@@ -355,9 +293,9 @@ public abstract class MapTemplate {
     tenPut();
     Set <String> keySet = map.keySet();
     for(String w : words){
-      Assert.assertTrue(keySet.contains(w));
+      assertTrue(keySet.contains(w));
     }
-    Assert.assertEquals(10, keySet.size());
+    assertEquals(10, keySet.size());
   }
 
   @Test
@@ -365,9 +303,9 @@ public abstract class MapTemplate {
     tenPut();
     Collection<Integer> values = map.values();
     for(String w : words){
-      Assert.assertTrue(values.contains(w.length()));
+      assertTrue(values.contains(w.length()));
     }
-    Assert.assertEquals(10, values.size());
+    assertEquals(10, values.size());
   }
 
   @Test
@@ -376,9 +314,9 @@ public abstract class MapTemplate {
     Set <Entry<String,Integer>> entrySet = map.entrySet();
     for(String w : words) {
       Entry<String, Integer> e = new MapEntry<>(w, w.length());
-      Assert.assertTrue(entrySet.contains(e));
+      assertTrue(entrySet.contains(e));
     }
-    Assert.assertEquals(10, entrySet.size());
+    assertEquals(10, entrySet.size());
   }
 
   protected void manyPut(){
@@ -387,38 +325,23 @@ public abstract class MapTemplate {
     }
   }
 
-  /*****test 10 item map**************************/
-  /*@Test
-  public void manyIterator() {
-    manyPut();
-    TreeMap <String, Integer> m = getManyTree();
-    Iterator <Entry<String, Integer>> iter = map.iterator();
-    int items = 0;
-    while(iter.hasNext()){
-      items++;
-      String w = iter.next().getKey();
-      Assert.assertTrue(m.containsKey(w));
-    }
-    Assert.assertEquals(m.size(), items);
-  }*/
-
   @Test
   public void manySize() {
     manyPut();
-    Assert.assertEquals(manyWords.length, map.size());
+    assertEquals(manyWords.length, map.size());
   }
 
   @Test
   public void manyIsEmpty() {
     manyPut();
-    Assert.assertFalse(map.isEmpty());
+    assertFalse(map.isEmpty());
   }
 
   @Test
   public void manyContainsKey() {
     manyPut();
     for(String w : manyWords) {
-      Assert.assertTrue(map.containsKey(w));
+      assertTrue(map.containsKey(w));
     }
   }
 
@@ -426,7 +349,7 @@ public abstract class MapTemplate {
   public void manyContainsValue() {
     manyPut();
     for(String w : manyWords) {
-      Assert.assertTrue(map.containsValue(w.length()));
+      assertTrue(map.containsValue(w.length()));
     }
 
   }
@@ -435,7 +358,7 @@ public abstract class MapTemplate {
   public void manyGet() {
     manyPut();
     for(String w : manyWords){
-      Assert.assertEquals((Integer)w.length(), map.get(w));
+      assertEquals((Integer)w.length(), map.get(w));
     }
   }
 
@@ -443,16 +366,16 @@ public abstract class MapTemplate {
   public void manyRemove(){
     manyPut();
     for(String w : manyWords){
-      Assert.assertEquals((Integer)w.length(), map.remove(w));
+      assertEquals((Integer)w.length(), map.remove(w));
     }
-    Assert.assertTrue(map.isEmpty());
+    assertTrue(map.isEmpty());
   }
 
   @Test
   public void manyClear(){
     manyPut();
     map.clear();
-    Assert.assertTrue(map.isEmpty());
+    assertTrue(map.isEmpty());
   }
 
   @Test
@@ -460,9 +383,9 @@ public abstract class MapTemplate {
     manyPut();
     Set <String> keySet = map.keySet();
     for(String w : manyWords){
-      Assert.assertTrue(keySet.contains(w));
+      assertTrue(keySet.contains(w));
     }
-    Assert.assertEquals(manyWords.length, keySet.size());
+    assertEquals(manyWords.length, keySet.size());
   }
 
   @Test
@@ -470,9 +393,9 @@ public abstract class MapTemplate {
     manyPut();
     Collection<Integer> values = map.values();
     for(String w : manyWords){
-      Assert.assertTrue(values.contains(w.length()));
+      assertTrue(values.contains(w.length()));
     }
-    Assert.assertEquals(manyWords.length, values.size());
+    assertEquals(manyWords.length, values.size());
   }
 
   @Test
@@ -481,9 +404,9 @@ public abstract class MapTemplate {
     Set <Entry<String,Integer>> entrySet = map.entrySet();
     for(String w : manyWords) {
       Entry<String, Integer> e = new MapEntry<>(w, w.length());
-      Assert.assertTrue(entrySet.contains(e));
+      assertTrue(entrySet.contains(e));
     }
-    Assert.assertEquals(manyWords.length, entrySet.size());
+    assertEquals(manyWords.length, entrySet.size());
   }
 
 

@@ -16,16 +16,16 @@
 
 package org.mellowtech.core.collections;
 
-import org.junit.*;
-import org.junit.Assert;
+import org.junit.jupiter.api.*;
+import static org.junit.jupiter.api.Assertions.*;
 
-import org.mellowtech.core.TestUtils;
 import java.util.*;
 import java.util.Map.Entry;
 
 /**
  * Created by msvens on 09/11/15.
  */
+//@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public abstract class DiscMapTemplate extends MapTemplate {
 
   public static int IDX_BLK_SIZE = 1024;
@@ -39,7 +39,7 @@ public abstract class DiscMapTemplate extends MapTemplate {
 
   public abstract DiscMap <String, Integer> reopen() throws Exception;
 
-  @After
+  @AfterEach
   public void after() throws Exception{
     dm().close();
     dm().delete();
@@ -48,14 +48,14 @@ public abstract class DiscMapTemplate extends MapTemplate {
   /*****test empty map**************************/
   @Test
   public void emptyIterator() {
-    Assert.assertFalse(dm().iterator().hasNext());
+    assertFalse(dm().iterator().hasNext());
   }
 
   @Test
   public void emptyReopen() throws Exception{
     dm().close();
     map = reopen();
-    Assert.assertNull(dm().get(swords[0]));
+    assertNull(dm().get(swords[0]));
   }
 
 
@@ -63,7 +63,7 @@ public abstract class DiscMapTemplate extends MapTemplate {
   @Test
   public void oneIterator() {
     onePut();
-    Assert.assertTrue(dm().iterator().hasNext());
+    assertTrue(dm().iterator().hasNext());
   }
 
   @Test
@@ -71,7 +71,7 @@ public abstract class DiscMapTemplate extends MapTemplate {
     onePut();
     dm().close();
     map = reopen();
-    Assert.assertEquals((Integer) swords[0].length(), dm().get(swords[0]));
+    assertEquals((Integer) swords[0].length(), dm().get(swords[0]));
   }
 
   /*****test 10 item map**************************/
@@ -84,7 +84,7 @@ public abstract class DiscMapTemplate extends MapTemplate {
       tot++;
       iter.next();
     }
-    Assert.assertEquals(10, tot);
+    assertEquals(10, tot);
   }
 
   @Test
@@ -93,7 +93,7 @@ public abstract class DiscMapTemplate extends MapTemplate {
     dm().close();
     map = reopen();
     for (String w : words) {
-      Assert.assertEquals((Integer) w.length(), dm().get(w));
+      assertEquals((Integer) w.length(), dm().get(w));
     }
   }
 
@@ -104,7 +104,7 @@ public abstract class DiscMapTemplate extends MapTemplate {
     dm().close();
     map = reopen();
     for(String w : manyWords){
-      Assert.assertEquals((Integer)w.length(), dm().get(w));
+      assertEquals((Integer)w.length(), dm().get(w));
     }
   }
 
@@ -115,10 +115,10 @@ public abstract class DiscMapTemplate extends MapTemplate {
     int items = 0;
     while(iter.hasNext()){
       String w = iter.next().getKey();
-      Assert.assertTrue(Arrays.binarySearch(mwSort, w) >= 0);
+      assertTrue(Arrays.binarySearch(mwSort, w) >= 0);
       items++;
     }
-    Assert.assertEquals(mwSort.length, items);
+    assertEquals(mwSort.length, items);
   }
 
 }

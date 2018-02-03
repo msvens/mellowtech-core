@@ -137,7 +137,8 @@ public class HybridTree <A,B> implements BTree<A,B> {
   public TreePosition getPositionWithMissing(A key) throws IOException {
     int block = findBlock(key);
     if(block < 0) return null;
-    return getFilePositionNoStrict(key, block);
+    TreePosition tp = getFilePositionNoStrict(key, block);
+    return tp;
   }
 
   @Override
@@ -405,7 +406,20 @@ public class HybridTree <A,B> implements BTree<A,B> {
     return Stream.concat(idx.values().stream(), Stream.of(rightPtr));
   }
 
-  private MapEntry<Integer,Integer> countKeyValues(int highBlock){
+  private MapEntry<Integer, Integer> countKeyValues(int highBlock) {
+    Iterator<Integer> all = blockPointers().iterator();
+    int cnt = 0;
+    int current = 0;
+    while(all.hasNext()){
+      current = all.next();
+      if(current == highBlock)
+        break;
+      cnt += getBlock(current).getNumberOfElements();
+    }
+    return new MapEntry<>(current,cnt);
+  }
+
+  /*private MapEntry<Integer,Integer> countKeyValues(int highBlock){
     int i = 0;
     int cnt = 0;
     Iterator<Integer> all = blockPointers().iterator();
@@ -415,7 +429,7 @@ public class HybridTree <A,B> implements BTree<A,B> {
       cnt = cnt + getBlock(all.next()).getNumberOfElements();
     }
     return new MapEntry<>(i,cnt);
-  }
+  }*/
 
   private void deletePointer(Map.Entry<A,Integer> entry){
     if(!idx.containsKey(entry.getKey())) throw new Error("key: "+entry.getKey()+" does not exist");

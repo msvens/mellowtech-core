@@ -147,9 +147,12 @@ public class BTreeImp<A,B> implements BTree<A,B> {
         updateValueBlock(vb.bNo, vb.sb);
         BTreeKey<A> sep = generateSeparator(vb.sb, tmpKV);
         //TODO: This must be a bug...should be leftNode = bNo and rightNode the new node
-        sep.leftNode = bNo - 1;
+        /*sep.leftNode = bNo - 1;
         insertSeparator(sep, levels, 0, bNo);
+        vb = newValueBlock();*/
+        sep.leftNode = bNo;
         vb = newValueBlock();
+        insertSeparator(sep, levels, 0, vb.bNo);
       }
       s++;
       vb.sb.insertUnsorted(tmpKV);
