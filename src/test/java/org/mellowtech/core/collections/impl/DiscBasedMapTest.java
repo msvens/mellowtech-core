@@ -46,11 +46,6 @@ public class DiscBasedMapTest {
     @Override
     public DiscMap<String, Integer> reopen() throws Exception {
       return (DiscMap<String,Integer>) init();
-      /*BTreeBuilder<String,Integer> builder = new BTreeBuilder <> ();
-      builder.keyCodec(new StringCodec()).valueCodec(new IntCodec()).filePath(absPath(fName));
-      builder.maxBlocks(VAL_BLKS).maxIndexBlocks(IDX_BLKS).valueBlockSize(VAL_BLK_SIZE).indexBlockSize(IDX_BLK_SIZE);
-      builder.blobValues(false).memoryMappedValues(false).memoryIndex(false);
-      return new DiscBasedMap<>(builder);*/
     }
 
     @Override
@@ -71,11 +66,7 @@ public class DiscBasedMapTest {
 
     @Override
     public DiscMap<String, Integer> reopen() throws Exception {
-      BTreeBuilder<String,Integer> builder = new BTreeBuilder <> ();
-      builder.keyCodec(new StringCodec()).valueCodec(new IntCodec()).filePath(absPath(fName));
-      builder.maxBlocks(VAL_BLKS).maxIndexBlocks(IDX_BLKS).valueBlockSize(VAL_BLK_SIZE).indexBlockSize(IDX_BLK_SIZE);
-      builder.blobValues(false).memoryMappedValues(false).memoryIndex(true);
-      return new DiscBasedMap<>(builder);
+      return (DiscMap<String,Integer>) init();
     }
 
     @Override
