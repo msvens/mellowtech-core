@@ -16,11 +16,10 @@
 
 package org.mellowtech.core.sort;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.*;
+import static org.junit.jupiter.api.Assertions.*;
+
 import org.mellowtech.core.codec.StringCodec;
-import org.mellowtech.core.sort.DiscBasedSort;
 import org.mellowtech.core.util.DelDir;
 import org.mellowtech.core.util.Platform;
 
@@ -36,8 +35,6 @@ import java.util.Collections;
 import java.util.Scanner;
 import java.util.regex.Pattern;
 
-import static junit.framework.Assert.*;
-
 /**
  * Date: 2013-01-20
  * Time: 16:55
@@ -51,7 +48,8 @@ public class DiscBasedSortTest {
   public static ArrayList <String> stringList;
   public static StringCodec codec = new StringCodec();
 
-  @Before public void before() throws Exception{
+  @BeforeEach
+  public void before() throws Exception{
     //CBString.setLocale(new Locale("sv"));
     String file = LONG_TEXT ? "longText.txt" : "shortText.txt";
 
@@ -81,12 +79,14 @@ public class DiscBasedSortTest {
     sortDir.mkdirs();
   }
 
-  @After
+  @AfterEach
   public void after(){
     DelDir.d(Platform.getTempDir().resolve("sort"));
   }
 
-  @Test public void testQuickSort() throws Exception{
+  @Test
+  @DisplayName("disc based sort")
+  public void testQuickSort() throws Exception{
     DiscBasedSort <String> discBasedSort = new DiscBasedSort <> (codec, 1024,4096,1,Platform.getTempDir().resolve("sort"));
     //stringBuffer.flip();
     ByteArrayOutputStream bos = new ByteArrayOutputStream();

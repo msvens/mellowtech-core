@@ -16,13 +16,10 @@
 
 package org.mellowtech.core.sort;
 
-import junit.framework.Assert;
+import org.junit.jupiter.api.*;
+import static org.junit.jupiter.api.Assertions.*;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
 import org.mellowtech.core.codec.StringCodec;
-import org.mellowtech.core.sort.EDiscBasedSort;
 import org.mellowtech.core.util.DelDir;
 import org.mellowtech.core.util.Platform;
 
@@ -44,8 +41,8 @@ public class EDiscBasedSortTest {
   public static ByteBuffer stringBuffer;
   public static ArrayList <String> stringList;
 
-  @Before public void before() throws Exception{
-
+  @BeforeEach
+  public void before() throws Exception{
     //CBString.setLocale(new Locale("sv"));
     String file = LONG_TEXT ? "longText.txt" : "shortText.txt";
     StringCodec codec = new StringCodec();
@@ -73,12 +70,14 @@ public class EDiscBasedSortTest {
     sortDir.mkdirs();
   }
 
-  @After
+  @AfterEach
   public void after(){
     DelDir.d(Platform.getTempDir().resolve("sort"));
   }
 
-  @Test public void testQuickSort() throws Exception{
+  @Test
+  @DisplayName("disc based sort with byte coppare")
+  public void testQuickSort() throws Exception{
     StringCodec codec = new StringCodec();
     EDiscBasedSort <String> edb = new EDiscBasedSort<>(codec,4096,4096*2,1,Platform.getTempDir().resolve("sort"));
     ByteArrayOutputStream bos = new ByteArrayOutputStream();
@@ -93,7 +92,7 @@ public class EDiscBasedSortTest {
     String tStr;
     for(String str : stringList){
       tStr = codec.from(sorted);
-      Assert.assertEquals(str, tStr);
+      assertEquals(str, tStr);
     }
   }
 }
