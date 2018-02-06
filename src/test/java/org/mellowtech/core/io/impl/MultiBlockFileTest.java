@@ -16,8 +16,10 @@
 
 package org.mellowtech.core.io.impl;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.*;
+import static org.junit.jupiter.api.Assertions.*;
+
+import org.junit.jupiter.api.DisplayName;
 import org.mellowtech.core.io.RecordFile;
 
 import java.io.IOException;
@@ -30,6 +32,7 @@ import java.nio.file.Paths;
  *
  * @author Martin Svensson
  */
+@DisplayName("A Multiblockfile ")
 public class MultiBlockFileTest extends RecordFileTemplate {
 
 
@@ -55,74 +58,52 @@ public class MultiBlockFileTest extends RecordFileTemplate {
     return new MultiBlockFile(blockSize*2, blockSize, reserve, fname);
   }
 
-  /****overwritten tests****/
-  @Test
-  @Override
-  public void oneClear() throws IOException {
-    rf.insert(testBlock);
-    rf.clear();
-    Assert.assertTrue(rf.fileSize() == blockSize*2);
-    Assert.assertEquals(0, rf.size());
-  }
 
   @Test
-  @Override
-  public void zeroClear() throws IOException{
-    rf.clear();
-    Assert.assertTrue(rf.fileSize() == blockSize*2);
-    Assert.assertEquals(0, rf.size());
-  }
-
-  @Test
-  @Override
-  public void allClear() throws Exception{
-    fillFile();
-    rf.clear();
-    Assert.assertTrue(rf.fileSize() == blockSize*2);
-    Assert.assertEquals(0, rf.size());
-  }
-
-  @Test
-  @Override
-  public void lastClear() throws IOException{
-    rf.insert(maxBlocks-1, testBlock);
-    rf.clear();
-    Assert.assertTrue(rf.fileSize() == blockSize*2);
-    Assert.assertEquals(0, rf.size());
-  }
-
-  @Test
-  @Override
-  public void lastFree() throws Exception{
-    rf.insert(maxBlocks-1, testBlock);
-    Assert.assertEquals(Integer.MAX_VALUE - 1, rf.getFreeBlocks());
-  }
-
-  @Test
-  @Override
-  public void allFree() throws Exception{
-    fillFile();
-    Assert.assertEquals(Integer.MAX_VALUE-maxBlocks, rf.getFreeBlocks());
-  }
-
   @Override
   public void reserveSize() throws IOException{
-    Assert.assertEquals(reserve, rf.getReserve().length);
+    assertEquals(reserve, rf.getReserve().length);
   }
 
-  //dont expect any exceptions
-  @Override
-  @Test
-  public void insertInFull() throws Exception {
-    fillFile();
-    rf.insert(testBlock);
+  @Nested
+  @DisplayName("Full file ")
+  class All extends RecordFileTemplate.All {
+
+    @Override
+    @Test
+    public void allFree() throws Exception{
+      fillFile();
+      assertEquals(Integer.MAX_VALUE-maxBlocks, rf.getFreeBlocks());
+    }
   }
 
-  @Override
-  @Test
-  public void insertOutOfRange() throws Exception {
-    rf.insert(maxBlocks, testBlock);
+  @Nested
+  @DisplayName("Record file wit only last record used ")
+  class Last extends RecordFileTemplate.Last {
+    @Override
+    @Test
+    public void lastFree() throws Exception{
+      rf.insert(maxBlocks-1, testBlock);
+      assertEquals(Integer.MAX_VALUE - 1, rf.getFreeBlocks());
+    }
   }
 
+ @Nested
+ @DisplayName("Hanlding wrong input ")
+ class ErrorPath extends RecordFileTemplate.ErrorPath {
+
+    @Override
+    @Test
+    void insertInFull() throws Exception {
+      fillFile();
+      rf.insert(testBlock);
+    }
+
+    @Override
+    @Test
+    void insertOutOfRange() throws Exception {
+      rf.insert(maxBlocks, testBlock);
+    }
+  }
 
 }

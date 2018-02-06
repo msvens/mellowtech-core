@@ -16,66 +16,35 @@
 
 package org.mellowtech.core.collections.impl;
 
-import java.util.*;
 
+import org.junit.jupiter.api.DisplayName;
 import org.mellowtech.core.codec.IntCodec;
 import org.mellowtech.core.codec.StringCodec;
 import org.mellowtech.core.collections.BTreeBuilder;
 import org.mellowtech.core.collections.DiscMap;
-import org.mellowtech.core.collections.SortedDiscMapTemplate;
-
-
-
-import org.junit.jupiter.api.*;
-
+import org.mellowtech.core.collections.SortedDiscMap;
 
 /**
  * @author Martin Svensson
  */
-public class DiscBasedMapTest {
+@DisplayName("A SortedDiscBasedMap")
+class DiscBasedMapTest extends SortedDiscMapTemplate {
 
 
 
-
-  @Nested
-  @DisplayName("NonMemoryIndexMap should")
-  class BTreeIndexMap extends SortedDiscMapTemplate {
-
+  @Override
+  DiscMap<String, Integer> init() throws Exception {
     String fName = "discBasedBTreeIndexMap";
-
-    @Override
-    public DiscMap<String, Integer> reopen() throws Exception {
-      return (DiscMap<String,Integer>) init();
-    }
-
-    @Override
-    public Map<String, Integer> init() throws Exception {
-      BTreeBuilder<String,Integer> builder = new BTreeBuilder();
-      builder.keyCodec(new StringCodec()).valueCodec(new IntCodec()).filePath(absPath(fName));
-      builder.maxBlocks(VAL_BLKS).maxIndexBlocks(IDX_BLKS).valueBlockSize(VAL_BLK_SIZE).indexBlockSize(IDX_BLK_SIZE);
-      builder.blobValues(false).memoryMappedValues(false).memoryIndex(false);
-      return new DiscBasedMap<>(builder);
-    }
+    BTreeBuilder<String,Integer> builder = new BTreeBuilder<>();
+    builder.keyCodec(new StringCodec()).valueCodec(new IntCodec()).filePath(absPath(fName));
+    builder.maxBlocks(VAL_BLKS).maxIndexBlocks(IDX_BLKS).valueBlockSize(VAL_BLK_SIZE).indexBlockSize(IDX_BLK_SIZE);
+    builder.blobValues(false).memoryMappedValues(false).memoryIndex(true);
+    return new DiscBasedMap<>(builder);
   }
 
-  @Nested
-  @DisplayName("MemoryIndexMap should")
-  class MemoryIndexMap extends SortedDiscMapTemplate {
-
-    String fName = "meemoryIndexMap";
-
-    @Override
-    public DiscMap<String, Integer> reopen() throws Exception {
-      return (DiscMap<String,Integer>) init();
-    }
-
-    @Override
-    public Map<String, Integer> init() throws Exception {
-      BTreeBuilder<String,Integer> builder = new BTreeBuilder();
-      builder.keyCodec(new StringCodec()).valueCodec(new IntCodec()).filePath(absPath(fName));
-      builder.maxBlocks(VAL_BLKS).maxIndexBlocks(IDX_BLKS).valueBlockSize(VAL_BLK_SIZE).indexBlockSize(IDX_BLK_SIZE);
-      builder.blobValues(false).memoryMappedValues(false).memoryIndex(true);
-      return new DiscBasedMap<>(builder);
-    }
+  @Override
+  DiscMap<String, Integer> reopen() throws Exception {
+    return init();
   }
+
 }

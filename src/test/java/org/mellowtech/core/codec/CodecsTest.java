@@ -5,20 +5,21 @@ package org.mellowtech.core.codec;
  * @since 2017-01-30
  */
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.*;
+import static org.junit.jupiter.api.Assertions.*;
 
+@DisplayName("Codecs should")
 public class CodecsTest {
 
-  @Test public void getStringCodec(){
-    Assert.assertTrue(Codecs.fromClass(String.class) instanceof StringCodec);
-    Assert.assertTrue(Codecs.type("") instanceof StringCodec);
+  @Test void getStringCodec(){
+    assertTrue(Codecs.fromClass(String.class) instanceof StringCodec);
+    assertTrue(Codecs.type("") instanceof StringCodec);
   }
 
-  @Test public void getChangeStringCodec(){
+  @Test void getChangeStringCodec(){
     Codecs.addMapping(String.class, new StringCodec2());
-    Assert.assertTrue(Codecs.fromClass(String.class) instanceof StringCodec2);
-    Assert.assertTrue(Codecs.type("") instanceof StringCodec2);
+    assertTrue(Codecs.fromClass(String.class) instanceof StringCodec2);
+    assertTrue(Codecs.type("") instanceof StringCodec2);
     Codecs.clearMappings();
   }
 }

@@ -19,7 +19,6 @@ package org.mellowtech.core.io.impl;
 import org.mellowtech.core.io.RecordFile;
 
 import java.nio.file.Path;
-import java.nio.file.Paths;
 
 /**
  * Date: 2013-03-11

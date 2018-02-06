@@ -16,33 +16,31 @@
 
 package org.mellowtech.core.collections.impl;
 
+import org.junit.jupiter.api.DisplayName;
 import org.mellowtech.core.codec.IntCodec;
 import org.mellowtech.core.codec.StringCodec;
-import org.mellowtech.core.collections.BTree;
-import org.mellowtech.core.collections.BTreeTemplate;
+import org.mellowtech.core.collections.BMap;
 import org.mellowtech.core.io.RecordFileBuilder;
 
 import java.nio.file.Path;
-import java.nio.file.Paths;
 
 
 /**
  * @author Martin Svensson
  */
-public class BTreeImpMappedBlobTest extends BTreeTemplate {
+@DisplayName("A Mem BTreeImpBlob")
+class BTreeImpMappedBlobTest extends BTreeTemplate {
 
   @Override
-  public String fName() {
+  String fName() {
     return "btreeimptwofilemappedblob";
   }
 
-  static Path getDir(Path fName){
-    return fName.getParent();
-  }
 
   @Override
-  public BTree<String, Integer> init(Path fileName, int valueBlockSize, int indexBlockSize,
-                                      int maxValueBlocks, int maxIndexBlocks) throws Exception{
+  BMap<String, Integer> init(Path fileName, int bucketSize, int maxBuckets,
+                             int indexBlockSize, int valueBlockSize,
+                             int maxIndexBlocks, int maxValueBlocks) throws Exception {
 
     RecordFileBuilder builder = new RecordFileBuilder().mem().
         blockSize(valueBlockSize).maxBlocks(maxValueBlocks);
@@ -51,17 +49,5 @@ public class BTreeImpMappedBlobTest extends BTreeTemplate {
         indexBlockSize,maxIndexBlocks, builder);
 
   }
-  @Override
-  public BTree<String, Integer> reopen(Path fileName,int valueBlockSize, int indexBlockSize,
-                                                        int maxValueBlocks, int maxIndexBlocks) throws Exception{
-
-    RecordFileBuilder builder = new RecordFileBuilder().mem().
-        blockSize(valueBlockSize).maxBlocks(maxValueBlocks);
-
-    return new BTreeBlobImp<>(getDir(fileName), fName(), new StringCodec(), new IntCodec(),
-        indexBlockSize,maxIndexBlocks, builder);
-
-  }
-
 
 }

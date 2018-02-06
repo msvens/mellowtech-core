@@ -16,25 +16,23 @@
 
 package org.mellowtech.core.collections.impl;
 
+import org.junit.jupiter.api.DisplayName;
 import org.mellowtech.core.codec.IntCodec;
 import org.mellowtech.core.codec.StringCodec;
 import org.mellowtech.core.collections.BTreeBuilder;
 import org.mellowtech.core.collections.DiscMap;
-import org.mellowtech.core.collections.SortedDiscMapTemplate;
-
-import java.util.Map;
 
 
 /**
  * @author Martin Svensson
  */
-public class DiscBasedBlobMapTest extends SortedDiscMapTemplate {
-
-  String fName = "discBasedMap";
+@DisplayName("A SortedBlobDiscMap")
+class DiscBasedBlobMapTest extends SortedDiscMapTemplate {
 
 
   @Override
-  public DiscMap<String, Integer> reopen() throws Exception {
+  DiscMap<String, Integer> init() throws Exception {
+    String fName = "sortedDiscBasedBlobMap";
     BTreeBuilder<String,Integer> builder = new BTreeBuilder<>();
     builder.keyCodec(new StringCodec()).valueCodec(new IntCodec()).filePath(absPath(fName));
     builder.maxBlocks(VAL_BLKS).maxIndexBlocks(IDX_BLKS).valueBlockSize(VAL_BLK_SIZE).indexBlockSize(IDX_BLK_SIZE);
@@ -43,11 +41,12 @@ public class DiscBasedBlobMapTest extends SortedDiscMapTemplate {
   }
 
   @Override
-  public Map<String, Integer> init() throws Exception {
-    BTreeBuilder<String,Integer> builder = new BTreeBuilder<>();
+  DiscMap<String, Integer> reopen() throws Exception {
+    return init();
+    /*BTreeBuilder<String,Integer> builder = new BTreeBuilder<>();
     builder.keyCodec(new StringCodec()).valueCodec(new IntCodec()).filePath(absPath(fName));
     builder.maxBlocks(VAL_BLKS).maxIndexBlocks(IDX_BLKS).valueBlockSize(VAL_BLK_SIZE).indexBlockSize(IDX_BLK_SIZE);
     builder.blobValues(true).memoryMappedValues(false);
-    return new DiscBasedMap<>(builder);
+    return new DiscBasedMap<>(builder);*/
   }
 }

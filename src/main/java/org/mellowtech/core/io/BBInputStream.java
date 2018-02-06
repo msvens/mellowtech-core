@@ -21,6 +21,8 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 
 /**
+ * Byte Buffer backed input stream
+ *
  * @author msvens
  *
  */

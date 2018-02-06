@@ -16,6 +16,7 @@
 
 package org.mellowtech.core.io.impl;
 
+import org.junit.jupiter.api.DisplayName;
 import org.mellowtech.core.io.RecordFile;
 import org.mellowtech.core.io.SplitRecordFile;
 
@@ -28,6 +29,7 @@ import java.nio.file.Paths;
  *
  * @author Martin Svensson
  */
+@DisplayName("A MemSplitBlockFile")
 public class MemSplitBlockFileTest extends SplitRecordFileTemplate{
 
   @Override

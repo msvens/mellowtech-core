@@ -16,12 +16,11 @@
 
 package org.mellowtech.core.io.impl;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.*;
+import static org.junit.jupiter.api.Assertions.*;
 import org.mellowtech.core.io.RecordFile;
 
 import java.nio.file.Path;
-import java.nio.file.Paths;
 
 /**
  * Created by msvens on 28/10/15.
@@ -49,12 +48,10 @@ public class VariableRecordFileTest extends RecordFileTemplate {
     return new VariableRecordFile(fname);
   }
 
-  /**
-   * A VariableRecordFile does not have blocks in that sense
-   */
   @Test
+  @Override
   public void blockSize(){
-    Assert.assertEquals(0, rf.getBlockSize());
+    assertEquals(0, rf.getBlockSize());
   }
 
 }

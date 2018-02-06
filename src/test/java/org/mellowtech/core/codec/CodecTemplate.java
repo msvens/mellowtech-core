@@ -15,12 +15,12 @@
  */
 
 package org.mellowtech.core.codec;
-import org.junit.Assert;
-import org.junit.Test;
+
+import org.junit.jupiter.api.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.lang.reflect.Constructor;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
@@ -33,32 +33,32 @@ import java.nio.channels.WritableByteChannel;
 public abstract class CodecTemplate<A> {
 
 
-  public abstract A val(int idx);
-  public abstract int size(int idx);
-  public abstract BCodec<A> codec();
+  abstract A val(int idx);
+  abstract int size(int idx);
+  abstract BCodec<A> codec();
 
 
   @Test
-  public void testByteSize() throws Exception{
+  void testByteSize() throws Exception{
     //B b = newB(0);
-    Assert.assertEquals(size(0),codec().byteSize(val(0)));
+    assertEquals(size(0),codec().byteSize(val(0)));
   }
 
   @Test
-  public void testByteSizeBuffer() throws Exception{;
+  void testByteSizeBuffer() throws Exception{;
     ByteBuffer bb = codec().to(val(0));
     bb.flip();
-    Assert.assertEquals(size(0), codec().byteSize(bb));
+    assertEquals(size(0), codec().byteSize(bb));
   }
 
   @Test
-  public void testDeepCopy() throws Exception {
+  void testDeepCopy() throws Exception {
     A a = codec().deepCopy(val(0));
-    Assert.assertNotNull(a);
+    assertNotNull(a);
   }
 
   @Test
-  public void testFromArray() throws Exception {
+  void testFromArray() throws Exception {
     A a = val(0);
     byte array[] = new byte[codec().byteSize(a)];
     codec().to(a, array, 0);
@@ -66,26 +66,26 @@ public abstract class CodecTemplate<A> {
   }
 
   @Test
-  public void testFromBuffer() throws Exception {
+  void testFromBuffer() throws Exception {
     A a = val(0);
     ByteBuffer bb = codec().to(a);
     bb.flip();
     codec().from(bb);
-    //Assert.assertEquals(values[0], b1.get());
+    //assertEquals(values[0], b1.get());
   }
 
   @Test
-  public void testFromStream() throws Exception {
+  void testFromStream() throws Exception {
     A a = val(0);
     byte array[] = new byte[codec().byteSize(a)];
     codec().to(a, array, 0);
     ByteArrayInputStream stream = new ByteArrayInputStream(array);
     codec().from(stream);
-    //Assert.assertEquals(values[0], b1.get());
+    //assertEquals(values[0], b1.get());
   }
 
   @Test
-  public void testFromChannel() throws Exception {
+  void testFromChannel() throws Exception {
     A a = val(0);
     byte array[] = new byte[codec().byteSize(a)];
     codec().to(a, array, 0);
@@ -95,28 +95,28 @@ public abstract class CodecTemplate<A> {
   }
 
   @Test
-  public void testTo() throws Exception {
+  void testTo() throws Exception {
     A a = val(0);
     ByteBuffer bb = codec().to(a);
-    Assert.assertEquals(size(0), bb.capacity());
+    assertEquals(size(0), bb.capacity());
   }
 
   @Test
-  public void testToArray() throws Exception {
+  void testToArray() throws Exception {
     A a = val(0);
     byte array[] = new byte[codec().byteSize(a)];
     codec().to(a, array, 0);
   }
 
   @Test
-  public void testToStream() throws Exception {
+  void testToStream() throws Exception {
     A a = val(0);
     ByteArrayOutputStream bos = new ByteArrayOutputStream(codec().byteSize(a));
     codec().to(a, bos);
   }
 
   @Test
-  public void testToChannel() throws Exception {
+  void testToChannel() throws Exception {
     A a = val(0);
     ByteArrayOutputStream bos = new ByteArrayOutputStream(codec().byteSize(a));
     WritableByteChannel channel = Channels.newChannel(bos);

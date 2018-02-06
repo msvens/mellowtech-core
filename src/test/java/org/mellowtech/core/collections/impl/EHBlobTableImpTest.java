@@ -16,33 +16,40 @@
 
 package org.mellowtech.core.collections.impl;
 
+import org.junit.jupiter.api.DisplayName;
 import org.mellowtech.core.codec.IntCodec;
 import org.mellowtech.core.codec.StringCodec;
 import org.mellowtech.core.collections.BMap;
-import org.mellowtech.core.collections.BMapTemplate;
 
 import java.nio.file.Path;
-import java.nio.file.Paths;
 
 /**
  * Created by msvens on 05/11/15.
  */
-public class EHBlobTableImpTest extends BMapTemplate {
+@DisplayName("A EHBlobTable")
+class EHBlobTableImpTest extends BMapTemplate {
 
   @Override
-  public String fName() {
+  String fName() {
     return "ehtableimp";
   }
 
   @Override
-  public BMap<String, Integer> init(Path fileName, int bucketSize, int maxBuckets) throws Exception{
+  BMap<String, Integer> init(Path fileName, int bucketSize, int maxBuckets,
+                             int indexBlockSize, int valueBlockSize,
+                             int maxIndexBlocks, int maxValueBlocks) throws Exception {
+
     return new EHBlobTableImp<>(fileName, new StringCodec(), new IntCodec(), false, bucketSize, maxBuckets);
+
   }
 
   @Override
-  public BMap<String, Integer> reopen(Path fileName) throws Exception{
+  BMap<String, Integer> reopen(Path fileName, int bucketSize, int maxBuckets,
+                               int indexBlockSize, int valueBlockSize,
+                               int maxIndexBlocks, int maxValueBlocks) throws Exception {
+
     return new EHBlobTableImp<>(fileName, new StringCodec(), new IntCodec(), false, -1, -1);
 
-    //return new EHBlobTableImp<>(fileName, new StringCodec(), new IntCodec(), false);
   }
+
 }
