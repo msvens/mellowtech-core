@@ -29,7 +29,7 @@ import java.util.*;
 import java.util.Map.Entry;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public abstract class DiscMapTemplate{
+abstract class DiscMapTemplate{
 
   DiscMap<String, Integer> map;
 

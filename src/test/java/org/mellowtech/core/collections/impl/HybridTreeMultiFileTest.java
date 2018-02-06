@@ -16,9 +16,10 @@
 
 package org.mellowtech.core.collections.impl;
 
+import org.junit.jupiter.api.DisplayName;
 import org.mellowtech.core.codec.IntCodec;
 import org.mellowtech.core.codec.StringCodec;
-import org.mellowtech.core.collections.BTree;
+import org.mellowtech.core.collections.BMap;
 import org.mellowtech.core.io.RecordFileBuilder;
 
 import java.nio.file.Path;
@@ -27,38 +28,26 @@ import java.nio.file.Path;
  * @author msvens
  * @since 02/07/16
  */
-public class HybridTreeMultiFileTest extends BTreeTemplate {
+@DisplayName("A HybridTree with MultiFile")
+class HybridTreeMultiFileTest extends BTreeTemplate {
 
 
   public static final int MultiFileSize = 1024*1024*4;
+
   @Override
   public String fName() {
     return "hybridtreemultifile";
   }
 
-  static Path getDir(Path fName){
-    return fName.getParent();
-  }
-
   @Override
-  public BTree<String, Integer> init(Path fileName, int valueBlockSize,
-                                                      int indexBlockSize, int maxValueBlocks,
-                                                      int maxIndexBlocks) throws Exception {
+  BMap<String, Integer> init(Path fileName, int bucketSize, int maxBuckets,
+                             int indexBlockSize, int valueBlockSize,
+                             int maxIndexBlocks, int maxValueBlocks) throws Exception {
 
     RecordFileBuilder builder = new RecordFileBuilder().multi().blockSize(valueBlockSize).
         multiFileSize(MultiFileSize);
-
     return new HybridTree<>(getDir(fileName), fName(), new StringCodec(), new IntCodec(), builder);
+
   }
 
-  @Override
-  public BTree<String, Integer> reopen(Path fileName,int valueBlockSize,
-                                                        int indexBlockSize, int maxValueBlocks,
-                                                        int maxIndexBlocks) throws Exception {
-
-    RecordFileBuilder builder = new RecordFileBuilder().multi().blockSize(valueBlockSize).
-        multiFileSize(MultiFileSize);
-
-    return new HybridTree<>(getDir(fileName), fName(), new StringCodec(), new IntCodec(), builder);
-  }
 }
