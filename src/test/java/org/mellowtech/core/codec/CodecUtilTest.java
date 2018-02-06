@@ -16,8 +16,8 @@
 
 package org.mellowtech.core.codec;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 
 import java.nio.ByteBuffer;
@@ -26,278 +26,290 @@ import java.nio.ByteBuffer;
  * @author msvens
  *
  */
-public class CodecUtilTest {
+class CodecUtilTest {
   
   @Test
-  public void separateIntSecondSmaller() {
+  void separateIntSecondSmaller() {
     int a = 2, b = 1;
-    Assert.assertEquals(2, (int) CodecUtil.separate(a,b, new IntCodec()));
+    assertEquals(2, (int) CodecUtil.separate(a,b, new IntCodec()));
   }
   
   @Test
-  public void separateIntFirstSmaller() {
+  void separateIntFirstSmaller() {
     int a = 1, b = 2;
-    Assert.assertEquals(2, (int) CodecUtil.separate(a,b, new IntCodec()));
+    assertEquals(2, (int) CodecUtil.separate(a,b, new IntCodec()));
   }
   
   @Test
-  public void separateIntEquals() {
+  void separateIntEquals() {
     int a = 1, b = 1;
-    Assert.assertEquals(1, (int) CodecUtil.separate(a,b, new IntCodec()));
+    assertEquals(1, (int) CodecUtil.separate(a,b, new IntCodec()));
   }
   
   @Test
-  public void separateCharArraySecondSmaller() {
+  void separateCharArraySecondSmaller() {
     char[] a = "acd".toCharArray(), b = "abc".toCharArray();
-    Assert.assertEquals("ac", new String(CodecUtil.separate(a,b, new CharArrayCodec())));
+    assertEquals("ac", new String(CodecUtil.separate(a,b, new CharArrayCodec())));
   }
   
   @Test
-  public void separateCharArrayFirstSmaller() {
+  void separateCharArrayFirstSmaller() {
     char[] a = "abc".toCharArray(), b = "acd".toCharArray();
-    Assert.assertEquals("ac", new String(CodecUtil.separate(a,b, new CharArrayCodec())));
+    assertEquals("ac", new String(CodecUtil.separate(a,b, new CharArrayCodec())));
   }
   
   @Test
-  public void separateCharArrayEquals() {
+  void separateCharArrayEquals() {
     char[] a = "abc".toCharArray(), b = "abc".toCharArray();
-    Assert.assertEquals("abc", new String(CodecUtil.separate(a,b, new CharArrayCodec())));
+    assertEquals("abc", new String(CodecUtil.separate(a,b, new CharArrayCodec())));
   }
   
   @Test
-  public void separateStringSecondSmaller() {
+  void separateStringSecondSmaller() {
     String a = "acd", b = "abc";
-    Assert.assertEquals("ac", CodecUtil.separate(a,b, new StringCodec()));
+    assertEquals("ac", CodecUtil.separate(a,b, new StringCodec()));
   }
   
   @Test
-  public void separateStringFirstSmaller() {
+  void separateStringFirstSmaller() {
     String a = "abc", b = "acd";
-    Assert.assertEquals("ac", CodecUtil.separate(a,b, new StringCodec()));
+    assertEquals("ac", CodecUtil.separate(a,b, new StringCodec()));
   }
   
   @Test
-  public void separateStringsEquals() {
+  void separateStringsEquals() {
     String a = "abc", b = "abc";
-    Assert.assertEquals("abc", CodecUtil.separate(a,b, new StringCodec()));
+    assertEquals("abc", CodecUtil.separate(a,b, new StringCodec()));
   }
   
   @Test
-  public void slackOrSizeLessThanFour() {
+  void slackOrSizeLessThanFour() {
     ByteBuffer bb = ByteBuffer.allocate(12);
     bb.position(9);
-    Assert.assertEquals(-3, CodecUtil.slackOrSize(bb, new StringCodec()));
+    assertEquals(-3, CodecUtil.slackOrSize(bb, new StringCodec()));
   }
   
   @Test
-  public void slackOrSize(){
+  void slackOrSize(){
     StringCodec codec = new StringCodec();
     String str = "this is a test";
     ByteBuffer bb = new StringCodec().to(str);
     bb.flip();
-    Assert.assertEquals(codec.byteSize(str), CodecUtil.slackOrSize(bb, codec));
+    assertEquals(codec.byteSize(str), CodecUtil.slackOrSize(bb, codec));
   }
   
   @Test
-  public void slackOrSizeLessThanFully() {
+  void slackOrSizeLessThanFully() {
     StringCodec codec = new StringCodec();
     String str = "this is a test";
     ByteBuffer bb = new StringCodec().to(str);
     bb.flip();
     bb.limit(10);
-    Assert.assertEquals(-10, CodecUtil.slackOrSize(bb, codec));
+    assertEquals(-10, CodecUtil.slackOrSize(bb, codec));
   }
   
   @Test
-  public void copyToBeginning() {
+  void copyToBeginning() {
     ByteBuffer bb = ByteBuffer.allocate(12);
     bb.putInt(1);
     bb.putInt(2);
     bb.putInt(3);
     bb.position(8);
     CodecUtil.copyToBeginning(bb, 4);
-    Assert.assertEquals(4, bb.position());
-    Assert.assertEquals(3, bb.getInt(0));
+    assertEquals(4, bb.position());
+    assertEquals(3, bb.getInt(0));
   }
   
   @Test
-  public void encodedByteSize127(){
+  void encodedByteSize127(){
     int i = 0xFF >> 1;
-    Assert.assertEquals(i + 1, CodecUtil.byteSize(i, true));
+    assertEquals(i + 1, CodecUtil.byteSize(i, true));
   }
   
   @Test
-  public void encoddedByteSize255(){
+  void encoddedByteSize255(){
     int i = 0xFF;
-    Assert.assertEquals(i + 2, CodecUtil.byteSize(i, true));
+    assertEquals(i + 2, CodecUtil.byteSize(i, true));
   }
   
-  @Test(expected=IllegalArgumentException.class)
-  public void encodedByteSizeMAX(){
-    int i = Integer.MAX_VALUE;
-    CodecUtil.byteSize(i, true);
+  @Test
+  void encodedByteSizeMAX(){
+    assertThrows(IllegalArgumentException.class, () -> {
+      int i = Integer.MAX_VALUE;
+      CodecUtil.byteSize(i, true);
+    });
   }
   
-  @Test(expected=IllegalArgumentException.class)
-  public void encodedByteSizeNegative(){
+  @Test
+  void encodedByteSizeNegative(){
+    assertThrows(IllegalArgumentException.class, () -> {
     int i = -1;
     CodecUtil.byteSize(i, true);
+    });
   }
   
   @Test
-  public void encodeInt127(){
+  void encodeInt127(){
     int i = 0xFF >> 1;
     ByteBuffer bb = ByteBuffer.allocate(CodecUtil.encodeLength(i));
-    Assert.assertEquals(1, CodecUtil.encodeInt(i, bb));
+    assertEquals(1, CodecUtil.encodeInt(i, bb));
   }
   
   @Test
-  public void encodeInt255(){
+  void encodeInt255(){
     int i = 0xFF;
     ByteBuffer bb = ByteBuffer.allocate(CodecUtil.encodeLength(i));
-    Assert.assertEquals(2, CodecUtil.encodeInt(i, bb));
+    assertEquals(2, CodecUtil.encodeInt(i, bb));
   }
   
   @Test
-  public void encodeIntMax(){
+  void encodeIntMax(){
     int i = Integer.MAX_VALUE;
     ByteBuffer bb = ByteBuffer.allocate(CodecUtil.encodeLength(i));
-    Assert.assertEquals(CodecUtil.encodeLength(i), CodecUtil.encodeInt(i, bb));
-  }
-  
-  @Test(expected = IllegalArgumentException.class)
-  public void encodeIntMin(){
-    int i = Integer.MIN_VALUE;
-    ByteBuffer bb = ByteBuffer.allocate(CodecUtil.encodeLength(i));
-    Assert.assertEquals(CodecUtil.encodeLength(i), CodecUtil.encodeInt(i, bb));
+    assertEquals(CodecUtil.encodeLength(i), CodecUtil.encodeInt(i, bb));
   }
   
   @Test
-  public void encodeIntZero(){
+  void encodeIntMin(){
+    assertThrows(IllegalArgumentException.class, () -> {
+      int i = Integer.MIN_VALUE;
+      ByteBuffer bb = ByteBuffer.allocate(CodecUtil.encodeLength(i));
+      assertEquals(CodecUtil.encodeLength(i), CodecUtil.encodeInt(i, bb));
+    });
+  }
+  
+  @Test
+  void encodeIntZero(){
     int i = 0;
     ByteBuffer bb = ByteBuffer.allocate(CodecUtil.encodeLength(i));
-    Assert.assertEquals(CodecUtil.encodeLength(i), CodecUtil.encodeInt(i, bb));
+    assertEquals(CodecUtil.encodeLength(i), CodecUtil.encodeInt(i, bb));
   }
   
   @Test
-  public void encodeLong127(){
+  void encodeLong127(){
     long i = 0xFF >> 1;
     ByteBuffer bb = ByteBuffer.allocate(CodecUtil.encodeLength(i));
-    Assert.assertEquals(1, CodecUtil.encodeLong(i, bb));
+    assertEquals(1, CodecUtil.encodeLong(i, bb));
   }
   
   @Test
-  public void encodeLong255(){
+  void encodeLong255(){
     long i = 0xFF;
     ByteBuffer bb = ByteBuffer.allocate(CodecUtil.encodeLength(i));
-    Assert.assertEquals(2, CodecUtil.encodeLong(i, bb));
+    assertEquals(2, CodecUtil.encodeLong(i, bb));
   }
   
   @Test
-  public void encodeLongMax(){
+  void encodeLongMax(){
     long i = Long.MAX_VALUE;
     ByteBuffer bb = ByteBuffer.allocate(CodecUtil.encodeLength(i));
-    Assert.assertEquals(CodecUtil.encodeLength(i), CodecUtil.encodeLong(i, bb));
-  }
-  
-  @Test(expected = IllegalArgumentException.class)
-  public void encodeLongMin(){
-    long i = Long.MIN_VALUE;
-    ByteBuffer bb = ByteBuffer.allocate(CodecUtil.encodeLength(i));
-    Assert.assertEquals(CodecUtil.encodeLength(i), CodecUtil.encodeLong(i, bb));
+    assertEquals(CodecUtil.encodeLength(i), CodecUtil.encodeLong(i, bb));
   }
   
   @Test
-  public void encodeLongZero(){
+  void encodeLongMin(){
+    assertThrows(IllegalArgumentException.class, () -> {
+      long i = Long.MIN_VALUE;
+      ByteBuffer bb = ByteBuffer.allocate(CodecUtil.encodeLength(i));
+      assertEquals(CodecUtil.encodeLength(i), CodecUtil.encodeLong(i, bb));
+    });
+  }
+  
+  @Test
+  void encodeLongZero(){
     long i = 0;
     ByteBuffer bb = ByteBuffer.allocate(CodecUtil.encodeLength(i));
-    Assert.assertEquals(CodecUtil.encodeLength(i), CodecUtil.encodeLong(i, bb));
+    assertEquals(CodecUtil.encodeLength(i), CodecUtil.encodeLong(i, bb));
   }
   
   @Test
-  public void decodeInt127(){
+  void decodeInt127(){
     int i = 0xFF >> 1;
     ByteBuffer bb = ByteBuffer.allocate(CodecUtil.encodeLength(i));
     CodecUtil.encodeInt(i, bb);
     bb.flip();
-    Assert.assertEquals(i, CodecUtil.decodeInt(bb));
+    assertEquals(i, CodecUtil.decodeInt(bb));
   }
   
   @Test
-  public void decodeInt255(){
+  void decodeInt255(){
     int i = 0xFF;
     ByteBuffer bb = ByteBuffer.allocate(CodecUtil.encodeLength(i));
     CodecUtil.encodeInt(i, bb);
     bb.flip();
-    Assert.assertEquals(i, CodecUtil.decodeInt(bb));
+    assertEquals(i, CodecUtil.decodeInt(bb));
   }
   
   @Test
-  public void decodeIntMax(){
+  void decodeIntMax(){
     int i = Integer.MAX_VALUE;
     ByteBuffer bb = ByteBuffer.allocate(CodecUtil.encodeLength(i));
     CodecUtil.encodeInt(i, bb);
     bb.flip();
-    Assert.assertEquals(i, CodecUtil.decodeInt(bb));
-  }
-  
-  @Test(expected = IllegalArgumentException.class)
-  public void decodeIntMin(){
-    int i = Integer.MIN_VALUE;
-    ByteBuffer bb = ByteBuffer.allocate(CodecUtil.encodeLength(i));
-    CodecUtil.encodeInt(i, bb);
+    assertEquals(i, CodecUtil.decodeInt(bb));
   }
   
   @Test
-  public void decodeIntZero(){
+  void decodeIntMin(){
+    assertThrows(IllegalArgumentException.class, () -> {
+      int i = Integer.MIN_VALUE;
+      ByteBuffer bb = ByteBuffer.allocate(CodecUtil.encodeLength(i));
+      CodecUtil.encodeInt(i, bb);
+    });
+  }
+  
+  @Test
+  void decodeIntZero(){
     int i = 0;
     ByteBuffer bb = ByteBuffer.allocate(CodecUtil.encodeLength(i));
     CodecUtil.encodeInt(i, bb);
     bb.flip();
-    Assert.assertEquals(i, CodecUtil.decodeInt(bb));
+    assertEquals(i, CodecUtil.decodeInt(bb));
   }
   
   @Test
-  public void decodeLong127(){
+  void decodeLong127(){
     long i = 0xFF >> 1;
     ByteBuffer bb = ByteBuffer.allocate(CodecUtil.encodeLength(i));
     CodecUtil.encodeLong(i, bb);
     bb.flip();
-    Assert.assertEquals(i, CodecUtil.decodeLong(bb));
+    assertEquals(i, CodecUtil.decodeLong(bb));
   }
   
   @Test
-  public void decodeLong255(){
+  void decodeLong255(){
     long i = 0xFF;
     ByteBuffer bb = ByteBuffer.allocate(CodecUtil.encodeLength(i));
     CodecUtil.encodeLong(i, bb);
     bb.flip();
-    Assert.assertEquals(i, CodecUtil.decodeLong(bb));
+    assertEquals(i, CodecUtil.decodeLong(bb));
   }
   
   @Test
-  public void decodeLongMax(){
+  void decodeLongMax(){
     long i = Long.MAX_VALUE;
     ByteBuffer bb = ByteBuffer.allocate(CodecUtil.encodeLength(i));
     CodecUtil.encodeLong(i, bb);
     bb.flip();
-    Assert.assertEquals(i, CodecUtil.decodeLong(bb));
-  }
-  
-  @Test(expected = IllegalArgumentException.class)
-  public void decodeLongMin(){
-    long i = Long.MIN_VALUE;
-    ByteBuffer bb = ByteBuffer.allocate(CodecUtil.encodeLength(i));
-    CodecUtil.encodeLong(i, bb);
+    assertEquals(i, CodecUtil.decodeLong(bb));
   }
   
   @Test
-  public void decodeLongZero(){
+  void decodeLongMin(){
+    assertThrows(IllegalArgumentException.class, () -> {
+      long i = Long.MIN_VALUE;
+      ByteBuffer bb = ByteBuffer.allocate(CodecUtil.encodeLength(i));
+      CodecUtil.encodeLong(i, bb);
+    });
+  }
+  
+  @Test
+  void decodeLongZero(){
     long i = 0;
     ByteBuffer bb = ByteBuffer.allocate(CodecUtil.encodeLength(i));
     CodecUtil.encodeLong(i, bb);
     bb.flip();
-    Assert.assertEquals(i, CodecUtil.decodeLong(bb));
+    assertEquals(i, CodecUtil.decodeLong(bb));
   }
 
 }

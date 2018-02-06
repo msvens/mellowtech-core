@@ -16,8 +16,8 @@
 
 package org.mellowtech.core.codec;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.nio.ByteBuffer;
 
@@ -25,101 +25,101 @@ import java.nio.ByteBuffer;
  * @author msvens
  * @since 2017-01-27
  */
-public abstract  class CodecCompareTemplate<A> extends CodecTemplate<A> {
+abstract  class CodecCompareTemplate<A> extends CodecTemplate<A> {
 
   @Test
-  public void testEquals() throws Exception {
+  void testEquals(){
     A a = val(0);
     A b = codec().deepCopy(a);
-    Assert.assertTrue(codec().compare(a, b) == 0);
+    assertTrue(codec().compare(a, b) == 0);
   }
 
   @Test
-  public void testCompareToTSame() throws Exception {
+  void testCompareToTSame(){
     A a = val(0);
     A b = codec().deepCopy(a);
-    Assert.assertEquals(0, codec().compare(a,b));
+    assertEquals(0, codec().compare(a,b));
   }
 
   @Test
-  public void testCompareToLess() throws Exception {
+  void testCompareToLess(){
     A a = val(0);
     A b = val(1);
-    Assert.assertTrue(codec().compare(a,b) < 0);
+    assertTrue(codec().compare(a,b) < 0);
   }
 
   @Test
-  public void testByteCompareSameIBIBB() throws Exception {
+  void testByteCompareSameIBIBB(){
     byte[] a = codec().to(val(0)).array();
     ByteBuffer b = codec().to(val(0));
-    Assert.assertEquals(0, codec().byteCompare(0, a, 0, b));
+    assertEquals(0, codec().byteCompare(0, a, 0, b));
   }
 
   @Test
-  public void testByteCompareLessIBIBB() throws Exception {
+  void testByteCompareLessIBIBB(){
     byte[] a = codec().to(val(0)).array();
     ByteBuffer b = codec().to(val(1));
-    Assert.assertTrue(codec().byteCompare(0, a, 0, b) < 0);
+    assertTrue(codec().byteCompare(0, a, 0, b) < 0);
   }
 
   @Test
-  public void testByteCompareSameIBBIB() throws Exception {
+  void testByteCompareSameIBBIB(){
     ByteBuffer a = codec().to(val(0));
     byte[] b = codec().to(val(0)).array();
-    Assert.assertEquals(0, codec().byteCompare(0, a, 0, b));
+    assertEquals(0, codec().byteCompare(0, a, 0, b));
   }
 
   @Test
-  public void testByteCompareLessIBBIB() throws Exception {
+  void testByteCompareLessIBBIB(){
     ByteBuffer a = codec().to(val(0));
     byte[] b = codec().to(val(1)).array();
-    Assert.assertTrue(codec().byteCompare(0, a, 0, b) < 0);
+    assertTrue(codec().byteCompare(0, a, 0, b) < 0);
   }
 
   @Test
-  public void testByteCompareSameIBBIBB() throws Exception {
+  void testByteCompareSameIBBIBB(){
     ByteBuffer a = codec().to(val(0));
     ByteBuffer b = codec().to(val(0));
-    Assert.assertEquals(0, codec().byteCompare(0, a, 0, b));
+    assertEquals(0, codec().byteCompare(0, a, 0, b));
   }
 
   @Test
-  public void testByteCompareLessIBBIBB() throws Exception {
+  void testByteCompareLessIBBIBB(){
     ByteBuffer a = codec().to(val(0));
     ByteBuffer b = codec().to(val(1));
-    Assert.assertTrue(codec().byteCompare(0, a, 0, b) < 0);
+    assertTrue(codec().byteCompare(0, a, 0, b) < 0);
   }
 
   @Test
-  public void testByteCompareSameIIB() throws Exception {
+  void testByteCompareSameIIB(){
     ByteBuffer tmpBuff = ByteBuffer.allocate(size(0)*2);
     codec().to(val(0), tmpBuff);
     codec().to(val(0), tmpBuff);
-    Assert.assertEquals(0, codec().byteCompare(0, size(0), tmpBuff.array()));
+    assertEquals(0, codec().byteCompare(0, size(0), tmpBuff.array()));
   }
 
   @Test
-  public void testByteCompareLessIIB() throws Exception {
+  void testByteCompareLessIIB(){
     ByteBuffer tmpBuff = ByteBuffer.allocate(size(0)+size(1));
     codec().to(val(0), tmpBuff);
     codec().to(val(1), tmpBuff);
-    Assert.assertTrue(codec().byteCompare(0, size(0), tmpBuff.array()) < 0);
+    assertTrue(codec().byteCompare(0, size(0), tmpBuff.array()) < 0);
   }
 
   @Test
-  public void testByteCompareSameIIBB() throws Exception {
+  void testByteCompareSameIIBB(){
     ByteBuffer tmpBuff = ByteBuffer.allocate(size(0)*2);
     codec().to(val(0), tmpBuff);
     codec().to(val(0), tmpBuff);
-    Assert.assertEquals(0, codec().byteCompare(0, size(0), tmpBuff));
+    assertEquals(0, codec().byteCompare(0, size(0), tmpBuff));
   }
 
   @Test
-  public void testByteCompareLessIIBB() throws Exception {
+  void testByteCompareLessIIBB(){
     ByteBuffer tmpBuff = ByteBuffer.allocate(size(0)+size(1));
     codec().to(val(0), tmpBuff);
     codec().to(val(1), tmpBuff);
-    Assert.assertTrue(codec().byteCompare(0, size(0), tmpBuff) < 0);
+    assertTrue(codec().byteCompare(0, size(0), tmpBuff) < 0);
   }
 
 }
