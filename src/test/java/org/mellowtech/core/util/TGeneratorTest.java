@@ -16,15 +16,17 @@
 
 package org.mellowtech.core.util;
 
-import junit.framework.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.Iterator;
+import java.util.stream.IntStream;
 
 /**
  * Created by msvens on 22/12/15.
  */
-public class TGeneratorTest {
+@DisplayName("A TGenerator")
+class TGeneratorTest {
 
   final static String[] testArray = new String[]{
     "AAB", "AAC", "ABA", "ABB", "ABC",
@@ -36,38 +38,34 @@ public class TGeneratorTest {
   };
 
   @Test
-  public void testStringGeneration(){
+  void testStringGeneration(){
     Iterator<String> iter = TGenerator.of(String.class, 3, 'A', 'C', false);
-    for(int i = 0; i < testArray.length; i++){
-      Assert.assertEquals(testArray[i], iter.next());
-    }
+    IntStream.range(0, testArray.length).forEach(i -> assertEquals(testArray[i], iter.next()));
   }
   @Test
-  public void testCharGenerationMutable(){
+  void testCharGenerationMutable(){
     Iterator<char[]> iter = TGenerator.of(char[].class, 3, 'A', 'C', true);
-    for(int i = 0; i < testArray.length; i++){
-      Assert.assertEquals(testArray[i], new String(iter.next()));
+    for (String aTestArray : testArray) {
+      assertEquals(aTestArray, new String(iter.next()));
     }
   }
   @Test
-  public void testCharGeneration(){
+  void testCharGeneration(){
     Iterator<char[]> iter = TGenerator.of(char[].class, 3, 'A', 'C', false);
-    for(int i = 0; i < testArray.length; i++){
-      Assert.assertEquals(testArray[i], new String(iter.next()));
-    }
+    IntStream.range(0, testArray.length).forEach(i -> assertEquals(testArray[i], new String(iter.next())));
   }
   @Test
-  public void testByteGenerationMutable(){
+  void testByteGenerationMutable(){
     Iterator<byte[]> iter = TGenerator.of(byte[].class, 3, 'A', 'C', true);
-    for(int i = 0; i < testArray.length; i++){
-      Assert.assertEquals(testArray[i], new String(iter.next()));
+    for (String aTestArray : testArray) {
+      assertEquals(aTestArray, new String(iter.next()));
     }
   }
   @Test
-  public void testByteGeneration(){
+  void testByteGeneration(){
     Iterator<byte[]> iter = TGenerator.of(byte[].class, 3, 'A', 'C', false);
-    for(int i = 0; i < testArray.length; i++){
-      Assert.assertEquals(testArray[i], new String(iter.next()));
+    for (String aTestArray : testArray) {
+      assertEquals(aTestArray, new String(iter.next()));
     }
   }
 }
