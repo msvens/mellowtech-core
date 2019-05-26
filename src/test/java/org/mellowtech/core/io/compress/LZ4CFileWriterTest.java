@@ -25,7 +25,7 @@ import java.nio.file.Path;
  * @author msvens
  * @since 2018-03-24
  */
-@DisplayName("LZ4 CFileReader")
+@DisplayName("LZ4 CFileWriter")
 public class LZ4CFileWriterTest extends CFileWriterTemplate {
 
 

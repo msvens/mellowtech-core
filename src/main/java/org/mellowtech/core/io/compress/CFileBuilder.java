@@ -62,6 +62,10 @@ public class CFileBuilder {
     return this;
   }
 
+  public int blockSize(){
+    return blockSize;
+  }
+
   public CFileReader reader() throws IOException {
     read = true;
     write = false;

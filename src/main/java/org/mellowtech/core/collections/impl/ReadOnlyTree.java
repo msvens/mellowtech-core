@@ -22,7 +22,7 @@ import java.util.stream.Stream;
  * @author Martin Svensson {@literal <msvens@gmail.com>}
  * @since 3.0.7
  */
-public class HybridTree <A,B> implements BTree<A,B> {
+public class ReadOnlyTree<A,B> implements BTree<A,B> {
 
   protected final Path dir;
   protected final String name;
@@ -38,10 +38,10 @@ public class HybridTree <A,B> implements BTree<A,B> {
   private long modCount = 0;
 
 
-  public HybridTree(Path dir, String name,
-                    BCodec<A> keyCodec,
-                    BCodec<B> valueCodec,
-                    RecordFileBuilder valueFileBuilder){
+  public ReadOnlyTree(Path dir, String name,
+                      BCodec<A> keyCodec,
+                      BCodec<B> valueCodec,
+                      RecordFileBuilder valueFileBuilder){
     try {
       this.dir = dir;
       this.name = name;
@@ -70,20 +70,14 @@ public class HybridTree <A,B> implements BTree<A,B> {
 
   @Override
   public void createTree(Iterator<KeyValue<A,B>> iterator) throws IOException {
-    //truncate();
-
     if (!iterator.hasNext()) {
       truncate();
       return;
     }
-
-    modCount++;
     values.clear();
-    size = 0;
-    //rightPtr = newBlock(mapped).bNo;
     idx.clear();
 
-    HybridTree.Block<A,B> vb = newBlock(mapped);
+    ReadOnlyTree.Block<A,B> vb = newBlock(mapped);
 
     int s = 0;
     KeyValue<A,B> tmpKV;
@@ -160,11 +154,13 @@ public class HybridTree <A,B> implements BTree<A,B> {
 
   @Override
   public void put(A key, B value) throws IOException {
-    put(key,value, true);
+    throw new Error("Read Only Tree");
+    //put(key,value, true);
   }
 
   public void put(A key, B value, boolean update) {
-    KeyValue<A,B> kv = new KeyValue<>(key,value);
+    throw new Error("Read Only Tree");
+    /*KeyValue<A,B> kv = new KeyValue<>(key,value);
     try {
       Integer bNo = findBlock(kv.getKey());
       BBuffer<KeyValue<A,B>> block = getBlock(bNo);
@@ -183,7 +179,7 @@ public class HybridTree <A,B> implements BTree<A,B> {
         updateBlock(bNo, block);
         return;
       }
-      HybridTree.Block<A,B> vb = newBlock(mapped);
+      ReadOnlyTree.Block<A,B> vb = newBlock(mapped);
       block.split(vb.sb);
       if (kv.compareTo(block.getLast()) <= 0)
         block.insert(kv);
@@ -195,12 +191,13 @@ public class HybridTree <A,B> implements BTree<A,B> {
       addPointer(sep,vb.bNo);
     } catch (IOException e) {
       throw new Error(e);
-    }
+    }*/
   }
 
   @Override
   public void putIfNotExists(A key, B value){
-    put(key,value,false);
+    throw new Error("Read Only Tree");
+    //put(key,value,false);
   }
 
   @Override
@@ -217,20 +214,19 @@ public class HybridTree <A,B> implements BTree<A,B> {
 
     BBuffer<KeyValue<A,B>> tmp;
     @SuppressWarnings("unchecked")
-    HybridTree.FirstLastKey<A>[] blocks = new HybridTree.FirstLastKey[values.size()];
+    ReadOnlyTree.FirstLastKey<A>[] blocks = new ReadOnlyTree.FirstLastKey[values.size()];
     Iterator<Record> iter = values.iterator();
     int i = 0;
     int s = 0;
     while (iter.hasNext()) {
       Record r = iter.next();
       tmp = new BBuffer<>(ByteBuffer.wrap(r.data), kvCodec);
-      //System.out.println("iter.next "+this.dir+" "+this.name+" "+tmp.getNumberOfElements());
       if(tmp.getNumberOfElements() == 0)
         break;
       KeyValue<A,B> first = tmp.getFirst();
       KeyValue<A,B> last = tmp.getLast();
-      HybridTree.FirstLastKey<A> sl =
-          new HybridTree.FirstLastKey<>(first.getKey(), last.getKey(), r.record);
+      ReadOnlyTree.FirstLastKey<A> sl =
+          new ReadOnlyTree.FirstLastKey<>(first.getKey(), last.getKey(), r.record);
       blocks[i] = sl;
       i++;
       s += tmp.getNumberOfElements();
@@ -243,19 +239,19 @@ public class HybridTree <A,B> implements BTree<A,B> {
     rightPtr = blocks[0].bNo;
     size = s;
 
-    //System.out.println("blocks length: "+blocks.length);
     for (i = 0; i < blocks.length - 1; i++) {
-      HybridTree.FirstLastKey<A> left = blocks[i];
-      HybridTree.FirstLastKey<A> right = blocks[i + 1];
+      ReadOnlyTree.FirstLastKey<A> left = blocks[i];
+      ReadOnlyTree.FirstLastKey<A> right = blocks[i + 1];
 
       A sep = generateSeparator(left.last, right.first);
-      //System.out.println(left.last+" "+right.first+" "+sep);
       addPointer(sep, right.bNo);
     }
   }
 
   @Override
   public B remove(A key) throws IOException {
+    throw new Error("Read Only Tree");
+    /*
     try{
       modCount++;
       Map.Entry<A,Integer> entry = entry(key);
@@ -315,12 +311,12 @@ public class HybridTree <A,B> implements BTree<A,B> {
     }catch(IOException e){
       throw new Error(e);
     }
-
+    */
   }
 
   @Override
   public void save() throws IOException {
-    values.save();
+    //values.save();
   }
 
   @Override
@@ -330,11 +326,13 @@ public class HybridTree <A,B> implements BTree<A,B> {
 
   @Override
   public void truncate() throws IOException {
-    modCount++;
+    throw new Error("Read Only Tree");
+    /*modCount++;
     values.clear();
     size = 0;
     rightPtr = newBlock(mapped).bNo;
     idx.clear();
+    */
   }
 
 
@@ -369,7 +367,7 @@ public class HybridTree <A,B> implements BTree<A,B> {
         KeyValue<A,B> next = iter.next();
         if (prev.compareTo(next) >= 0) {
           System.out.println("wrong order: " + prev.getKey() + " " + next.getKey());
-          //return false;
+          return false;
         }
         prev = next;
       }
@@ -440,10 +438,10 @@ public class HybridTree <A,B> implements BTree<A,B> {
     return new MapEntry<>(i,cnt);
   }*/
 
-  private void deletePointer(Map.Entry<A,Integer> entry){
+  /*private void deletePointer(Map.Entry<A,Integer> entry){
     if(!idx.containsKey(entry.getKey())) throw new Error("key: "+entry.getKey()+" does not exist");
     idx.remove(entry.getKey());
-  }
+  }*/
 
   private Map.Entry<A,Integer> entry(A key){
     Map.Entry<A,Integer> ptr = idx.higherEntry(key);
@@ -526,7 +524,7 @@ public class HybridTree <A,B> implements BTree<A,B> {
     return idx.floorEntry(key);
   }
 
-  private HybridTree.Block<A,B> newBlock(boolean mapped) throws IOException {
+  private ReadOnlyTree.Block<A,B> newBlock(boolean mapped) throws IOException {
     int bNo;
     BBuffer<KeyValue<A,B>> buff;
     if (mapped) {
@@ -536,7 +534,7 @@ public class HybridTree <A,B> implements BTree<A,B> {
       buff = new BBuffer<>(values.getBlockSize(), kvCodec, BBuffer.PtrType.NORMAL);
       bNo = values.insert(buff.getArray());
     }
-    return new HybridTree.Block<>(buff, bNo);
+    return new ReadOnlyTree.Block<>(buff, bNo);
   }
 
   private void redistributeBlocks(BBuffer<KeyValue<A,B>> small,
@@ -578,7 +576,7 @@ public class HybridTree <A,B> implements BTree<A,B> {
     }
   }
 
-  static class FirstLastKey<A> implements Comparable<HybridTree.FirstLastKey<A>> {
+  static class FirstLastKey<A> implements Comparable<ReadOnlyTree.FirstLastKey<A>> {
     int bNo;
     A first;
     A last;
@@ -591,7 +589,7 @@ public class HybridTree <A,B> implements BTree<A,B> {
 
     @Override
     @SuppressWarnings("unchecked")
-    public int compareTo(HybridTree.FirstLastKey<A> o) {
+    public int compareTo(ReadOnlyTree.FirstLastKey<A> o) {
       return ((Comparable<? super A>)first).compareTo(o.first);
     }
 

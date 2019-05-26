@@ -19,13 +19,13 @@ public class BlockPointer {
 
 
 
-  static BlockPointer read(FileChannel fc, long offset) throws IOException{
+  public static BlockPointer read(FileChannel fc, long offset) throws IOException{
     ByteBuffer bb = ByteBuffer.allocate(12);
     fc.read(bb, offset);
     return read(bb, 0, offset);
   }
 
-  static BlockPointer read(ByteBuffer bb, int bufferOffset, long fileOffset) throws IOException{
+  public static BlockPointer read(ByteBuffer bb, int bufferOffset, long fileOffset) throws IOException{
     int type = bb.getInt(bufferOffset);
     int size = bb.getInt(bufferOffset+4);
     int origSize = bb.getInt(bufferOffset+8);
@@ -36,6 +36,10 @@ public class BlockPointer {
     else if(type != CFile.BLOCK)
       throw new IOException("Could not read block");
     return new BlockPointer(fileOffset, size, origSize, deleted);
+  }
+
+  public static BlockPointer empty(){
+    return new BlockPointer(-1, -1, -1, false);
   }
 
 
