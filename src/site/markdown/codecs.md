@@ -1,4 +1,4 @@
-#Overview
+# Overview
 As was explained in the introduction Mellowtech Core is basically an API
 for supporting the developer in situations when in memory is not enough,
 e.g. objects needs to have a byte based representation.
@@ -19,7 +19,7 @@ Before we go on you should note that you would typically not have to create your
 own Codecs since the API has built in support for the most common types
 
 
-##Using built in codecs
+## Using built in codecs
 
 The primitive types in Mellowtech core are
 
@@ -103,7 +103,7 @@ Object copy = codec.deepCopy(someObject);
 ```
 
 
-##Serializing complex types
+## Serializing complex types
 
 For most situations the built-in codecs are enough. However, if
 you need a more complex structure you will have to implement your own codec. Again,
@@ -112,7 +112,7 @@ typically offers better performance. _BCodec_ and _CodecUtil_
 contains methods to assist the developer. At a minimum you are
 required to implement four methods in your custom codec.
 
-###Subclassing BCodec
+### Subclassing BCodec
 
 Lets implement a Codec that serializes a class that contains an integer and string. We start with
 implementing the container
@@ -190,7 +190,7 @@ A couple of important things to note when you define your own codecs
 	not change the position in the ByteBuffer (that is why we used the utility
 	function _CodecUtil.peekSize_
 
-###Using BRecord
+### Using BRecord
 
 As an alternative to the above pattern where you implement your own codec you can use the _RecordCodec_ to 
 serialize complex types.
@@ -229,7 +229,7 @@ Then using _RecordCodec_ you can do the following
 As long as the objects you want to serialize only contain primitive fields it is 
 recommended to use the BRecord/RecordCodec pattern.
 
-##Comparing Objects on a Byte Level
+## Comparing Objects on a Byte Level
 
 The original (and still) main purpose of the Mellowtech Core library
 was to offer functionality to sort and store objects on disc. In order

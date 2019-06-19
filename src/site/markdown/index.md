@@ -1,4 +1,4 @@
-#Overview
+# Overview
 
 Mellowtech Core is a set of components that we use for working with disc based
 and byte based manipulation of Objects. It is typically useful for any scenario
@@ -20,9 +20,9 @@ a lot of changes and enhancements and is now maintained and developed by mellowt
 
 Go to the detailed descriptions for usage instructions
 
-##Releases
+## Releases
 
-###3.0.7
+### 3.0.7
 * Added [HybridTree](https://github.com/msvens/mellowtech-core/blob/master/src/main/java/org/mellowtech/core/collections/impl/HybridTree.java). This tree
 keeps the index totally in memory using a java treemap that is rebuilt every time the Tree is opened. The
 hybridtree offers very good performance and is also robust because there is no complicated logic to ensure
@@ -34,18 +34,18 @@ bytes indicating if the block has been deleted. This marker will likely increase
 the likelyhood of actual data being read as the deleted marker
 * Fixed Bug that broke the BTreeMap iterators when specifing an exclusive from key.
 
-###3.0.3 - Hardening
+### 3.0.3 - Hardening
 * Added extensive unit testing for key classes. Around 1000 tests were added
 * Added proper support of java Map and NavigableMap Apis. Now Map views are proper views of the underlying disc map
 * Continued deprecation of old and unused classes
 * Refactored collections package with a more clean separation of Api and implementation
 
-###3.0.2 - To Maven Official
+### 3.0.2 - To Maven Official
 * Initial release on official Maven repository
 * Major update to ByteStorable API
 * First release to require java 8
 
-##Download
+## Download
 
 The core mellowtech.org API can be downloaded from the central maven repository
 

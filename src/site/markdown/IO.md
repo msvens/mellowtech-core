@@ -1,4 +1,4 @@
-#Overview
+# Overview
 
 Mellowtech Core IO is an IO abstraction layer for working with files that contains data organized as records. The API
 is defined in RecordFile and SplitRecordFile respectively. A SplitRecordFile is a RecordFile with some added functionality.
@@ -19,7 +19,7 @@ to the largest mapped region. So always expect file sizes to be larger than the 
 
 **Never assume that the various record files are binary compatible**
 
-##Creating and Using RecordFiles
+## Creating and Using RecordFiles
 
 The preferred way of creating files is to use the RecordFileBuilder, then you don't need to worry about which underlying
 implementation to use. Lets say you want to instantiate a memory mapped RecordFile.
@@ -71,7 +71,7 @@ rf.close();
 new File("/tmp/myfile.rf").delete();
 ```
 
-###Dynamically Sized Records
+### Dynamically Sized Records
 
 In some circumstances you will need a way of allocating records that can grow and shrink in size. That is, 
 you might need one record that is 100K in size and another that is only 1K in size. Creating a RecordFile with 

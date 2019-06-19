@@ -1,4 +1,4 @@
-#Overview
+# Overview
 
 One of the original purposes of Mellowtech Core was to offer fast disc based sorting for handling indexing of 
 large document collections. Typically it is always faster to work with sorted data when you build your text search index. Obviously, there
@@ -13,15 +13,15 @@ The general flow of the sort can be seen below
 <br/>
 <img src="img/sort.png" alt="sort flow" style="height:400px"/>
 
-##Example Usage
+## Example Usage
 
 In the following example we will use the *ByteComparable* version (org.mellowtech.core.sort.EDiscBasedSort). For ordinary sort
 (org.mellowtech.core.sort.DiscBasedSort) the pattern is exactly the same
 
-###1 Get some Data to Sort
+### 1 Get some Data to Sort
 A nicely prepared download can be found at [pizzachili](http://pizzachili.dcc.uchile.cl/texts/nlang)
 
-###2 Parse your Data
+### 2 Parse your Data
 The next step is to transform the downloaded text file to a file of ByteStorables (CBStrings in this case).
 
 ```java
@@ -49,7 +49,7 @@ public static void parse() throws Exception{
 We use the Scanner class to extract all words form the file (omitting any words that has a length less than 2)
 and store them in a new file containing CBStrings. Later we will show a way of removing this step
 
-###3 Sort Data
+### 3 Sort Data
 The final step is to sort the words and stored them in a new file
 
 ```java
@@ -66,7 +66,7 @@ in the sorting step. Also in the actual sort you need to provide a size of the i
 storing the ByteStorables to sort in each run. That buffer will be the basic memory footprint for the sort (with an additional
 array of integers holding positions in the buffer)
 
-###4 Combined Parsing and Sorting
+### 4 Combined Parsing and Sorting
 
 In many cases it does not make sense to store an intermediate file (Step 2 above) but rather directly sort your input file.
 This can be done in many different ways. The core library contains a special InputStream that takes as input a Scanner and
@@ -88,7 +88,7 @@ public static void parseAndSort() throws Exception {
 As you can see the code is very similar with the difference that we now sort an ScannerInputStream and outputs an OutputStream.
 Doing this way will reduce the need of creating a file of ByteStorables first
 
-###5 Verifying
+### 5 Verifying
 
 A simple way to verify the output is to iterate through it is to use a _StorableInputStream_ to read the sorted file and make
 sure no BStorable is smaller than the previous one

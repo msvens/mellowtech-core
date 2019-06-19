@@ -1,4 +1,4 @@
-#Overview
+# Overview
 
 Mellowtech Core Collections is a set of classes for disc based key-value maps. It supports both sorted and hashed maps.
 The hash map implementation is still rough around the edges so the sorted map is preferred.
@@ -12,7 +12,7 @@ and secondly you can use the *java.util.collections.Map* abstraction.
 **All maps are unsynchronized**
 
 
-##BTree
+## BTree
 
 There are two main implementations of *org.mellowtech.core.collections.BTree*.
 
@@ -47,11 +47,11 @@ BTree bt = new BTreeBuilder().valuesInMemory(true).build("someFileName",new CBSt
 
 Would create a BTree that have its values memory mapped and all other options set to its default values
 
-##ExtendibleHashTable
+## ExtendibleHashTable
 
 To be written
 
-##Collections
+## Collections
 
 The _BTree_ and _BMap_ APIs are primarily used as a basis for higher level constructs. In most situations
 you as a developer should use the disc based collections that implement java.util.Map and java.util.NavigableMap.
@@ -91,7 +91,7 @@ db1 = ehbuilder.inMemory(true).blobValues(true).build(new StringCodec(), new Str
 
 Would create the same underlying structure as the DiscMaps above
 
-##Example
+## Example
 In this example we will build on the data we sorted in the [sorting](sorting.html) section. The idea is to create a
 BTree that holds all unique words and the number of times it occurs. _Given large enough data it is a lot faster to
 sort it first and then insert it than continuously update a counter value of a key in a tree_.
